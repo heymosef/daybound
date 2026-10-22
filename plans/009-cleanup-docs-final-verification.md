@@ -82,13 +82,13 @@ This is the single owner of complete final validation. Other streams run focused
 
 ## Done criteria
 
-- [ ] all numbered requirements implemented or explicitly reviewed measured no-op with justification
-- [ ] README/env/AGENTS accurate; stale log/template/unused helper removed
-- [ ] full supported-runtime suite/static/build/audit gates pass
-- [ ] timezone matrix and intercepted browser flows verified
-- [ ] local commits only, clean diff/status, plan index/evidence updated
-- [ ] Astra requested-model plan approval recorded before implementation and final staff review passes
-- [ ] `git diff --check` exits 0; changed paths remain in scope.
+- [x] all numbered requirements implemented or explicitly reviewed measured no-op with justification
+- [x] README/env/AGENTS accurate; stale log/template/unused helper removed
+- [x] full supported-runtime suite/static/build/audit gates pass
+- [x] timezone matrix and intercepted browser flows verified
+- [x] local commits only, clean diff/status, plan index/evidence updated
+- [x] Astra requested-model plan approval recorded before implementation and final staff review passes
+- [x] `git diff --check` exits 0; changed paths remain in scope.
 
 ## STOP conditions
 
@@ -99,3 +99,7 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Keep validation evidence honest about scope. No production deployment or GitHub settings change is part of this task.
+
+## Completion record
+
+DONE — 80d6be4 +446ca3a; cleanup-evidence.md, validation.md, browser-evidence.md, final-staff-review.md. All commits local; exact final source446ca3a. Optional features remain outside implementation scope.

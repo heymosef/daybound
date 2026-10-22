@@ -62,10 +62,10 @@ Actual rerender/time advancement must drive the reset regression; fixed now test
 
 ## Done criteria
 
-- [ ] calendar navigation remains stable across ticking/midnight
-- [ ] reopening shows selected date month
-- [ ] focused tests, typecheck and lint pass
-- [ ] `git diff --check` exits 0; changed paths remain in scope.
+- [x] calendar navigation remains stable across ticking/midnight
+- [x] reopening shows selected date month
+- [x] focused tests, typecheck and lint pass
+- [x] `git diff --check` exits 0; changed paths remain in scope.
 
 ## STOP conditions
 
@@ -76,3 +76,7 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Changing useTime frequency must never be the fix for calendar reset. Keep lifecycle tests when date-selection API changes.
+
+## Completion record
+
+DONE — fa5d857; calendar-evidence.md, browser-evidence.md. All commits local; exact final source446ca3a. Optional features remain outside implementation scope.

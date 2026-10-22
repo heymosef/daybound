@@ -68,11 +68,11 @@ Unit-test exact UTC instants/IANA fields under multiple TZ values, including hom
 
 ## Done criteria
 
-- [ ] fixed YYYY-MM-DD stays stable across midnight/home changes
-- [ ] live vs selected-today are separate states
-- [ ] past selection returns live, reload starts live
-- [ ] focused App/date tests, typecheck and lint pass
-- [ ] `git diff --check` exits 0; changed paths remain in scope.
+- [x] fixed YYYY-MM-DD stays stable across midnight/home changes
+- [x] live vs selected-today are separate states
+- [x] past selection returns live, reload starts live
+- [x] focused App/date tests, typecheck and lint pass
+- [x] `git diff --check` exits 0; changed paths remain in scope.
 
 ## STOP conditions
 
@@ -83,3 +83,7 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Keep selection semantics separate from clock frequency and timezone rendering. Date ranges/exports in future must not accidentally persist transient view state.
+
+## Completion record
+
+DONE — c4bf6e2 +74ea93a; fixed-date/date-correction evidence and review, browser-evidence.md. All commits local; exact final source446ca3a. Optional features remain outside implementation scope.

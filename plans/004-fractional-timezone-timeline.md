@@ -70,11 +70,11 @@ Tests cover the model AND rendered Timeline/TimezoneRow. Assert Kathmandu home d
 
 ## Done criteria
 
-- [ ] 25-cell rail preserved, 1h elapsed spacing, exact day-view anchor
-- [ ] fractional minutes and exact midnight boundaries shown
-- [ ] DST gap/repeat and accessible offset labels correct
-- [ ] all matrix tests, typecheck, lint pass
-- [ ] `git diff --check` exits 0; changed paths remain in scope.
+- [x] 25-cell rail preserved, 1h elapsed spacing, exact day-view anchor
+- [x] fractional minutes and exact midnight boundaries shown
+- [x] DST gap/repeat and accessible offset labels correct
+- [x] all matrix tests, typecheck, lint pass
+- [x] `git diff --check` exits 0; changed paths remain in scope.
 
 ## STOP conditions
 
@@ -89,3 +89,7 @@ App now supplies exact `startOfCalendarDate` instants and a separate live/date s
 ## Maintenance notes
 
 Do not reintroduce browser-local rounding on absolute instants. Coordinate geometry review with plan008; cache data without changing the tested rail model.
+
+## Completion record
+
+DONE — 7bf6d4f +74ea93a +446ca3a; timeline/date-correction/layout evidence, browser-evidence.md, final-staff-review.md. All commits local; exact final source446ca3a. Optional features remain outside implementation scope.

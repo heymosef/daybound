@@ -65,11 +65,11 @@ Use renderHook + Testing Library for hook state and mock Storage methods/getter 
 
 ## Done criteria
 
-- [ ] malformed/legacy state cannot crash App; valid custom data preserved
-- [ ] all storage operations guarded, memory state works on failure
-- [ ] accurate failure notice survives prior dismissal
-- [ ] focused tests, typecheck, lint pass
-- [ ] `git diff --check` exits 0; changed paths remain in scope.
+- [x] malformed/legacy state cannot crash App; valid custom data preserved
+- [x] all storage operations guarded, memory state works on failure
+- [x] accurate failure notice survives prior dismissal
+- [x] focused tests, typecheck, lint pass
+- [x] `git diff --check` exits 0; changed paths remain in scope.
 
 ## STOP conditions
 
@@ -80,3 +80,7 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Keep key parsers explicit and version/migrate any future schema additions. Imports/working-hour future plans depend on these validators.
+
+## Completion record
+
+DONE — 94ec757; persistence-evidence.md, browser-evidence.md. All commits local; exact final source446ca3a. Optional features remain outside implementation scope.

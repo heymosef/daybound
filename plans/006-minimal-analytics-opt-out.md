@@ -79,12 +79,12 @@ Intercept the actual fetch transport, not just a facade mocked to match expectat
 
 ## Done criteria
 
-- [ ] free-text/person properties removed; only allowlisted payloads leave adapter
-- [ ] no SDK/runtime exists to enable automatic capture/replay/logs
-- [ ] durable accessible opt-out prevents new requests, aborts in-flight requests and has no delayed queue/retry path
-- [ ] missing config/blocked storage safe; tests never send real analytics
-- [ ] focused tests, typecheck, lint pass
-- [ ] `git diff --check` exits 0; changed paths remain in scope.
+- [x] free-text/person properties removed; only allowlisted payloads leave adapter
+- [x] no SDK/runtime exists to enable automatic capture/replay/logs
+- [x] durable accessible opt-out prevents new requests, aborts in-flight requests and has no delayed queue/retry path
+- [x] missing config/blocked storage safe; tests never send real analytics
+- [x] focused tests, typecheck, lint pass
+- [x] `git diff --check` exits 0; changed paths remain in scope.
 
 ## STOP conditions
 
@@ -95,3 +95,7 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Any new event must extend the typed policy and complete transport tests. No external PostHog dashboard/project changes. This intentionally sacrifices cross-visit identification/replay and retry delivery to keep explicit usage events minimal. Browser/ingestion services necessarily see network requests already sent; opt-out governs future capture and cancellation.
+
+## Completion record
+
+DONE — cc10f91/0581ef8/bb1c2db; analytics transport/integration evidence and reviews, browser-evidence.md. All commits local; exact final source446ca3a. Optional features remain outside implementation scope.

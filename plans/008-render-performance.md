@@ -80,11 +80,11 @@ Clock tests should assert behavior at :59.900, delayed callbacks, visibility/foc
 
 ## Done criteria
 
-- [ ] aligned minute updates and immediate resume; no stale date behavior
-- [ ] stable memo inputs/cache proven with meaningful count/profile evidence
-- [ ] bundle and font measurements plus implement/reject decisions documented
-- [ ] focused tests, typecheck and lint pass; all three themes remain available
-- [ ] `git diff --check` exits 0; changed paths remain in scope.
+- [x] aligned minute updates and immediate resume; no stale date behavior
+- [x] stable memo inputs/cache proven with meaningful count/profile evidence
+- [x] bundle and font measurements plus implement/reject decisions documented
+- [x] focused tests, typecheck and lint pass; all three themes remain available
+- [x] `git diff --check` exits 0; changed paths remain in scope.
 
 ## STOP conditions
 
@@ -95,3 +95,7 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Keep geometry correct before memoizing. React.memo does not help when all props change; profile actual work and avoid render-time ref mutations that new lint catches.
+
+## Completion record
+
+DONE — 7feaa01 +446ca3a; performance-evidence.md, timeline-layout-correction.md, browser-evidence.md. All commits local; exact final source446ca3a. Optional features remain outside implementation scope.

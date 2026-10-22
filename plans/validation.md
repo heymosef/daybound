@@ -9,9 +9,10 @@ risk-specific approvals are linked through the plan index/evidence files.
 
 ## Status
 
-Local command gates and fixture preparation PASS. Actual desktop/mobile CUA
-browser verification and final combined-source staff review are PENDING the
-primary reviewer. This is not a completed release, live-ingestion test or remote
+Local command gates, fixture preparation, actual desktop/mobile CUA browser
+verification and final source review PASS. Initial combined source80d6be4
+received the complete gates below; final source446ca3a received affected checks
+and actual browser geometry after the desktop-label correction. This is not a completed release, live-ingestion test or remote
 CI result. Plans010/011 remain deferred; no feature implementation was added.
 
 ## Authoritative final command run
@@ -115,3 +116,29 @@ performed by this executor. The attached worktree is retained for user review.
 Primary owns final plan-status reconciliation and records the bounded/final
 staff verdicts. Pending evidence must be completed before claiming the entire
 maintenance goal finished.
+
+## Final browser/source acceptance
+
+Primary actual CUA observations PASS in browser-evidence.md. Production controls,
+mobile390px containment, fixed-date midnight/home-zone/equal-today/past fallback,
+fractional/DST/St Johns, storage recovery, minimal whole envelopes,9pending-request
+abort, persistent opt-out and cross-tab denial all have actual DOM observations.
+Three Google Fonts CSS resource requests became one; no latency claim is made.
+
+Browser inspection found desktop fractional24h labels colliding. Exact bounded
+source446ca3a removes only the desktop width narrowing, retaining shared3.25em
+cells. Focused36 Timeline/model tests (including two new cases), typecheck,lint,
+production build, in-memory bundle and rebuilt fixtures all passed. No full-suite
+duplication was needed for this style-only delta; the257 full-suite result remains
+at80d6be4. Actual final1280px label gaps are positive in all themes (minimum13.55px),
+with identical cross-row positions. Final390px cells52px, alignment delta0 and
+page width390px pass. Updated final JS397847 bytes /126447gzip; CSS48840 /9989gzip.
+The unchanged lockfile retains the integrated audit0 result.
+
+GPT-6 Astra/High independently APPROVED80d6be4 and exact final446ca3a; see
+final-staff-review.md. Source approval and actual-browser acceptance are both
+complete. Only plan/evidence/screenshots/status files follow that source hash.
+Owned verification servers stopped; no pre-existing service was stopped. Final
+working/cumulative whitespace, local commit and original-checkout boundaries
+are checked at evidence commit. No remote CI, deployment or live ingestion
+was performed or claimed.

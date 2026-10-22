@@ -72,11 +72,11 @@ Retain and repair the two assertions. New infrastructure should reject a deliber
 
 ## Done criteria
 
-- [ ] npm run typecheck and npm run lint exit 0 over source/tests/configs
-- [ ] 29 existing tests pass without weakened assertions
-- [ ] PR workflow exists and Pages checks precede upload
-- [ ] No production behavior changes
-- [ ] `git diff --check` exits 0; changed paths remain in scope.
+- [x] npm run typecheck and npm run lint exit 0 over source/tests/configs
+- [x] 29 existing tests pass without weakened assertions
+- [x] PR workflow exists and Pages checks precede upload
+- [x] No production behavior changes
+- [x] `git diff --check` exits 0; changed paths remain in scope.
 
 ## STOP conditions
 
@@ -87,3 +87,7 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 All future plans must preserve these gates. Broad source scope authorizes type-only/unused-code repair, not a rewrite.
+
+## Completion record
+
+DONE — 238ff08; bootstrap-evidence.md/bootstrap-review.md, validation.md. All commits local; exact final source446ca3a. Optional features remain outside implementation scope.

@@ -64,11 +64,11 @@ Use existing component tests after updates. This plan validates the dependency g
 
 ## Done criteria
 
-- [ ] npm audit --audit-level=high exits 0
-- [ ] clean npm ci, focused tests, typecheck, lint and build pass on Node 24
-- [ ] npm ls --depth=0 exits 0; pnpm override and culori removed
-- [ ] PR checks remain unprivileged; deploy-only write permissions; no external actions invoked
-- [ ] `git diff --check` exits 0; changed paths remain in scope.
+- [x] npm audit --audit-level=high exits 0
+- [x] clean npm ci, focused tests, typecheck, lint and build pass on Node 24
+- [x] npm ls --depth=0 exits 0; pnpm override and culori removed
+- [x] PR checks remain unprivileged; deploy-only write permissions; no external actions invoked
+- [x] `git diff --check` exits 0; changed paths remain in scope.
 
 ## STOP conditions
 
@@ -79,3 +79,7 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Audit counts are package counts, not exploit counts. No deployed-site RCE was established. Document lower severity exceptions with reachability and renewal date.
+
+## Completion record
+
+DONE — 238ff08; bootstrap-evidence.md/bootstrap-review.md, validation.md (Node24 clean install/audit0). All commits local; exact final source446ca3a. Optional features remain outside implementation scope.
