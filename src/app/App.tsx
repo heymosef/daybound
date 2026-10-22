@@ -112,7 +112,7 @@ function applySystemBarColor(color: string) {
     );
 
     // 3. Set theme-color + backgrounds
-    const color = resolveThemeColor(designTheme, mode as any);
+    const color = resolveThemeColor(designTheme, mode);
     applySystemBarColor(color);
 
     // 4. Ensure viewport-fit=cover (needed for iOS safe-area)
@@ -237,7 +237,7 @@ function App() {
     const mode = settings.theme || "system";
 
     const updateTheme = () => {
-      const color = resolveThemeColor(designTheme, mode as any);
+      const color = resolveThemeColor(designTheme, mode);
 
       // Aggressively replace theme-color and set backgrounds
       applySystemBarColor(color);

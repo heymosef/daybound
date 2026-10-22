@@ -20,7 +20,7 @@ vi.mock("motion/react", () => ({
   motion: {
     div: React.forwardRef(
       (
-        { children, ...props }: React.PropsWithChildren<Record<string, unknown>>,
+        { children, ...props }: React.PropsWithChildren<MotionMockProps>,
         ref: React.Ref<HTMLDivElement>,
       ) => (
         <div ref={ref} {...stripMotionProps(props)}>
@@ -30,7 +30,7 @@ vi.mock("motion/react", () => ({
     ),
     span: React.forwardRef(
       (
-        { children, ...props }: React.PropsWithChildren<Record<string, unknown>>,
+        { children, ...props }: React.PropsWithChildren<MotionMockProps>,
         ref: React.Ref<HTMLSpanElement>,
       ) => (
         <span ref={ref} {...stripMotionProps(props)}>
@@ -42,19 +42,20 @@ vi.mock("motion/react", () => ({
   AnimatePresence: ({ children }: React.PropsWithChildren) => <>{children}</>,
 }));
 
-function stripMotionProps(props: Record<string, unknown>) {
-  const {
-    initial,
-    animate,
-    exit,
-    transition,
-    style,
-    className,
-    role,
-    id,
-    ...rest
-  } = props;
-  return { style, className, role, id, ...rest };
+type MotionMockProps = React.HTMLAttributes<HTMLElement> & {
+  initial?: unknown;
+  animate?: unknown;
+  exit?: unknown;
+  transition?: unknown;
+};
+
+function stripMotionProps(props: MotionMockProps) {
+  const domProps = { ...props };
+  delete domProps.initial;
+  delete domProps.animate;
+  delete domProps.exit;
+  delete domProps.transition;
+  return domProps;
 }
 
 const NOW = new Date(2026, 2, 2, 14, 30);
@@ -78,10 +79,6 @@ function renderDatePicker(
 describe("DatePicker strip", () => {
   it("renders 7 day buttons", () => {
     renderDatePicker();
-    const buttons = screen.getAllByRole("button").filter((btn) =>
-      btn.getAttribute("aria-current") === "date" ||
-      btn.textContent?.match(/\d+\w{3}/)
-    );
     const dayButtons = screen.getAllByRole("button").filter(
       (btn) => !btn.getAttribute("aria-label")?.includes("calendar"),
     );
@@ -313,10 +310,8 @@ describe("Viewing label for far-future dates", () => {
     const homeToday = startOfDay(toZonedTime(NOW, "UTC"));
     const expectedDate = addDays(homeToday, 14);
     const backButton = screen.getByRole("button", { name: /back to today/i });
-    const chip = backButton.parentElement;
-    expect(chip).toBeInTheDocument();
-    expect(within(chip!).getByText(String(expectedDate.getDate()))).toBeInTheDocument();
-    expect(within(chip!).getByText(format(expectedDate, "MMM"))).toBeInTheDocument();
+    expect(within(backButton).getByText(String(expectedDate.getDate()))).toBeInTheDocument();
+    expect(within(backButton).getByText(format(expectedDate, "MMM"))).toBeInTheDocument();
   });
 
   it("hides viewing label when selectedDateOffset <= 6", () => {
@@ -395,9 +390,7 @@ describe("Timezone-aware date handling", () => {
     const sydneyToday = startOfDay(toZonedTime(TZ_NOW, "Australia/Sydney"));
     const expectedDate = addDays(sydneyToday, 14);
     const backButton = screen.getByRole("button", { name: /back to today/i });
-    const chip = backButton.parentElement;
-    expect(chip).toBeInTheDocument();
-    expect(within(chip!).getByText(String(expectedDate.getDate()))).toBeInTheDocument();
-    expect(within(chip!).getByText(format(expectedDate, "MMM"))).toBeInTheDocument();
+    expect(within(backButton).getByText(String(expectedDate.getDate()))).toBeInTheDocument();
+    expect(within(backButton).getByText(format(expectedDate, "MMM"))).toBeInTheDocument();
   });
 });

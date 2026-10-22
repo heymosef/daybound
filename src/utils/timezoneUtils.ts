@@ -1,5 +1,4 @@
-import { format as formatTz, toZonedTime } from "date-fns-tz";
-import { format as formatLocal } from "date-fns";
+import { format as formatTz } from "date-fns-tz";
 
 export interface TimezoneConfig {
   id: string;
@@ -28,7 +27,6 @@ export const getCommonTimezones = (): string[] => {
     "supportedValuesOf" in Intl
   ) {
     try {
-      // @ts-ignore
       _cachedTimezones = Intl.supportedValuesOf("timeZone");
       return _cachedTimezones;
     } catch (e) {
@@ -77,7 +75,7 @@ export const getAbbreviation = (
 ) => {
   try {
     return formatTz(date, "zzz", { timeZone: timezone });
-  } catch (e) {
+  } catch {
     return "";
   }
 };

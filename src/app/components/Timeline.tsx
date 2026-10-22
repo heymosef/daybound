@@ -38,8 +38,6 @@ const LABEL_PAD = 0; // px – clamping offset from the container edge
 const TimelineInner: React.FC<TimelineProps> = ({
   now,
   timezone,
-  isHome,
-  homeTimezone,
   className,
   use24Hour,
   hoveredHourIndex,

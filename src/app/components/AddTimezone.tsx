@@ -35,7 +35,7 @@ const sanitizeQuery = (raw: string): string =>
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[^a-z\s'\-]/g, "")
+    .replace(/[^a-z\s'-]/g, "")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, MAX_QUERY_LEN);

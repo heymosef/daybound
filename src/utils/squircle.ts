@@ -132,7 +132,6 @@ export function registerSquircle(): void {
       type: "text/javascript",
     });
     const url = URL.createObjectURL(blob);
-    // @ts-ignore – paintWorklet is not in the TS lib types
     CSS.paintWorklet.addModule(url);
     registered = true;
   } catch {
