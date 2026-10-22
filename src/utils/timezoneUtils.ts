@@ -1,5 +1,4 @@
 import { getZonedFields } from "./calendarDate";
-import { formatZonedClock } from "./timeline";
 
 export interface TimezoneConfig {
   id: string;
@@ -51,19 +50,6 @@ export const getCommonTimezones = (): string[] => {
     "Pacific/Auckland",
   ];
   return _cachedTimezones;
-};
-
-export const formatTimezoneTime = (
-  date: Date,
-  timezone: string,
-  use24Hour: boolean,
-) => {
-  try {
-    return formatZonedClock(date, timezone, use24Hour);
-  } catch (e) {
-    console.error("Format error", e);
-    return "--:--";
-  }
 };
 
 export const getAbbreviation = (
