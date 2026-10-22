@@ -3,22 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePostHog } from "@posthog/react";
 import { motion, AnimatePresence } from "motion/react";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
-import {
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  getDay,
-  format,
-  addMonths,
-  subMonths,
-  isBefore,
-  startOfDay,
-  isSameDay,
-  isSameMonth,
-  differenceInCalendarDays,
-  addDays,
-} from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { addCalendarMonths, calendarMonthDays, calendarSurrogate, formatCalendarDate, getZonedFields, LIVE_SELECTION, startOfCalendarDate, startOfCalendarMonth, type DateSelection } from "../../utils/calendarDate";
 
 interface CalendarDropdownProps {
   isOpen: boolean;
@@ -29,8 +14,8 @@ interface CalendarDropdownProps {
       | "date_selected"
       | "today_button",
   ) => void;
-  onSelectDate: (offset: number) => void;
-  selectedDateOffset: number;
+  onSelectDate: (selection: DateSelection) => void;
+  selection: DateSelection;
   containerRef?: React.RefObject<HTMLDivElement | null>;
   homeTimezone: string;
   now: Date;
@@ -42,32 +27,28 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
   isOpen,
   onClose,
   onSelectDate,
-  selectedDateOffset,
+  selection,
   containerRef,
   homeTimezone,
   now,
 }) => {
   const posthog = usePostHog();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const homeNow = toZonedTime(now, homeTimezone);
-  const today = startOfDay(homeNow);
-  const selectedDate = addDays(today, selectedDateOffset);
-  const selectedMonthTime = startOfMonth(selectedDate).getTime();
-  const [viewingMonth, setViewingMonth] = useState(() => new Date(selectedMonthTime));
-  const previousContext = useRef({ isOpen: false, homeTimezone, selectedDateOffset });
-  const isViewingCurrentMonth = isSameMonth(viewingMonth, today);
+  const today = getZonedFields(now, homeTimezone).date;
+  const selectedDate = selection.mode === "date" ? selection.date : today;
+  const selectedMonth = startOfCalendarMonth(selectedDate);
+  const selectionKey = selection.mode === "live" ? "live" : selection.date;
+  const [viewingMonth, setViewingMonth] = useState(selectedMonth);
+  const previousContext = useRef({ isOpen: false, homeTimezone, selectionKey });
+  const isViewingCurrentMonth = viewingMonth <= startOfCalendarMonth(today);
 
   useEffect(() => {
     const previous = previousContext.current;
-    if (isOpen && (
-      !previous.isOpen ||
-      previous.homeTimezone !== homeTimezone ||
-      previous.selectedDateOffset !== selectedDateOffset
-    )) {
-      setViewingMonth(new Date(selectedMonthTime));
+    if (isOpen && (!previous.isOpen || previous.homeTimezone !== homeTimezone || previous.selectionKey !== selectionKey)) {
+      setViewingMonth(selectedMonth);
     }
-    previousContext.current = { isOpen, homeTimezone, selectedDateOffset };
-  }, [isOpen, homeTimezone, selectedDateOffset, selectedMonthTime]);
+    previousContext.current = { isOpen, homeTimezone, selectionKey };
+  }, [isOpen, homeTimezone, selectionKey, selectedMonth]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -101,30 +82,28 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
       document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  const monthStart = startOfMonth(viewingMonth);
-  const monthEnd = endOfMonth(viewingMonth);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  const leadingBlanks = (getDay(monthStart) + 6) % 7;
+  const days = calendarMonthDays(viewingMonth).map((date) => ({
+    date, unavailable: startOfCalendarDate(date, homeTimezone) === null,
+  }));
+  const leadingBlanks = (calendarSurrogate(viewingMonth).getUTCDay() + 6) % 7;
 
-  const handleDayClick = (day: Date) => {
-    if (isBefore(day, today) && !isSameDay(day, today)) return;
-    const offset = differenceInCalendarDays(day, today);
-    onSelectDate(offset);
+  const handleDayClick = (day: string, unavailable: boolean) => {
+    if (day < today || unavailable) return;
+    onSelectDate({ mode: "date", date: day });
     onClose("date_selected");
   };
 
   const handleTodayClick = () => {
-    onSelectDate(0);
+    onSelectDate(LIVE_SELECTION);
     onClose("today_button");
   };
 
-  const monthsFromToday = (month: Date) =>
-    (month.getFullYear() - today.getFullYear()) * 12 +
-    month.getMonth() -
-    today.getMonth();
+  const monthsFromToday = (month: string) =>
+    (Number(month.slice(0, 4)) - Number(today.slice(0, 4))) * 12 +
+    Number(month.slice(5, 7)) - Number(today.slice(5, 7));
 
   const handlePrevMonth = () => {
-    const newMonth = subMonths(viewingMonth, 1);
+    const newMonth = addCalendarMonths(viewingMonth, -1);
     setViewingMonth(newMonth);
     posthog?.capture("calendar_month_navigated", {
       direction: "backward",
@@ -133,7 +112,7 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
   };
 
   const handleNextMonth = () => {
-    const newMonth = addMonths(viewingMonth, 1);
+    const newMonth = addCalendarMonths(viewingMonth, 1);
     setViewingMonth(newMonth);
     posthog?.capture("calendar_month_navigated", {
       direction: "forward",
@@ -177,7 +156,7 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
               <ChevronLeft size="1em" />
             </button>
             <span className="text-[clamp(12px,0.6vw+8px,14px)] font-medium text-[var(--dt-text)]">
-              {format(viewingMonth, "MMMM yyyy")}
+              {formatCalendarDate(viewingMonth, { month: "long", year: "numeric" })}
             </span>
             <button
               onClick={handleNextMonth}
@@ -206,17 +185,17 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
                 <div key={`blank-${i}`} className="w-[2.5em] h-[2.5em]" />
               ))}
 
-              {days.map((day) => {
+              {days.map(({ date: day, unavailable }) => {
                 const isPast =
-                  isBefore(day, today) && !isSameDay(day, today);
-                const isDayToday = isSameDay(day, today);
+                  day < today;
+                const isDayToday = day === today;
                 const isSelected =
-                  !isDayToday && isSameDay(day, selectedDate);
+                  !isDayToday && day === selectedDate;
 
                 let cellClass =
                   "flex items-center justify-center w-[2.5em] h-[2.5em] text-[clamp(12px,0.6vw+8px,14px)] transition-colors ";
 
-                if (isPast) {
+                if (isPast || unavailable) {
                   cellClass +=
                     "text-[var(--dt-text-muted)] opacity-40 cursor-not-allowed";
                 } else if (isDayToday) {
@@ -232,20 +211,27 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
 
                 return (
                   <button
-                    key={day.toISOString()}
+                    key={day}
                     className={cellClass}
-                    onClick={() => handleDayClick(day)}
-                    aria-disabled={isPast}
-                    aria-label={format(day, "EEEE, MMMM d, yyyy")}
-                    tabIndex={isPast ? -1 : 0}
+                    onClick={() => handleDayClick(day, unavailable)}
+                    aria-disabled={isPast || unavailable}
+                    disabled={unavailable}
+                    title={unavailable ? `This date does not exist in ${homeTimezone}. Choose another date.` : undefined}
+                    aria-label={formatCalendarDate(day, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+                    tabIndex={isPast || unavailable ? -1 : 0}
                   >
-                    {format(day, "d")}
+                    {Number(day.slice(8))}
                   </button>
                 );
               })}
             </div>
           </div>
 
+          {days.some((day) => day.unavailable) && (
+            <p role="status" className="px-[0.75em] text-sm text-[var(--dt-text-secondary)]">
+              Some dates do not exist in this timezone and cannot be selected.
+            </p>
+          )}
           {/* Footer */}
           <div className="flex justify-center px-[0.75em] py-[0.5em] border-t border-[var(--dt-border)]">
             <button

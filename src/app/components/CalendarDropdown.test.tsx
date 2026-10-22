@@ -12,7 +12,7 @@ function renderCalendar(overrides: Partial<React.ComponentProps<typeof CalendarD
     isOpen: true,
     onClose: vi.fn(),
     onSelectDate: vi.fn(),
-    selectedDateOffset: 0,
+    selection: { mode: "live" } as const,
     homeTimezone: "UTC",
     now: NOW,
     ...overrides,
@@ -42,7 +42,7 @@ describe("calendar opening and clock updates", () => {
 
   it("opens and reopens in the far-future selected month", async () => {
     const user = userEvent.setup();
-    const { update } = renderCalendar({ selectedDateOffset: 100 });
+    const { update } = renderCalendar({ selection: { mode: "date", date: "2026-06-10" } });
     expect(screen.getByText("June 2026")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Next month" }));
     expect(screen.getByText("July 2026")).toBeInTheDocument();
@@ -51,11 +51,11 @@ describe("calendar opening and clock updates", () => {
     expect(screen.getByText("June 2026")).toBeInTheDocument();
   });
 
-  it("reconciles an intentional selected offset change", async () => {
+  it("reconciles an intentional selected date change", async () => {
     const user = userEvent.setup();
     const { update } = renderCalendar();
     await user.click(screen.getByRole("button", { name: "Next month" }));
-    update({ selectedDateOffset: 100 });
+    update({ selection: { mode: "date", date: "2026-06-10" } });
     expect(screen.getByText("June 2026")).toBeInTheDocument();
   });
 
@@ -95,10 +95,26 @@ describe("calendar opening and clock updates", () => {
     fireEvent.mouseDown(document.body);
     expect(props.onClose).toHaveBeenLastCalledWith("outside_click");
     await user.click(screen.getByRole("button", { name: "Tuesday, March 3, 2026" }));
-    expect(props.onSelectDate).toHaveBeenLastCalledWith(1);
+    expect(props.onSelectDate).toHaveBeenLastCalledWith({ mode: "date", date: "2026-03-03" });
     expect(props.onClose).toHaveBeenLastCalledWith("date_selected");
     await user.click(screen.getByRole("button", { name: "Today" }));
-    expect(props.onSelectDate).toHaveBeenLastCalledWith(0);
+    expect(props.onSelectDate).toHaveBeenLastCalledWith({ mode: "live" });
     expect(props.onClose).toHaveBeenLastCalledWith("today_button");
   });
+});
+
+
+it("does not steal browsing when a fixed date's derived offset decreases at midnight", async () => {
+  const user = userEvent.setup();
+  const { update } = renderCalendar({ now: new Date("2026-03-31T23:59:59Z"), selection: { mode: "date", date: "2026-04-04" } });
+  await user.click(screen.getByRole("button", { name: "Next month" }));
+  expect(screen.getByText("May 2026")).toBeInTheDocument();
+  update({ now: new Date("2026-04-01T00:00:00Z") });
+  expect(screen.getByText("May 2026")).toBeInTheDocument();
+});
+
+it("disables an entirely skipped calendar day and explains why", () => {
+  renderCalendar({ now: new Date("2011-12-28T12:00:00Z"), homeTimezone: "Pacific/Apia" });
+  expect(screen.getByRole("button", { name: "Friday, December 30, 2011" })).toBeDisabled();
+  expect(screen.getByRole("status")).toHaveTextContent("Some dates do not exist in this timezone and cannot be selected.");
 });

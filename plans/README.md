@@ -17,11 +17,11 @@ Source audited/planned at `b77ff08`; October 22, 2026. [Original audit](audit-20
 |---|---|---|---|---|
 | [001](001-verification-baseline.md) | Verification baseline / CI gates | P1 | — | DONE (238ff08; focused/static/install/audit verified) |
 | [002](002-dependency-runtime-security.md) | Dependency security / supported runtime | P1 | 001 | DONE (238ff08; focused/static/install/audit verified) |
-| [003](003-calendar-navigation.md) | Stable calendar browsing | P1 | 001 | IN PROGRESS |
-| [005](005-persistence-recovery.md) | Validated storage / recovery | P1 | 001 | IN PROGRESS |
-| [007](007-fixed-calendar-selection.md) | Fixed calendar selection | P1 | 001,003; App integration after005 | TODO |
-| [004](004-fractional-timezone-timeline.md) | Accurate rail, fractional zones / DST | P1 | 001,003,007 | TODO |
-| [006](006-minimal-analytics-opt-out.md) | Minimal analytics / opt-out | P1 | 001,002,005 | TODO |
+| [003](003-calendar-navigation.md) | Stable calendar browsing | P1 | 001 | DONE (fa5d857; lifecycle regressions reviewed) |
+| [005](005-persistence-recovery.md) | Validated storage / recovery | P1 | 001 | DONE (94ec757; recovery/preservation tests reviewed) |
+| [007](007-fixed-calendar-selection.md) | Fixed calendar selection | P1 | 001,003; App integration after005 | IN PROGRESS |
+| [004](004-fractional-timezone-timeline.md) | Accurate rail, fractional zones / DST | P1 | 001,003,007 | IN PROGRESS |
+| [006](006-minimal-analytics-opt-out.md) | Minimal analytics / opt-out | P1 | 001,002,005 | IN PROGRESS (isolated transport slice; UI integration later) |
 | [008](008-render-performance.md) | Clock/render/startup optimization | P2 | 001–007 | TODO |
 | [009](009-cleanup-docs-final-verification.md) | Cleanup, onboarding / final validation | P2 | Cleanup after002; final gates after001–008 | TODO |
 | [010](010-portable-configuration.md) | Portable configuration design | P3 | 005,009 | DEFERRED: plan only |

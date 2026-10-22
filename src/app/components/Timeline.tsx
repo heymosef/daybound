@@ -198,6 +198,8 @@ const TimelineInner: React.FC<TimelineProps> = ({
   return (
     <div
       ref={outerRef}
+      data-date-mode={isLive ? "live" : "date"}
+      data-preview-instant={now.toISOString()}
       className={twMerge(
         "overflow-hidden w-full h-full relative select-none cursor-default",
         className,

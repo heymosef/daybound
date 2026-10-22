@@ -82,6 +82,10 @@ The user-selected fixed rail would need changing to a calendar-day rail; exact b
 
 Also stop for unexpected semantic drift or two failed repair attempts on the same verification. Report concrete evidence and options to the reviewer; no silent scope expansion. Do not weaken tests or disable validation to pass.
 
+## Integration after plan 007
+
+App now supplies exact `startOfCalendarDate` instants and a separate live/date selection. DatePicker and CalendarDropdown use fixed date keys and explicit-zone fields; relative offsets are presentation only. Timeline still needs this plan to consume the exact supplied instant, replace browser rounding/formatting, and render fractional boundaries. Preserve003's stable selection-key opening guard.
+
 ## Maintenance notes
 
 Do not reintroduce browser-local rounding on absolute instants. Coordinate geometry review with plan008; cache data without changing the tested rail model.

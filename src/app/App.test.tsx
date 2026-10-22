@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
 
@@ -222,5 +222,82 @@ describe("App persistence recovery", () => {
     expect(document.documentElement).toHaveAttribute("data-design-theme", "te-1");
     expect(document.documentElement).not.toHaveClass("dark");
     expect(write).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("App fixed calendar selection lifecycle", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-02T23:59:50Z"));
+    localStorage.clear();
+    localStorage.setItem("timezone_config", JSON.stringify([
+      { id: "utc", timezone: "UTC", label: "UTC desk", isHome: true },
+      { id: "west", timezone: "Pacific/Honolulu", label: "West", isHome: false },
+      { id: "east", timezone: "Pacific/Kiritimati", label: "East", isHome: false },
+    ]));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const expectView = (mode: "live" | "date", instant: string) => {
+    const rails = document.querySelectorAll("[data-date-mode]");
+    expect(rails).toHaveLength(3);
+    for (const rail of rails) {
+      expect(rail).toHaveAttribute("data-date-mode", mode);
+      expect(rail).toHaveAttribute("data-preview-instant", instant);
+    }
+  };
+  const advanceTo = (instant: string) => act(() => {
+    vi.setSystemTime(new Date(instant));
+    vi.advanceTimersByTime(1000);
+  });
+
+  it("keeps a far-future chosen date across midnight and home changes across the date line", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Open calendar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next month" }));
+    fireEvent.click(screen.getByRole("button", { name: "Wednesday, April 15, 2026" }));
+    expectView("date", "2026-04-15T00:00:00.000Z");
+    advanceTo("2026-03-03T00:00:00Z");
+    expectView("date", "2026-04-15T00:00:00.000Z");
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "west" } });
+    expectView("date", "2026-04-15T10:00:00.000Z");
+    fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "east" } });
+    expectView("date", "2026-04-14T10:00:00.000Z");
+    expect(localStorage.getItem("selected_date")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(LOCAL_SAVE_NOTICE_COPY);
+  });
+
+  it("retains preview when the selected date becomes today, then returns live once past", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "3 Mar" }));
+    expectView("date", "2026-03-03T00:00:00.000Z");
+    advanceTo("2026-03-03T12:00:00Z");
+    expectView("date", "2026-03-03T00:00:00.000Z");
+    advanceTo("2026-03-04T00:00:00Z");
+    expectView("live", "2026-03-04T00:00:01.000Z");
+  });
+
+  it("keeps selected-today after a home change and immediately falls back if the home date passes it", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "3 Mar" }));
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "east" } });
+    expectView("date", "2026-03-02T10:00:00.000Z");
+    advanceTo("2026-03-03T12:00:00Z");
+    expectView("live", "2026-03-03T12:00:01.000Z");
+  });
+
+  it("returns live through explicit Today and starts live after reload", () => {
+    const { unmount } = render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "3 Mar" }));
+    fireEvent.click(screen.getByRole("button", { current: "date" }));
+    expectView("live", "2026-03-02T23:59:50.000Z");
+    fireEvent.click(screen.getByRole("button", { name: "3 Mar" }));
+    expectView("date", "2026-03-03T00:00:00.000Z");
+    unmount();
+    render(<App />);
+    expectView("live", "2026-03-02T23:59:50.000Z");
   });
 });

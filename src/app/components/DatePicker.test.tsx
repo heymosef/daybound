@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { DatePicker } from "./DatePicker";
 import { format, addDays, startOfDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
+import { addCalendarDays, getZonedFields } from "../../utils/calendarDate";
 
 class ResizeObserverStub {
   observe() {}
@@ -58,19 +59,21 @@ function stripMotionProps(props: MotionMockProps) {
   return domProps;
 }
 
-const NOW = new Date(2026, 2, 2, 14, 30);
+const NOW = new Date("2026-03-02T14:30:00Z");
 
 function renderDatePicker(
-  overrides: Partial<React.ComponentProps<typeof DatePicker>> = {},
+  overrides: Partial<React.ComponentProps<typeof DatePicker>> & { selectedDateOffset?: number } = {},
 ) {
   const onSelectDate = vi.fn();
+  const { selectedDateOffset = 0, ...props } = overrides;
+  const today = getZonedFields(props.now ?? NOW, props.homeTimezone ?? "UTC").date;
   const result = render(
     <DatePicker
-      selectedDateOffset={0}
+      selection={selectedDateOffset === 0 ? { mode: "live" } : { mode: "date", date: addCalendarDays(today, selectedDateOffset) }}
       onSelectDate={onSelectDate}
       now={NOW}
       homeTimezone="UTC"
-      {...overrides}
+      {...props}
     />,
   );
   return { onSelectDate, ...result };
@@ -140,7 +143,7 @@ describe("DatePicker strip", () => {
 
     if (dayButtons.length > 0) {
       await user.click(dayButtons[0]);
-      expect(onSelectDate).toHaveBeenCalledWith(1);
+      expect(onSelectDate).toHaveBeenCalledWith({ mode: "date", date: "2026-03-03" });
     }
   });
 
@@ -234,7 +237,7 @@ describe("Calendar dropdown", () => {
     });
 
     await user.click(futureCell);
-    expect(onSelectDate).toHaveBeenCalledWith(5);
+    expect(onSelectDate).toHaveBeenCalledWith({ mode: "date", date: "2026-03-07" });
 
     const calendarButton = screen.getByRole("button", {
       name: /open calendar/i,
@@ -297,7 +300,7 @@ describe("Calendar dropdown", () => {
     });
 
     await user.click(footerTodayButton);
-    expect(onSelectDate).toHaveBeenCalledWith(0);
+    expect(onSelectDate).toHaveBeenCalledWith({ mode: "live" });
     expect(
       screen.getByRole("button", { name: /open calendar/i }),
     ).toHaveAttribute("aria-expanded", "false");
@@ -328,7 +331,7 @@ describe("Viewing label for far-future dates", () => {
     await user.click(
       screen.getByRole("button", { name: /back to today/i }),
     );
-    expect(onSelectDate).toHaveBeenCalledWith(0);
+    expect(onSelectDate).toHaveBeenCalledWith({ mode: "live" });
   });
 });
 
@@ -393,4 +396,20 @@ describe("Timezone-aware date handling", () => {
     expect(within(backButton).getByText(String(expectedDate.getDate()))).toBeInTheDocument();
     expect(within(backButton).getByText(format(expectedDate, "MMM"))).toBeInTheDocument();
   });
+});
+
+
+it("keeps selected-today preview distinct from live and lets Today return live", async () => {
+  const user = userEvent.setup();
+  const { onSelectDate } = renderDatePicker({ selection: { mode: "date", date: "2026-03-02" } });
+  expect(screen.getByTestId("today-indicator")).not.toHaveTextContent("Today");
+  await user.click(screen.getByRole("button", { current: "date" }));
+  expect(onSelectDate).toHaveBeenCalledWith({ mode: "live" });
+});
+
+it("disables a skipped date in the strip with an explanation", () => {
+  renderDatePicker({ now: new Date("2011-12-29T12:00:00Z"), homeTimezone: "Pacific/Apia" });
+  const skipped = screen.getByRole("button", { name: "30 Dec" });
+  expect(skipped).toBeDisabled();
+  expect(skipped).toHaveAttribute("title", "This date does not exist in Pacific/Apia.");
 });

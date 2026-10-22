@@ -28,7 +28,8 @@ Only these paths may change for this plan (wildcards mean existing files or focu
 - `src/main.tsx`
 - `src/analytics/AnalyticsProvider.tsx`
 - `src/analytics/analytics.ts`
-- `src/analytics/analytics.test.tsx`
+- `src/analytics/analytics.test.ts` (standalone transport)
+- `src/analytics/analytics.test.tsx` (React provider integration, if needed)
 - `src/app/App.tsx`
 - `src/app/App.test.tsx`
 - `src/app/components/AddTimezone.tsx`
@@ -42,7 +43,7 @@ Only these paths may change for this plan (wildcards mean existing files or focu
 - `package.json`
 - `package-lock.json`
 
-Run `git diff --stat b77ff08..HEAD -- 'src/main.tsx' 'src/analytics/AnalyticsProvider.tsx' 'src/analytics/analytics.ts' 'src/analytics/analytics.test.tsx' 'src/app/App.tsx' 'src/app/App.test.tsx' 'src/app/components/AddTimezone.tsx' 'src/app/components/AddTimezone.test.tsx' 'src/app/components/SettingsMenu.tsx' 'src/app/components/SettingsMenu.test.tsx' 'src/app/components/DatePicker.tsx' 'src/app/components/CalendarDropdown.tsx' 'src/utils/persistence.ts' 'src/utils/persistence.test.ts' 'package.json' 'package-lock.json'` and compare changes from approved predecessors before editing. Expected predecessor changes are reconciled, not blindly overwritten. All changes must trace to this plan's intent. Out of scope: global/model configuration, public PRs/issues, pushes, deployments, external service/dashboard writes, unrelated redesigns, .env values, production data. New plan/evidence files live under plans/.
+Run `git diff --stat b77ff08..HEAD -- 'src/main.tsx' 'src/analytics/AnalyticsProvider.tsx' 'src/analytics/analytics.ts' 'src/analytics/analytics.test.ts' 'src/analytics/analytics.test.tsx' 'src/app/App.tsx' 'src/app/App.test.tsx' 'src/app/components/AddTimezone.tsx' 'src/app/components/AddTimezone.test.tsx' 'src/app/components/SettingsMenu.tsx' 'src/app/components/SettingsMenu.test.tsx' 'src/app/components/DatePicker.tsx' 'src/app/components/CalendarDropdown.tsx' 'src/utils/persistence.ts' 'src/utils/persistence.test.ts' 'package.json' 'package-lock.json'` and compare changes from approved predecessors before editing. Expected predecessor changes are reconciled, not blindly overwritten. All changes must trace to this plan's intent. Out of scope: global/model configuration, public PRs/issues, pushes, deployments, external service/dashboard writes, unrelated redesigns, .env values, production data. New plan/evidence files live under plans/.
 
 ## Commands and git workflow
 
@@ -54,7 +55,7 @@ Existing commands: `npm ci` (isolated worktree), `npm test -- <test-files>`, `np
 
 Create a typed allowlisted event capture adapter/provider; select permitted primitive properties rather than forwarding arbitrary objects. Remove people.set/person profiling, register, labels, raw/sanitized searches and identifying metadata. Allow coarse counts, action/source enums, display settings and bounded date offsets; a canonical IANA timezone only where justified, never editable labels. Use the supported public PostHog HTTP capture endpoint `/i/v0/e/` directly, with the configured public project token, an ephemeral random per-page distinct_id, timestamp, `$process_person_profile:false` and `$geoip_disable:true`. Do not import/initialize the PostHog SDK. This eliminates automatic autocapture/page/replay/log/flag/survey/config traffic by construction. Respect DNT; omit URL/referrer/device/location fields, use fetch referrerPolicy:no-referrer and credentials:omit, and test the ENTIRE request envelope. Validate the configured host as an HTTPS origin without credentials/query/fragment; missing/invalid config disables capture while rendering App. No retries, batching, persistent queue, unload handlers, sendBeacon, or keepalive. References: https://posthog.com/docs/api and https://posthog.com/docs/data/anonymous-vs-identified-events and https://posthog.com/docs/product-analytics/troubleshooting .
 
-**Verify:** `npm test -- src/analytics/analytics.test.tsx` → mocked initialization policy, missing env, payload whitelist and full event envelope checks pass.
+**Verify:** `npm test -- src/analytics/` → mocked initialization policy, missing env, payload whitelist and full event envelope checks pass.
 
 ### Step 2: Implement consent-aware lifecycle
 
@@ -62,7 +63,7 @@ Before enabling capture at bootstrap, confirm preference storage can be read/wri
 
 Persist a separate versioned boolean analytics preference, default true in production and false for all Vite DEV/test and loopback hosts (localhost, *.localhost, 127/8, ::1). Read preference before the first possible event. If preference cannot be loaded safely, fail closed while App remains usable. Check consent at the transport boundary, track cancellable in-flight fetches with AbortController, and abort them immediately on opt-out/unmount. There is no queue to flush after opt-out. Rotate/clear the ephemeral anonymous identity on disabling capture; never generate an opt-in/person event. Already-delivered requests cannot be recalled; document this physical limit instead of promising retroactive deletion. Cross-tab opt-out must be honored through the storage event when available. Remove legacy PostHog persisted browser keys safely without exposing values or deleting unrelated app settings. Remove @posthog/react and posthog-js through the same package/lockfile owner after replacing all imports, and confirm the graph no longer contains their unused transitives. No test/dev traffic regardless of hostname; never contact the live project for verification.
 
-**Verify:** `npm test -- src/analytics/analytics.test.tsx` → pre-first-event opt-out/reload, in-flight abort, post-opt-out online/unload/timer silence, cross-tab disable, DEV/loopback and storage-blocked checks pass.
+**Verify:** `npm test -- src/analytics/` → pre-first-event opt-out/reload, in-flight abort, post-opt-out online/unload/timer silence, cross-tab disable, DEV/loopback and storage-blocked checks pass.
 
 ### Step 3: Replace call sites and expose the setting
 

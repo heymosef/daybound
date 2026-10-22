@@ -1,21 +1,20 @@
 import React, { useState, useRef, useCallback, useLayoutEffect } from "react";
 import { CalendarDays, X } from "lucide-react";
 import { usePostHog } from "@posthog/react";
-import { addDays, startOfDay, format } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { addCalendarDays, calendarDifference, formatCalendarDate, getZonedFields, LIVE_SELECTION, startOfCalendarDate, type DateSelection } from "../../utils/calendarDate";
 import { motion, AnimatePresence } from "motion/react";
 import { EASE_OUT } from "../../utils/animation";
 import { CalendarDropdown } from "./CalendarDropdown";
 
 interface DatePickerProps {
-  selectedDateOffset: number;
-  onSelectDate: (offset: number) => void;
+  selection: DateSelection;
+  onSelectDate: (selection: DateSelection) => void;
   now: Date;
   homeTimezone: string;
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
-  selectedDateOffset,
+  selection,
   onSelectDate,
   now,
   homeTimezone,
@@ -26,8 +25,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const firstButtonRef = useRef<HTMLButtonElement>(null);
 
-  const homeNow = toZonedTime(now, homeTimezone);
-  const homeToday = startOfDay(homeNow);
+  const homeToday = getZonedFields(now, homeTimezone).date;
+  const isLive = selection.mode === "live";
+  const selectedDate = selection.mode === "date" ? selection.date : homeToday;
+  const selectedDateOffset = calendarDifference(selectedDate, homeToday);
 
   useLayoutEffect(() => {
     const wrap = wrapperRef.current;
@@ -48,22 +49,18 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   }, []);
 
   const handleStripSelect = (offset: number) => {
-    onSelectDate(offset);
+    onSelectDate(offset === 0 ? LIVE_SELECTION : { mode: "date", date: addCalendarDays(homeToday, offset) });
     posthog?.capture("date_selected_strip", { date_offset: offset });
   };
 
   const handleCalendarSelect = useCallback(
-    (offset: number) => {
-      const pickedDate = addDays(homeToday, offset);
-      const monthDistance =
-        (pickedDate.getFullYear() - homeToday.getFullYear()) * 12 +
-        pickedDate.getMonth() -
-        homeToday.getMonth();
-      onSelectDate(offset);
-      posthog?.capture("date_selected_calendar", {
-        date_offset: offset,
-        month_distance: monthDistance,
-      });
+    (next: DateSelection) => {
+      const pickedDate = next.mode === "date" ? next.date : homeToday;
+      const offset = calendarDifference(pickedDate, homeToday);
+      const monthDistance = (Number(pickedDate.slice(0, 4)) - Number(homeToday.slice(0, 4))) * 12 +
+        Number(pickedDate.slice(5, 7)) - Number(homeToday.slice(5, 7));
+      onSelectDate(next);
+      posthog?.capture("date_selected_calendar", { date_offset: offset, month_distance: monthDistance });
     },
     [onSelectDate, posthog, homeToday],
   );
@@ -98,7 +95,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     >
       <div ref={wrapperRef} className="relative min-w-0" data-testid="strip-wrapper">
         <AnimatePresence mode="wait" initial={false}>
-          {selectedDateOffset === 0 ? (
+          {isLive ? (
             <motion.span
               key="today-pill"
               initial={{ opacity: 0, scale: 0.85 }}
@@ -130,7 +127,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         <div className="flex items-center p-[0.125em] bg-[var(--dt-control-bg)] rounded-md overflow-x-auto [&::-webkit-scrollbar]:hidden">
           <div className="flex items-center min-w-max">
             {Array.from({ length: 7 }).map((_, i) => {
-              const date = addDays(homeToday, i);
+              const date = addCalendarDays(homeToday, i);
+              const unavailable = startOfCalendarDate(date, homeTimezone) === null;
               const isSelected = i === selectedDateOffset;
 
               return (
@@ -138,6 +136,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   key={i}
                   ref={i === 0 ? firstButtonRef : undefined}
                   onClick={() => handleStripSelect(i)}
+                  disabled={unavailable}
+                  title={unavailable ? `This date does not exist in ${homeTimezone}.` : undefined}
                   aria-current={i === 0 ? "date" : undefined}
                   className={`
                     flex flex-col items-center justify-center gap-[0.125em] px-[0.6em] py-[0.375em] rounded-sm transition-all duration-200 min-w-[3em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)]
@@ -149,10 +149,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   `}
                 >
                   <span className="text-[clamp(13px,0.78vw+5px,16.25px)] font-medium leading-none">
-                    {date.getDate()}
+                    {Number(date.slice(8))}
                   </span>
                   <span className="text-[clamp(10px,0.5vw+8px,12px)] leading-none font-medium opacity-90">
-                    {format(date, "MMM")}
+                    {formatCalendarDate(date, { month: "short" })}
                   </span>
                 </button>
               );
@@ -175,7 +175,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           isOpen={isCalendarOpen}
           onClose={handleCalendarClose}
           onSelectDate={handleCalendarSelect}
-          selectedDateOffset={selectedDateOffset}
+          selection={selection}
           containerRef={containerRef}
           homeTimezone={homeTimezone}
           now={now}
@@ -183,12 +183,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       </div>
 
       {selectedDateOffset > 6 && (() => {
-        const viewingDate = addDays(homeToday, selectedDateOffset);
+        const viewingDate = selectedDate;
         return (
         <button
           type="button"
           onClick={() => {
-            onSelectDate(0);
+            onSelectDate(LIVE_SELECTION);
             posthog?.capture("date_selected_strip", { date_offset: 0 });
           }}
           aria-label="Back to today"
@@ -196,10 +196,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         >
           <div className="flex flex-col items-center justify-center gap-[0.125em] min-w-[2em]">
             <span className="text-[clamp(13px,0.78vw+5px,16.25px)] font-medium leading-none">
-              {viewingDate.getDate()}
+              {Number(viewingDate.slice(8))}
             </span>
             <span className="text-[clamp(10px,0.5vw+8px,12px)] leading-none font-medium opacity-90">
-              {format(viewingDate, "MMM")}
+              {formatCalendarDate(viewingDate, { month: "short" })}
             </span>
           </div>
           <X size="1.125em" />

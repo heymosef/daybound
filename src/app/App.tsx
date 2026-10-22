@@ -15,8 +15,7 @@ import {
   AppSettings,
   getCityName,
 } from "../utils/timezoneUtils";
-import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { startOfDay, addDays } from "date-fns";
+import { LIVE_SELECTION, resolveDateSelection, startOfCalendarDate, type DateSelection } from "../utils/calendarDate";
 import { TimezoneRow } from "./components/TimezoneRow";
 import { AddTimezone } from "./components/AddTimezone";
 import { DatePicker } from "./components/DatePicker";
@@ -262,8 +261,8 @@ function App() {
 
 
   const [initialized, setInitialized] = useState(false);
-  const [selectedDateOffset, setSelectedDateOffset] =
-    useState(0);
+  const [selection, setSelection] = useState<DateSelection>(LIVE_SELECTION);
+  const [dateFeedback, setDateFeedback] = useState("");
   const [hoveredHourIndex, setHoveredHourIndex] = useState<
     number | null
   >(null);
@@ -272,17 +271,25 @@ function App() {
     timezones.find((t) => t.isHome)?.timezone ||
     timezones[0]?.timezone ||
     Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const isLive = selectedDateOffset === 0;
+  const dateView = resolveDateSelection(selection, now, homeTimezone);
+  const { isLive, offset: selectedDateOffset, instant: displayTime } = dateView;
+  const effectiveSelection: DateSelection = isLive ? LIVE_SELECTION : { mode: "date", date: dateView.selectedDate };
 
-  // Compute display time: live = real now, future = midnight of selected day in home tz
-  const displayTime = (() => {
-    if (isLive) return now;
-    const homeNow = toZonedTime(now, homeTimezone);
-    const futureDayLocal = startOfDay(
-      addDays(homeNow, selectedDateOffset),
-    );
-    return fromZonedTime(futureDayLocal, homeTimezone);
-  })();
+  useEffect(() => {
+    if (selection.mode === "date" && dateView.isLive) {
+      setSelection(LIVE_SELECTION);
+      if (dateView.unavailable) setDateFeedback("This date does not exist in the home timezone. Choose another date.");
+    }
+  }, [selection, dateView.isLive, dateView.unavailable]);
+
+  const handleSelectDate = (next: DateSelection) => {
+    if (next.mode === "date" && startOfCalendarDate(next.date, homeTimezone) === null) {
+      setDateFeedback("This date does not exist in the home timezone. Choose another date.");
+      return;
+    }
+    setDateFeedback("");
+    setSelection(next);
+  };
 
   // Initialize default timezone if empty
   useEffect(() => {
@@ -436,8 +443,8 @@ function App() {
               {/* Group Date Picker and Settings for better mobile layout */}
               <div className="flex flex-row items-stretch gap-[0.5em] flex-grow min-w-0">
                 <DatePicker
-                  selectedDateOffset={selectedDateOffset}
-                  onSelectDate={setSelectedDateOffset}
+                  selection={effectiveSelection}
+                  onSelectDate={handleSelectDate}
                   now={now}
                   homeTimezone={homeTimezone}
                 />
@@ -477,6 +484,7 @@ function App() {
             )}
           </div>
 
+          {dateFeedback && <p role="status" className="text-sm text-[var(--dt-text-secondary)]">{dateFeedback}</p>}
           <div className="divide-y divide-[var(--dt-border)]">
             {timezones.length === 0 ? (
               <div className="py-20 text-center">
