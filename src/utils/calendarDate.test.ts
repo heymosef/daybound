@@ -13,6 +13,8 @@ it("extracts Kolkata fields through the Vancouver browser DST gap", () => {
   expect(getZonedFields(new Date("2026-03-07T21:00:00Z"), "Asia/Kolkata")).toMatchObject({ date: "2026-03-08", hour: 2, minute: 30, offsetSeconds: 19800 });
 });
 it.each([
+  ["0001-01-01", "UTC", "0001-01-01T00:00:00.000Z", 0],
+  ["0099-01-01", "UTC", "0099-01-01T00:00:00.000Z", 0],
   ["2026-03-08", "Asia/Kathmandu", "2026-03-07T18:15:00.000Z", 0],
   ["2026-09-06", "America/Santiago", "2026-09-06T04:00:00.000Z", 1],
   ["2026-11-01", "America/Havana", "2026-11-01T04:00:00.000Z", 0],

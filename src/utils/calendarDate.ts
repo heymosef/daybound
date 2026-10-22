@@ -8,7 +8,7 @@ function formatter(timezone: string): Intl.DateTimeFormat {
   let result = formatters.get(timezone);
   if (!result) {
     result = new Intl.DateTimeFormat("en-US-u-ca-gregory-nu-latn", {
-      timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
+      timeZone: timezone, era: "short", year: "numeric", month: "2-digit", day: "2-digit",
       hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
       weekday: "short", timeZoneName: "short",
     });
@@ -44,7 +44,7 @@ export function getZonedFields(instant: Date | number, timezone: string) {
   const epoch = instant instanceof Date ? instant.getTime() : instant;
   const parts = formatter(timezone).formatToParts(epoch);
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)!.value;
-  const year = Number(part("year"));
+  const year = part("era") === "BC" ? 1 - Number(part("year")) : Number(part("year"));
   const month = Number(part("month"));
   const day = Number(part("day"));
   const hour = Number(part("hour"));

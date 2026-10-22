@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
-import { format } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import React, { useState } from "react";
+import { formatCalendarDate, getZonedFields } from "../../utils/calendarDate";
+import { formatZonedClock } from "../../utils/timeline";
 import { X, Home, ArrowUp, ArrowDown } from "lucide-react";
 import {
   TimezoneConfig,
@@ -61,19 +61,12 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
     label || getCityName(timezone),
   );
 
-  // Track format direction for animation: 1 = down (to 24hr), -1 = up (to 12hr)
-  const formatDirRef = useRef(1);
-  const prevUse24HourRef = useRef(use24Hour);
-  if (prevUse24HourRef.current !== use24Hour) {
-    formatDirRef.current = use24Hour ? 1 : -1;
-    prevUse24HourRef.current = use24Hour;
+  const [formatState, setFormatState] = useState({ use24Hour, direction: 1 });
+  if (formatState.use24Hour !== use24Hour) {
+    setFormatState({ use24Hour, direction: use24Hour ? 1 : -1 });
   }
-
-  // Calculate local time for display
-  const localTime = toZonedTime(now, timezone);
-
-  // Get formatted strings
-  const dateString = format(localTime, "EEE, MMM d");
+  const fields = getZonedFields(now, timezone);
+  const dateString = formatCalendarDate(fields.date, { weekday: "short", month: "short", day: "numeric" });
   const abbreviation = getAbbreviation(now, timezone);
 
   const cityName = label || getCityName(timezone);
@@ -194,9 +187,10 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
           <AnimatePresence mode="popLayout">
             <motion.div
               key={use24Hour ? "24h" : "12h"}
+              data-testid="row-clock"
               initial={{
                 opacity: 0,
-                y: formatDirRef.current * -6,
+                y: formatState.direction * -6,
                 filter: "blur(4px)",
               }}
               animate={{
@@ -207,17 +201,14 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
               }}
               exit={{
                 opacity: 0,
-                y: formatDirRef.current * 6,
+                y: formatState.direction * 6,
                 filter: "blur(4px)",
                 transition: { duration: 0.15, ease: EASE_IN },
               }}
               className="font-medium text-[var(--dt-text)] whitespace-nowrap text-[clamp(15px,0.84vw+6px,18px)]"
             >
               <MorphingTime>
-                {format(
-                  toZonedTime(now, timezone),
-                  use24Hour ? "HH:mm" : "h:mm a",
-                )}
+                {formatZonedClock(now, timezone, use24Hour)}
               </MorphingTime>
             </motion.div>
           </AnimatePresence>

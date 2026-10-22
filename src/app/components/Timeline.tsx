@@ -3,14 +3,7 @@ import React, {
   useState,
   useLayoutEffect,
 } from "react";
-import {
-  addHours,
-  format,
-  getMinutes,
-  startOfHour,
-  getDay,
-} from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { createTimeline, formatZonedClock, TOTAL_HOURS, CENTER_INDEX } from "../../utils/timeline";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { motion, AnimatePresence } from "motion/react";
@@ -31,8 +24,6 @@ interface TimelineProps {
   showWeekends?: boolean;
 }
 
-const TOTAL_HOURS = 25; // always 25 cells
-const CENTER_INDEX = 12; // index of the "current hour" cell (live mode)
 const LABEL_PAD = 0; // px – clamping offset from the container edge
 
 const TimelineInner: React.FC<TimelineProps> = ({
@@ -67,20 +58,23 @@ const TimelineInner: React.FC<TimelineProps> = ({
   }, []);
 
   // ── Glide animation: track date changes for motion wrapper ──
+  const viewIdentity = isLive ? "live" : now.toISOString();
+  const prevViewRef = useRef(viewIdentity);
   const prevOffsetRef = useRef(selectedDateOffset);
   const slideDirectionRef = useRef(0);
   const [glideCount, setGlideCount] = useState(0);
   const changeTypeRef = useRef<"date" | "format">("date");
 
   useLayoutEffect(() => {
-    if (prevOffsetRef.current !== selectedDateOffset) {
+    if (prevViewRef.current !== viewIdentity) {
+      prevViewRef.current = viewIdentity;
       changeTypeRef.current = "date";
       slideDirectionRef.current =
         selectedDateOffset > prevOffsetRef.current ? 1 : -1;
       prevOffsetRef.current = selectedDateOffset;
       setGlideCount((c) => c + 1);
     }
-  }, [selectedDateOffset]);
+  }, [selectedDateOffset, viewIdentity]);
 
   // ── Format animation: track 12H/24H changes ──
   const prevFormatRef = useRef(use24Hour);
@@ -96,72 +90,21 @@ const TimelineInner: React.FC<TimelineProps> = ({
     }
   }, [use24Hour]);
 
-  const currentMinutes = getMinutes(now);
-
-  // ── Build the hour array ──
-  const anchor = startOfHour(now);
-
-  // Live mode: ±12h centred on current hour
-  // Day-view mode: 25 hours starting from midnight (now is already midnight)
-  const hours = isLive
-    ? Array.from({ length: TOTAL_HOURS }, (_, i) =>
-        addHours(anchor, i - CENTER_INDEX),
-      )
-    : Array.from({ length: TOTAL_HOURS }, (_, i) =>
-        addHours(anchor, i),
-      );
-
-  // ── Rail positioning ──
-  const nowFractionPercent = isLive
-    ? ((CENTER_INDEX + currentMinutes / 60) / TOTAL_HOURS) * 100
-    : 0;
-
+  const model = createTimeline(now, timezone, isLive, use24Hour);
+  const nowFractionPercent = model.progress / TOTAL_HOURS * 100;
   const railLeft = isLive ? "50%" : "0%";
-  const railTransform = isLive
-    ? `translateX(-${nowFractionPercent}%)`
-    : "translateX(0%)";
-
-  // ── Marker (overlay at container level, live mode only) ──
-  // In live mode the rail is centred on "now", so the marker is always
-  // at the horizontal centre of the container.
+  const railTransform = isLive ? `translateX(-${nowFractionPercent}%)` : "translateX(0%)";
   const markerLeftPx = dims.outer / 2;
-
-  // Freeze the marker time string so it doesn't flash "12:00 AM" during exit
-  const markerTimeDisplayRef = useRef("");
-  if (isLive) {
-    markerTimeDisplayRef.current = format(
-      toZonedTime(now, timezone),
-      use24Hour ? "H:mm" : "h:mm a",
-    );
-  }
-
-  // ── Floating date labels ──
-  type DateBoundary = {
-    index: number;
-    label: string;
-    key: string;
-  };
-  const dateBoundaries: DateBoundary[] = [];
-  let prevDateKey = "";
-  for (let i = 0; i < hours.length; i++) {
-    const local = toZonedTime(hours[i], timezone);
-    const key = format(local, "yyyy-MM-dd");
-    if (key !== prevDateKey) {
-      dateBoundaries.push({
-        index: i,
-        label: format(local, "EEE, MMM d"),
-        key,
-      });
-      prevDateKey = key;
-    }
-  }
+  // AnimatePresence retains the last mounted marker's children during exit.
+  const markerTimeDisplay = formatZonedClock(now, timezone, !!use24Hour, false);
+  const dateBoundaries = model.segments;
 
   const cellWidth =
     dims.inner > 0 ? dims.inner / TOTAL_HOURS : 0;
 
   const railOffset = isLive
     ? dims.outer / 2 -
-      ((CENTER_INDEX + currentMinutes / 60) / TOTAL_HOURS) *
+      (model.progress / TOTAL_HOURS) *
         dims.inner
     : 0;
 
@@ -234,6 +177,8 @@ const TimelineInner: React.FC<TimelineProps> = ({
                   ease: [0.4, 0, 0.2, 1],
                 }}
                 className="absolute top-[0.5em] z-30 text-[clamp(10px,0.5vw+8px,12px)] tracking-wider whitespace-nowrap text-[var(--dt-text)] pointer-events-none px-[0.5em] py-[0.125em] rounded-full bg-[var(--dt-bg)]/90 backdrop-blur-sm drop-shadow-sm border border-[var(--dt-border)] ml-[8px] mr-[0px] my-[0px]"
+                data-date-label={fl.date}
+                data-boundary-index={fl.index}
                 style={{ left: fl.x }}
               >
                 {fl.label}
@@ -247,6 +192,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
         {isLive && dims.outer > 0 && (
           <motion.div
             key="current-marker"
+            data-testid="current-marker"
             initial={{ opacity: 0 }}
             animate={{
               opacity: 1,
@@ -269,7 +215,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
                   aria-hidden
                   className="bg-[var(--dt-accent)] text-[var(--dt-text-inverse)] text-[clamp(10px,0.5vw+8px,12px)] font-medium px-[0.375em] py-[0.125em] rounded drop-shadow-sm whitespace-nowrap leading-none invisible"
                 >
-                  {markerTimeDisplayRef.current}
+                  {markerTimeDisplay}
                 </div>
                 {/* Crossfade layer — Tip 2: faster exit; Tip 4: asymmetric easing */}
                 <AnimatePresence initial={false}>
@@ -297,7 +243,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
                     }}
                     className="absolute inset-0 flex items-center justify-center bg-[var(--dt-accent)] dark:bg-[color-mix(in_oklch,var(--dt-accent),black_30%)] text-[var(--dt-text-inverse)] text-[clamp(10px,0.5vw+8px,12px)] font-medium px-[0.375em] py-[0.125em] rounded drop-shadow-sm whitespace-nowrap leading-none"
                   >
-                    <MorphingTime>{markerTimeDisplayRef.current}</MorphingTime>
+                    <MorphingTime>{markerTimeDisplay}</MorphingTime>
                   </motion.div>
                 </AnimatePresence>
               </div>
@@ -309,6 +255,8 @@ const TimelineInner: React.FC<TimelineProps> = ({
       {/* ── Inner rail ── */}
       <div
         ref={innerRef}
+        data-testid="timeline-rail"
+        data-start={new Date(model.start).toISOString()}
         className="flex h-full absolute top-0"
         style={{
           left: railLeft,
@@ -345,26 +293,24 @@ const TimelineInner: React.FC<TimelineProps> = ({
               ? { duration: 0.45, ease: [0.4, 0, 0.2, 1] }
               : { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
           }
-          className="flex h-full w-full"
+          className="relative flex h-full w-full"
         >
-          {hours.map((time, index) => {
-            const localTime = toZonedTime(time, timezone);
-            const isCurrentHour =
-              isLive && index === CENTER_INDEX;
+          {model.cells.map((cell) => {
+            const { index } = cell;
+            const isCurrentHour = isLive && index === CENTER_INDEX;
             const isHovered = hoveredHourIndex === index;
-            const hour = parseInt(format(localTime, "H"));
-
-            const isNight = hour < 7 || hour >= 19;
-            const isMidnight = hour === 0;
-
-            const isWeekend =
-              showWeekends &&
-              (getDay(localTime) === 0 ||
-                getDay(localTime) === 6);
+            const isNight = cell.isNight;
+            const isMidnight = model.boundaries.some((boundary) => boundary.time === cell.time);
+            const isWeekend = showWeekends && cell.isWeekend;
 
             return (
               <div
                 key={index}
+                role="group"
+                aria-label={cell.description}
+                title={cell.description}
+                data-timeline-cell={index}
+                data-instant={new Date(cell.time).toISOString()}
                 onMouseEnter={() => onHoverHour?.(index)}
                 onMouseLeave={() => onHoverHour?.(null)}
                 style={{
@@ -393,16 +339,6 @@ const TimelineInner: React.FC<TimelineProps> = ({
                   )}
                 />
 
-                {/* Midnight Divider */}
-                {isMidnight && (
-                  <div
-                    className={clsx(
-                      "absolute top-0 bottom-0 left-0 w-px bg-[var(--dt-midnight-line)] z-10",
-                      !isLive && index === 0 && "hidden",
-                    )}
-                  />
-                )}
-
                 {/* Hour Label */}
                 <div className="flex flex-col items-center z-0 gap-[0.125em]">
                   <span
@@ -416,9 +352,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
                         "text-[var(--dt-hour-midnight)]",
                     )}
                   >
-                    {use24Hour
-                      ? format(localTime, "H")
-                      : format(localTime, "h")}
+                    {cell.label}
                   </span>
                   {!use24Hour && (
                     <span
@@ -429,7 +363,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
                           : "text-[var(--dt-text-secondary)]",
                       )}
                     >
-                      {format(localTime, "a").toLowerCase()}
+                      {cell.period}
                     </span>
                   )}
                 </div>
@@ -441,6 +375,21 @@ const TimelineInner: React.FC<TimelineProps> = ({
               </div>
             );
           })}
+          {model.boundaries.map((boundary) => (
+            <div
+              key={boundary.key}
+              data-date-boundary={boundary.date}
+              data-boundary-index={boundary.index}
+              title={new Date(boundary.time).toISOString()}
+              className={clsx(
+                "absolute top-0 bottom-0 w-px bg-[var(--dt-midnight-line)] z-10 pointer-events-none",
+                !isLive && boundary.index === 0 && "hidden",
+              )}
+              style={{ left: `${boundary.index / TOTAL_HOURS * 100}%` }}
+            >
+              <div className="absolute top-0 left-0 h-[0.5em] border-l border-[var(--dt-midnight-border)]" />
+            </div>
+          ))}
         </motion.div>
       </div>
     </div>

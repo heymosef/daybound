@@ -1,4 +1,5 @@
-import { format as formatTz } from "date-fns-tz";
+import { getZonedFields } from "./calendarDate";
+import { formatZonedClock } from "./timeline";
 
 export interface TimezoneConfig {
   id: string;
@@ -58,11 +59,7 @@ export const formatTimezoneTime = (
   use24Hour: boolean,
 ) => {
   try {
-    // We use the original date (timestamp) and pass timezone to formatTz
-    const pattern = use24Hour ? "HH:mm" : "h:mm a";
-
-    // formatTz from date-fns-tz handles the timezone conversion internally when 'timeZone' option is present
-    return formatTz(date, pattern, { timeZone: timezone });
+    return formatZonedClock(date, timezone, use24Hour);
   } catch (e) {
     console.error("Format error", e);
     return "--:--";
@@ -74,7 +71,7 @@ export const getAbbreviation = (
   timezone: string,
 ) => {
   try {
-    return formatTz(date, "zzz", { timeZone: timezone });
+    return getZonedFields(date, timezone).abbreviation;
   } catch {
     return "";
   }
