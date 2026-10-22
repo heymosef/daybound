@@ -239,6 +239,46 @@ describe("storage failures and consent", () => {
     expect(c.getSnapshot()).toMatchObject({ enabled: true, preferenceStatus: "saved" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it("preserves failed opt-out across dispose/start after writes recover until explicit opt-in", () => {
+    const c = make();
+    const writes = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("write blocked"); });
+    c.setEnabled(false);
+    expect(c.getSnapshot()).toMatchObject({ enabled: false, preferenceStatus: "unavailable" });
+    expect(localStorage.getItem(KEY)).toBe(saved(true));
+    c.dispose(); c.start(); // A restart while writes are blocked must also stay unavailable/off.
+    expect(c.getSnapshot()).toMatchObject({ enabled: false, preferenceStatus: "unavailable" });
+    writes.mockRestore();
+    c.dispose(); c.start(); c.capture("calendar_opened");
+    expect(c.getSnapshot()).toMatchObject({ enabled: false, preferenceStatus: "saved" });
+    expect(localStorage.getItem(KEY)).toBe(saved(false)); // Successful repair makes off durable.
+    expect(fetchMock).not.toHaveBeenCalled();
+    localStorage.setItem(KEY, saved(true)); c.dispose(); c.start(); c.capture("calendar_opened");
+    expect(c.getSnapshot().enabled).toBe(false); // External consent cannot clear this visit's latch.
+    expect(fetchMock).not.toHaveBeenCalled();
+    c.setEnabled(true); c.capture("calendar_opened");
+    expect(c.getSnapshot()).toMatchObject({ enabled: true, preferenceStatus: "saved" });
+    expect(localStorage.getItem(KEY)).toBe(saved(true)); expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it.each(["stored-off", "malformed", "removed", "read-blocked", "cross-tab", "dnt"])(
+    "preserves fail-closed %s denial across lifecycle restart and recovered external consent", (revocation) => {
+      let dnt = false;
+      const c = make({ doNotTrack: () => dnt });
+      let readSpy: ReturnType<typeof vi.spyOn> | undefined;
+      if (revocation === "stored-off") localStorage.setItem(KEY, saved(false));
+      else if (revocation === "malformed") localStorage.setItem(KEY, "broken");
+      else if (revocation === "removed") localStorage.removeItem(KEY);
+      else if (revocation === "read-blocked") readSpy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("read blocked"); });
+      else if (revocation === "cross-tab") window.dispatchEvent(new StorageEvent("storage", { key: KEY, newValue: saved(false) }));
+      else dnt = true;
+      c.capture("calendar_opened");
+      expect(c.getSnapshot().enabled).toBe(false);
+      readSpy?.mockRestore(); dnt = false; localStorage.setItem(KEY, saved(true));
+      c.dispose(); c.start(); c.capture("calendar_opened");
+      expect(c.getSnapshot()).toMatchObject({ enabled: false, preferenceStatus: "saved" });
+      expect(localStorage.getItem(KEY)).toBe(saved(false)); expect(fetchMock).not.toHaveBeenCalled();
+      c.setEnabled(true); c.capture("calendar_opened");
+      expect(c.getSnapshot().enabled).toBe(true); expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
   it("honors cross-tab opt-out and malformed/cleared preference, never cross-tab opt-in", () => {
     const c = make();
     window.dispatchEvent(new StorageEvent("storage", { key: "unrelated", newValue: saved(false) }));

@@ -149,6 +149,9 @@ export function createAnalytics(options: AnalyticsOptions = {}): AnalyticsContro
   const listeners = new Set<() => void>();
   const pending = new Set<AbortController>();
   let started = false;
+  // A lifecycle restart must never undo a denial when disk still contains stale consent.
+  // Only a successfully persisted explicit opt-in clears this controller-local latch.
+  let deniedForVisit = false;
   let identity: string | undefined;
   let snapshot: AnalyticsSnapshot = { enabled: false, preferenceStatus: "unavailable", available: false };
   const available = () => {
@@ -161,12 +164,16 @@ export function createAnalytics(options: AnalyticsOptions = {}): AnalyticsContro
   };
   const update = (enabled: boolean, preferenceStatus: AnalyticsSnapshot["preferenceStatus"]) => {
     const canCapture = available();
-    const next = { enabled: started && enabled && canCapture, preferenceStatus, available: canCapture };
+    const next = { enabled: started && enabled && !deniedForVisit && canCapture, preferenceStatus, available: canCapture };
     if (!next.enabled) cancel();
     if (next.enabled === snapshot.enabled && next.preferenceStatus === snapshot.preferenceStatus &&
       next.available === snapshot.available) return;
     snapshot = next;
     for (const listener of listeners) listener();
+  };
+  const deny = (preferenceStatus: AnalyticsSnapshot["preferenceStatus"]) => {
+    deniedForVisit = true;
+    update(false, preferenceStatus);
   };
   const write = (enabled: boolean) => {
     const value = JSON.stringify({ version: 1, enabled });
@@ -190,20 +197,20 @@ export function createAnalytics(options: AnalyticsOptions = {}): AnalyticsContro
     if (event.key !== ANALYTICS_PREFERENCE_KEY && event.key !== null) return;
     // Cross-tab messages may disable, never silently opt another tab in.
     try {
-      if (event.key === null || event.newValue === null) update(false, "unavailable");
-      else if (readPreference(event.newValue) === false) update(false, "saved");
-    } catch { update(false, "unavailable"); }
+      if (event.key === null || event.newValue === null) deny("unavailable");
+      else if (readPreference(event.newValue) === false) deny("saved");
+    } catch { deny("unavailable"); }
   };
   const consentAtDispatch = () => {
     if (!started || !snapshot.enabled) return false;
     try {
       const enabled = readPreference(storage().getItem(ANALYTICS_PREFERENCE_KEY));
       if (enabled !== true) {
-        update(false, enabled === false ? "saved" : "unavailable");
+        deny(enabled === false ? "saved" : "unavailable");
         return false;
       }
-    } catch { update(false, "unavailable"); return false; }
-    if (!available()) { update(false, snapshot.preferenceStatus); return false; }
+    } catch { deny("unavailable"); return false; }
+    if (!available()) { deny(snapshot.preferenceStatus); return false; }
     return true;
   };
   const controller: AnalyticsController = {
@@ -220,13 +227,14 @@ export function createAnalytics(options: AnalyticsOptions = {}): AnalyticsContro
         const saved = readPreference(storage().getItem(ANALYTICS_PREFERENCE_KEY));
         const legacyOff = saved === undefined && validToken &&
           (legacyDenied(storage().getItem(consentKey)) || legacyDenied(cookieValue(consentKey)));
-        const enabled = saved ?? (!legacyOff && production && !isLoopback(hostname));
+        const enabled = !deniedForVisit && (saved ?? (!legacyOff && production && !isLoopback(hostname)));
         // Probe this actual preference write before any event can leave the page.
         write(enabled);
         // Only this project's exact legacy keys, after preserving consent; never clear other data.
         cleanupLegacy();
-        update(enabled, "saved");
-      } catch { update(false, "unavailable"); }
+        if (!enabled || !available()) deny("saved");
+        else update(true, "saved");
+      } catch { deny("unavailable"); }
     },
     dispose() {
       if (!started) return;
@@ -236,16 +244,17 @@ export function createAnalytics(options: AnalyticsOptions = {}): AnalyticsContro
     },
     setEnabled(enabled) {
       // Disable synchronously even if persistence throws. Opt-in requires a successful write.
-      if (!enabled) update(false, snapshot.preferenceStatus);
+      if (!enabled) deny(snapshot.preferenceStatus);
       try {
         write(enabled);
         cleanupLegacy();
+        if (enabled) deniedForVisit = false;
         update(enabled, "saved");
-      } catch { update(false, "unavailable"); }
+      } catch { deny("unavailable"); }
     },
     capture(event, ...args) {
       if (!started || !snapshot.enabled) return;
-      if (!available()) { update(false, snapshot.preferenceStatus); return; }
+      if (!available()) { deny(snapshot.preferenceStatus); return; }
       try {
         const properties = project(event, args[0]);
         if (!properties) return;

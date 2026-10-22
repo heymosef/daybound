@@ -48,7 +48,15 @@ than claiming durable success. A failed write can leave an old true value on
 disk; a later reload can resume only if storage works again, as documented in
 the plan. Immediately before every fetch, consent is read and validated again;
 missing, false, malformed, or inaccessible storage disables/cancels capture.
-Cross-tab storage events can disable capture, but never enable it.
+Cross-tab storage events can disable capture, but never enable it. Explicit
+opt-out and fail-closed consent revocations also latch a controller-local denial
+for the rest of this visit. That latch survives `dispose`/`start` and clears only
+after successful explicit `setEnabled(true)` persistence and legacy cleanup.
+Restart probes/persists the denied state as false, so stale true on disk cannot
+silently re-enable capture. A successful false write/readback truthfully changes
+the status to saved; continued failure keeps the status unavailable. A full
+page reload creates a new controller, so a denied preference that could never be
+saved still has the physical browser-storage limit described above.
 
 Before legacy cleanup, an absent versioned preference migrates explicit SDK
 opt-out from its exact configured-token localStorage/cookie consent key. An
@@ -100,7 +108,7 @@ Final focused/static checks (exit 0):
 npm exec --yes --package=node@24 --package=npm@11 -- sh -c 'npm test -- src/analytics/analytics.test.ts && npm run typecheck && npm run lint'
 ```
 
-- Vitest: **1 file passed; 65 tests passed**. Offline fake public token and
+- Vitest: **1 file passed; 72 tests passed**. Offline fake public token and
   `.invalid` host only. Full request bodies/options/headers assert exact fields
   and absence of distinctive private fixtures. All event projections, invalid
   config/environments/DNT, reload opt-out, malformed preference, getter/read/
@@ -117,8 +125,27 @@ Initial focused run: 58/59 passed; one test fixture incorrectly assumed jsdom
 provided a `navigator.doNotTrack` getter. Replaced that fixture with a scoped
 global stub. The next complete focused/static run passed 59/59. The final run
 passed 65/65 after the primary requested stronger per-dispatch storage checks
-and their regressions. No production policy or test assertion was weakened.
+and their regressions. Staff then requested the denial-latch revision below;
+its final focused/static run passed 72/72. No production policy or test
+assertion was weakened.
 No complete suite was run; the integration validation owner retains that gate.
+
+## Staff revision after reviewed commit da396d4
+
+Staff identified that a failed opt-out left stale true on disk; the earlier
+reusable lifecycle could read that true again after writes recovered. Added the
+controller-local denied latch described above without changing the exported API.
+Only explicit successfully persisted opt-in clears the latch. Disposal itself
+does not set the latch, preserving ordinary StrictMode start/dispose/start reuse
+for an enabled controller. The regression exercises real controller lifecycle:
+enabled → blocked writes → explicit opt-out → restart while still blocked →
+restore writes → dispose/start → no fetch, saved false → external saved true →
+dispose/start → still no fetch → successful explicit opt-in → one fetch.
+Six further cases verify restart after stored false, malformed or removed
+preference, revoked reads, cross-tab opt-out, and DNT revocation. All recover only
+through explicit successful opt-in. Final command above passed **72 tests**, both
+TypeScript projects, and ESLint with no warnings. `git diff --check da396d4`
+passed. This revision is a new local commit, leaving the reviewed commit intact.
 
 ## Limits and remaining integration work
 
