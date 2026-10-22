@@ -97,3 +97,22 @@ it("formats fractional and historical second offsets explicitly", () => {
   expect(formatOffset(-12600)).toBe("UTC-03:30");
   expect(formatOffset(19828)).toBe("UTC+05:30:28");
 });
+
+it.each([
+  ["1988-10-30", "1988-10-29", "01:30", "01:31", "Sun, Oct 30", "Sat, Oct 29"],
+  ["2009-11-01", "2009-10-31", "02:30", "02:31", "Sun, Nov 1", "Sat, Oct 31"],
+  ["2010-11-07", "2010-11-06", "02:30", "02:31", "Sun, Nov 7", "Sat, Nov 6"],
+])("enumerates every St Johns date crossing on %s between hourly samples", (date, previous, midnight, rollback, label, previousLabel) => {
+  const start = Date.parse(`${date}T00:05:00Z`);
+  const model = createTimeline(new Date(start), "America/St_Johns", false, true);
+  const expected = [`${date}T${midnight}:00.000Z`, `${date}T${rollback}:00.000Z`, `${date}T03:30:00.000Z`];
+  expect(model.boundaries.map((boundary) => new Date(boundary.time).toISOString())).toEqual(expected);
+  expect(model.boundaries.map((boundary) => boundary.date)).toEqual([date, previous, date]);
+  expect(model.boundaries.map((boundary) => boundary.label)).toEqual([label, previousLabel, label]);
+  for (const [index, boundary] of model.boundaries.entries()) {
+    expect(boundary.index).toBeCloseTo((Date.parse(expected[index]) - start) / 3600000, 12);
+    expect(getZonedFields(boundary.time, "America/St_Johns").date).toBe(boundary.date);
+    expect(getZonedFields(boundary.time - 1, "America/St_Johns").date).toBe(index === 1 ? date : previous);
+  }
+  expect(model.segments.map((segment) => segment.date)).toEqual([previous, date, previous, date]);
+});

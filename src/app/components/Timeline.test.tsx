@@ -122,3 +122,36 @@ it("renders the missing New York spring hour as an instant jump from 1 to 3", ()
   expect(screen.getByRole("group", { name: "2026-03-08 3:00 UTC-04:00 (2026-03-08T07:00:00.000Z)" })).toHaveTextContent("3");
   expect(screen.queryByRole("group", { name: /^2026-03-08 2:00/ })).not.toBeInTheDocument();
 });
+
+it("preserves the motion wrapper at midnight then glides forward to the next date", () => {
+  const fixed = new Date("2026-12-05T00:00:00Z");
+  const { rerender } = renderRail({ now: fixed, timezone: "UTC", selectedDateOffset: 44 });
+  const rail = screen.getByTestId("timeline-rail");
+  const wrapper = rail.firstElementChild;
+  const firstCell = wrapper!.querySelector('[data-timeline-cell="0"]');
+  rerender(<Timeline now={fixed} timezone="UTC" isLive={false} selectedDateOffset={43} use24Hour />);
+  expect(screen.getByTestId("timeline-rail")).toBe(rail);
+  expect(rail.firstElementChild).toBe(wrapper);
+  expect(rail.querySelector('[data-timeline-cell="0"]')).toBe(firstCell);
+  rerender(<Timeline now={new Date("2026-12-06T00:00:00Z")} timezone="UTC" isLive={false} selectedDateOffset={44} use24Hour />);
+  expect(rail.firstElementChild).not.toBe(wrapper);
+  expect(rail.firstElementChild).toHaveStyle({ transform: "translateX(25px)" });
+  expect(rail.querySelector('[data-timeline-cell="0"]')).toHaveAttribute("data-instant", "2026-12-06T00:00:00.000Z");
+});
+it("renders fractional dividers on both sides of a brief St Johns date appearance", () => {
+  const { container } = renderRail({ now: new Date("2009-11-01T00:05:00Z"), timezone: "America/St_Johns" });
+  const boundaries = [...container.querySelectorAll('[data-date-boundary]')];
+  expect(boundaries.map((boundary) => boundary.getAttribute("title"))).toEqual([
+    "2009-11-01T02:30:00.000Z", "2009-11-01T02:31:00.000Z", "2009-11-01T03:30:00.000Z",
+  ]);
+  const indices = [2 + 25 / 60, 2 + 26 / 60, 3 + 25 / 60];
+  for (const [index, boundary] of boundaries.entries()) {
+    expect(Number(boundary.getAttribute("data-boundary-index"))).toBeCloseTo(indices[index], 12);
+    expect(parseFloat((boundary as HTMLElement).style.left)).toBeCloseTo(indices[index] / 25 * 100, 12);
+    expect(boundary).toHaveAttribute("data-date-boundary", index === 1 ? "2009-10-31" : "2009-11-01");
+  }
+  expect(container.querySelector('[data-date-label="2009-10-31"][data-boundary-index="0"]')).toHaveTextContent("Sat, Oct 31");
+  const nextLabel = container.querySelector('[data-date-label="2009-11-01"]');
+  expect(nextLabel).toHaveTextContent("Sun, Nov 1");
+  expect(parseFloat((nextLabel as HTMLElement).style.left)).toBeCloseTo(indices[2] * 100, 10);
+});

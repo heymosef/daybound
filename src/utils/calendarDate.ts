@@ -81,39 +81,66 @@ export function formatCalendarDate(key: string, options: Intl.DateTimeFormatOpti
   return new Intl.DateTimeFormat("en-US", { ...options, timeZone: "UTC" }).format(calendarSurrogate(key));
 }
 
-/** First local-date transition in a bracket; compare explicit-zone calendar keys. */
-export function findDateTransition(before: number, after: number, timezone: string): number {
-  const previousDate = getZonedFields(before, timezone).date;
-  if (getZonedFields(after, timezone).date === previousDate) throw new RangeError("Date transition is not bracketed");
-  let low = before;
-  let high = after;
-  while (high - low > 1) {
-    const middle = Math.floor((low + high) / 2);
-    if (getZonedFields(middle, timezone).date === previousDate) low = middle;
-    else high = middle;
+/**
+ * All local-date boundaries in [start, end), including backward date jumps.
+ * Intl exposes fields, not transitions: hourly OFFSET brackets assume at most
+ * one offset change per hour (as in the supported IANA timezone data). They do
+ * not assume that calendar dates are monotonic or last at least an hour.
+ */
+export function calendarDateTransitions(start: number, end: number, timezone: string): number[] {
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || end <= start) {
+    throw new RangeError("Invalid date transition interval");
   }
-  return high;
-}
-
-/** Bounded 72h search around the UTC calendar surrogate; no assumed local midnight. */
-export function startOfCalendarDate(key: string, timezone: string): Date | null {
-  const nominal = calendarSurrogate(key).getTime();
-  const lower = nominal - 36 * HOUR_MS;
-  const upper = nominal + 36 * HOUR_MS;
-  let before = lower;
-  for (let after = lower + HOUR_MS; after <= upper; after += HOUR_MS) {
-    const beforeDate = getZonedFields(before, timezone).date;
-    const afterDate = getZonedFields(after, timezone).date;
-    if (beforeDate !== afterDate && afterDate >= key) {
-      const boundary = findDateTransition(before, after, timezone);
-      if (getZonedFields(boundary, timezone).date === key && getZonedFields(boundary - 1, timezone).date !== key) {
-        return new Date(boundary);
+  const spans: { start: number; end: number; offset: number }[] = [];
+  // Include the millisecond preceding the rail so a boundary at start survives.
+  let spanStart = start - 1;
+  let offset = getZonedFields(spanStart, timezone).offsetSeconds;
+  for (let before = spanStart; before < end;) {
+    const after = Math.min(before + HOUR_MS, end);
+    const nextOffset = getZonedFields(after, timezone).offsetSeconds;
+    if (nextOffset !== offset) {
+      let low = before;
+      let high = after;
+      while (high - low > 1) {
+        const middle = Math.floor((low + high) / 2);
+        if (getZonedFields(middle, timezone).offsetSeconds === offset) low = middle;
+        else high = middle;
       }
-      if (afterDate > key) return null;
+      spans.push({ start: spanStart, end: high, offset });
+      spanStart = high;
+      offset = nextOffset;
     }
     before = after;
   }
-  return null;
+  spans.push({ start: spanStart, end, offset });
+
+  const candidates = new Set<number>();
+  for (const span of spans) {
+    if (span.start >= start && span.start < end) candidates.add(span.start);
+    const offsetMs = span.offset * 1000;
+    // Epoch-day arithmetic works through astronomical year zero; do not feed
+    // intermediate BC fields through the public AD-only YYYY-MM-DD validator.
+    let midnight = Math.ceil((span.start + offsetMs) / DAY_MS) * DAY_MS - offsetMs;
+    for (; midnight < span.end; midnight += DAY_MS) {
+      if (midnight < start || midnight >= end) continue;
+      const fields = getZonedFields(midnight, timezone);
+      if (fields.offsetSeconds !== span.offset || fields.hour !== 0 || fields.minute !== 0 || fields.second !== 0) {
+        throw new RangeError("Calendar midnight does not round-trip within its offset span");
+      }
+      candidates.add(midnight);
+    }
+  }
+  return [...candidates]
+    .filter((time) => getZonedFields(time, timezone).date !== getZonedFields(time - 1, timezone).date)
+    .sort((a, b) => a - b);
+}
+
+/** Earliest occurrence in a bounded 72h window, including brief/repeated dates. */
+export function startOfCalendarDate(key: string, timezone: string): Date | null {
+  const nominal = calendarSurrogate(key).getTime();
+  const boundaries = calendarDateTransitions(nominal - 36 * HOUR_MS, nominal + 36 * HOUR_MS, timezone);
+  const first = boundaries.find((time) => getZonedFields(time, timezone).date === key);
+  return first === undefined ? null : new Date(first);
 }
 
 export function resolveDateSelection(selection: DateSelection, now: Date, timezone: string) {

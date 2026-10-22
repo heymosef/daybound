@@ -71,9 +71,11 @@ const TimelineInner: React.FC<TimelineProps> = ({
       changeTypeRef.current = "date";
       slideDirectionRef.current =
         selectedDateOffset > prevOffsetRef.current ? 1 : -1;
-      prevOffsetRef.current = selectedDateOffset;
       setGlideCount((c) => c + 1);
     }
+    // A fixed view keeps its identity at home midnight, but its relative
+    // offset still changes and must be current for the next date selection.
+    prevOffsetRef.current = selectedDateOffset;
   }, [selectedDateOffset, viewIdentity]);
 
   // ── Format animation: track 12H/24H changes ──

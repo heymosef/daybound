@@ -43,3 +43,27 @@ it("preserves a fixed date across midnight, home changes and equal-today; only p
   expect(resolveDateSelection(selection, new Date("2026-03-08T00:00:00Z"), "Pacific/Honolulu")).toMatchObject({ isLive: false, selectedDate: "2026-03-08", offset: 1 });
   expect(resolveDateSelection(selection, new Date("2026-03-09T00:00:00Z"), "UTC").isLive).toBe(true);
 });
+
+// These fixtures come from explicit-zone Intl fields, including the one-minute
+// appearance before a rollback crosses back to the previous calendar date.
+it.each([
+  ["1988-10-30", "1988-10-30T01:30:00.000Z", "1988-10-30T01:31:00.000Z", -5400, -12600],
+  ["2009-11-01", "2009-11-01T02:30:00.000Z", "2009-11-01T02:31:00.000Z", -9000, -12600],
+  ["2010-11-07", "2010-11-07T02:30:00.000Z", "2010-11-07T02:31:00.000Z", -9000, -12600],
+])("keeps the earliest brief St Johns date %s", (date, earliest, rollback, oldOffset, newOffset) => {
+  const zone = "America/St_Johns";
+  const start = Date.parse(earliest);
+  const jump = Date.parse(rollback);
+  expect(getZonedFields(start - 1, zone).date).toBe(addCalendarDays(date, -1));
+  expect(getZonedFields(start, zone)).toMatchObject({ date, hour: 0, minute: 0, offsetSeconds: oldOffset });
+  expect(getZonedFields(jump - 1, zone)).toMatchObject({ date, hour: 0, minute: 0, second: 59, offsetSeconds: oldOffset });
+  expect(getZonedFields(jump, zone)).toMatchObject({ date: addCalendarDays(date, -1), offsetSeconds: newOffset });
+  expect(startOfCalendarDate(date, zone)?.toISOString()).toBe(earliest);
+});
+it("retains astronomical year zero inside the earliest public year search", () => {
+  expect(isCalendarDate("0001-01-01")).toBe(true);
+  expect(getZonedFields(Date.parse("0001-01-01T00:00:00Z") - 1, "UTC")).toMatchObject({ year: 0, date: "0000-12-31", offsetSeconds: 0 });
+  expect(startOfCalendarDate("0001-01-01", "UTC")?.toISOString()).toBe("0001-01-01T00:00:00.000Z");
+  expect(startOfCalendarDate("0099-01-01", "UTC")?.toISOString()).toBe("0099-01-01T00:00:00.000Z");
+  expect(isCalendarDate("0000-12-31")).toBe(false);
+});

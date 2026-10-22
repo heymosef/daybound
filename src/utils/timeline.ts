@@ -1,4 +1,4 @@
-import { findDateTransition, formatCalendarDate, getZonedFields, HOUR_MS } from "./calendarDate";
+import { calendarDateTransitions, formatCalendarDate, getZonedFields, HOUR_MS } from "./calendarDate";
 
 export const TOTAL_HOURS = 25;
 export const CENTER_INDEX = 12;
@@ -49,17 +49,9 @@ export function createTimeline(instant: Date, timezone: string, isLive: boolean,
       key: `${fields.date}-${time}`,
     };
   };
-  const boundaries: ReturnType<typeof boundaryAt>[] = [];
-  if (getZonedFields(start - 1, timezone).date !== cells[0].fields.date) boundaries.push(boundaryAt(start));
-  // Bracket transitions throughout the half-open rail, including inside the final cell.
-  const step = HOUR_MS / 4;
-  for (let before = start; before < end; before += step) {
-    const after = Math.min(before + step, end);
-    if (getZonedFields(before, timezone).date !== getZonedFields(after, timezone).date) {
-      const time = findDateTransition(before, after, timezone);
-      if (time < end) boundaries.push(boundaryAt(time));
-    }
-  }
+  // Shared offset spans find brief and backward date crossings through the
+  // final cell, while excluding the rail's right endpoint.
+  const boundaries = calendarDateTransitions(start, end, timezone).map(boundaryAt);
   const segments = [boundaryAt(start), ...boundaries.filter((boundary) => boundary.time > start)];
   return { start, end, anchor, progress, cells, boundaries, segments };
 }
