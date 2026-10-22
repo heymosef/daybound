@@ -94,6 +94,24 @@ it("shares hover indices and live anchor/marker geometry between rows", () => {
   for (const cell of cells) expect(cell).not.toHaveStyle({ background: "var(--dt-surface-highlight)" });
 });
 
+it.each([false, true])("reserves the same fractional-label width across aligned rows in 24-hour mode=%s", (use24Hour) => {
+  render(<>{["UTC", "Asia/Kolkata", "Asia/Kathmandu"].map((timezone) => <Timeline key={timezone}
+    now={new Date("2026-03-07T12:00:00Z")} timezone={timezone} isLive selectedDateOffset={0} use24Hour={use24Hour} />)}</>);
+  const rails = screen.getAllByTestId("timeline-rail");
+  const instants = [...rails[0].querySelectorAll("[data-instant]")].map((cell) => cell.getAttribute("data-instant"));
+  for (const rail of rails) {
+    const cells = [...rail.querySelectorAll("[data-timeline-cell]")];
+    expect(cells).toHaveLength(25);
+    expect(cells.map((cell) => cell.getAttribute("data-instant"))).toEqual(instants);
+    // jsdom has no text layout: enforce the shared width floor here; CUA verifies label bounds.
+    for (const cell of cells) {
+      expect(cell).toHaveClass("min-w-[3.25em]");
+      expect(cell.className.split(" ").filter((name) => name.includes(":min-w-"))).toEqual([]);
+    }
+  }
+  if (use24Hour) expect(rails[2]).toHaveTextContent("13:45");
+});
+
 
 it.each([
   ["America/Santiago", "2026-09-06T04:00:00Z", "1", 23],

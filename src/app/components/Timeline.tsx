@@ -328,7 +328,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
                       : "var(--dt-bg)",
                 }}
                 className={clsx(
-                  "relative grow shrink-0 basis-0 min-w-[3.25em] md:min-w-[1.75em]",
+                  "relative grow shrink-0 basis-0 min-w-[3.25em]",
                   "flex flex-col items-center justify-center",
                   "pb-[0.25em] pt-[0.5em] group/hour",
                   "border-l border-transparent transition-colors duration-75",
