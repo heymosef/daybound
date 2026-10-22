@@ -41,4 +41,3 @@ For this planning deliverable now: the plan exists, defines data boundaries and 
 Main trust boundary is browser file input and local state replacement. No backend, account system, cloud synchronization or sharing link is part of this proposal. Preserve local-storage fallback. Coarse effort M; fix risk MED.
 
 Stop for missing product decisions, drift in storage/time contracts, unsupported schemas, privacy-impacting scope expansion, or two failed verification attempts. Never expose secrets or user data in diagnostics. Future code requires renewed explicit authorization; this task authorizes these two plan artifacts only.
-

@@ -83,4 +83,3 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Keep selection semantics separate from clock frequency and timezone rendering. Date ranges/exports in future must not accidentally persist transient view state.
-

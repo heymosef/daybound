@@ -41,4 +41,3 @@ For this planning deliverable now: the plan exists, defines data boundaries and 
 No accounts, payroll, calendar-provider integration, holidays or meeting booking without separate approval. Plan the data migration before adding UI fields. Coarse effort L; fix risk MED–HIGH.
 
 Stop for missing product decisions, drift in storage/time contracts, unsupported schemas, privacy-impacting scope expansion, or two failed verification attempts. Never expose secrets or user data in diagnostics. Future code requires renewed explicit authorization; this task authorizes these two plan artifacts only.
-

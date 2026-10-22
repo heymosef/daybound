@@ -93,4 +93,3 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Keep geometry correct before memoizing. React.memo does not help when all props change; profile actual work and avoid render-time ref mutations that new lint catches.
-

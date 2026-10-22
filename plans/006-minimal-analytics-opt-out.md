@@ -92,4 +92,3 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Any new event must extend the typed policy and complete transport tests. No external PostHog dashboard/project changes. This intentionally sacrifices cross-visit identification/replay and retry delivery to keep explicit usage events minimal. Browser/ingestion services necessarily see network requests already sent; opt-out governs future capture and cancellation.
-

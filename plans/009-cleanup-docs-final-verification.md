@@ -93,4 +93,3 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Keep validation evidence honest about scope. No production deployment or GitHub settings change is part of this task.
-

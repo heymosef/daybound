@@ -79,4 +79,3 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Audit counts are package counts, not exploit counts. No deployed-site RCE was established. Document lower severity exceptions with reachability and renewal date.
-

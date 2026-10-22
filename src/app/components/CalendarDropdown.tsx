@@ -49,20 +49,25 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
 }) => {
   const posthog = usePostHog();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const [viewingMonth, setViewingMonth] = useState(
-    startOfMonth(new Date()),
-  );
-
   const homeNow = toZonedTime(now, homeTimezone);
   const today = startOfDay(homeNow);
   const selectedDate = addDays(today, selectedDateOffset);
+  const selectedMonthTime = startOfMonth(selectedDate).getTime();
+  const [viewingMonth, setViewingMonth] = useState(() => new Date(selectedMonthTime));
+  const previousContext = useRef({ isOpen: false, homeTimezone, selectedDateOffset });
   const isViewingCurrentMonth = isSameMonth(viewingMonth, today);
 
   useEffect(() => {
-    if (isOpen) {
-      setViewingMonth(startOfMonth(startOfDay(toZonedTime(now, homeTimezone))));
+    const previous = previousContext.current;
+    if (isOpen && (
+      !previous.isOpen ||
+      previous.homeTimezone !== homeTimezone ||
+      previous.selectedDateOffset !== selectedDateOffset
+    )) {
+      setViewingMonth(new Date(selectedMonthTime));
     }
-  }, [isOpen, homeTimezone, now]);
+    previousContext.current = { isOpen, homeTimezone, selectedDateOffset };
+  }, [isOpen, homeTimezone, selectedDateOffset, selectedMonthTime]);
 
   useEffect(() => {
     if (!isOpen) return;

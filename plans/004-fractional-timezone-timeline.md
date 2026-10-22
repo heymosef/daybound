@@ -85,4 +85,3 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Do not reintroduce browser-local rounding on absolute instants. Coordinate geometry review with plan008; cache data without changing the tested rail model.
-

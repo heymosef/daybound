@@ -15,8 +15,8 @@ Source audited/planned at `b77ff08`; October 22, 2026. [Original audit](audit-20
 
 | Plan | Title | Priority | Depends on | Status |
 |---|---|---|---|---|
-| [001](001-verification-baseline.md) | Verification baseline / CI gates | P1 | — | IN PROGRESS |
-| [002](002-dependency-runtime-security.md) | Dependency security / supported runtime | P1 | 001 | IN PROGRESS |
+| [001](001-verification-baseline.md) | Verification baseline / CI gates | P1 | — | DONE (238ff08; focused/static/install/audit verified) |
+| [002](002-dependency-runtime-security.md) | Dependency security / supported runtime | P1 | 001 | DONE (238ff08; focused/static/install/audit verified) |
 | [003](003-calendar-navigation.md) | Stable calendar browsing | P1 | 001 | IN PROGRESS |
 | [005](005-persistence-recovery.md) | Validated storage / recovery | P1 | 001 | IN PROGRESS |
 | [007](007-fixed-calendar-selection.md) | Fixed calendar selection | P1 | 001,003; App integration after005 | TODO |

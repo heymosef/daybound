@@ -76,4 +76,3 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 Changing useTime frequency must never be the fix for calendar reset. Keep lifecycle tests when date-selection API changes.
-

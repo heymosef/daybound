@@ -87,4 +87,3 @@ Also stop for unexpected semantic drift or two failed repair attempts on the sam
 ## Maintenance notes
 
 All future plans must preserve these gates. Broad source scope authorizes type-only/unused-code repair, not a rewrite.
-
