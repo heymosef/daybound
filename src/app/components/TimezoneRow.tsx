@@ -1,12 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { formatCalendarDate, getZonedFields } from "../../utils/calendarDate";
-import { formatZonedClock } from "../../utils/timeline";
+import { formatClock, dayPeriod } from "../../utils/timeline";
 import { X, Home, ArrowUp, ArrowDown } from "lucide-react";
 import {
   TimezoneConfig,
   getCityName,
   getRegionName,
-  getAbbreviation,
   getCountryFromTimezone,
 } from "../../utils/timezoneUtils";
 import { Timeline } from "./Timeline";
@@ -65,9 +64,12 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
   if (formatState.use24Hour !== use24Hour) {
     setFormatState({ use24Hour, direction: use24Hour ? 1 : -1 });
   }
-  const fields = getZonedFields(now, timezone);
-  const dateString = formatCalendarDate(fields.date, { weekday: "short", month: "short", day: "numeric" });
-  const abbreviation = getAbbreviation(now, timezone);
+  const nowTime = now.getTime();
+  const fields = useMemo(() => getZonedFields(nowTime, timezone), [nowTime, timezone]);
+  const localDate = fields.date;
+  const dateString = useMemo(() => formatCalendarDate(localDate, { weekday: "short", month: "short", day: "numeric" }), [localDate]);
+  const abbreviation = fields.abbreviation;
+  const clock = `${formatClock(fields, use24Hour, true, true)}${use24Hour ? "" : ` ${dayPeriod(fields)}`}`;
 
   const cityName = label || getCityName(timezone);
   const regionName = getRegionName(timezone);
@@ -208,7 +210,7 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
               className="font-medium text-[var(--dt-text)] whitespace-nowrap text-[clamp(15px,0.84vw+6px,18px)]"
             >
               <MorphingTime>
-                {formatZonedClock(now, timezone, use24Hour)}
+                {clock}
               </MorphingTime>
             </motion.div>
           </AnimatePresence>

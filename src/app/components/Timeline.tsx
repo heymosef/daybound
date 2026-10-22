@@ -2,8 +2,9 @@ import React, {
   useRef,
   useState,
   useLayoutEffect,
+  useMemo,
 } from "react";
-import { createTimeline, formatZonedClock, TOTAL_HOURS, CENTER_INDEX } from "../../utils/timeline";
+import { createTimeline, formatClock, formatZonedClock, TOTAL_HOURS, CENTER_INDEX } from "../../utils/timeline";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { motion, AnimatePresence } from "motion/react";
@@ -92,13 +93,17 @@ const TimelineInner: React.FC<TimelineProps> = ({
     }
   }, [use24Hour]);
 
-  const model = createTimeline(now, timezone, isLive, use24Hour);
-  const nowFractionPercent = model.progress / TOTAL_HOURS * 100;
+  const nowTime = now.getTime();
+  const anchorTime = isLive ? Math.floor(nowTime / 3_600_000) * 3_600_000 : nowTime;
+  // A row retains one exact frame; hover, minute progress and formatting do not reconvert its 25 cells.
+  const model = useMemo(() => createTimeline(new Date(anchorTime), timezone, isLive), [anchorTime, timezone, isLive]);
+  const progress = isLive ? (nowTime - model.start) / 3_600_000 : 0;
+  const nowFractionPercent = progress / TOTAL_HOURS * 100;
   const railLeft = isLive ? "50%" : "0%";
   const railTransform = isLive ? `translateX(-${nowFractionPercent}%)` : "translateX(0%)";
   const markerLeftPx = dims.outer / 2;
   // AnimatePresence retains the last mounted marker's children during exit.
-  const markerTimeDisplay = formatZonedClock(now, timezone, !!use24Hour, false);
+  const markerTimeDisplay = useMemo(() => formatZonedClock(new Date(nowTime), timezone, !!use24Hour, false), [nowTime, timezone, use24Hour]);
   const dateBoundaries = model.segments;
 
   const cellWidth =
@@ -106,7 +111,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
 
   const railOffset = isLive
     ? dims.outer / 2 -
-      (model.progress / TOTAL_HOURS) *
+      (progress / TOTAL_HOURS) *
         dims.inner
     : 0;
 
@@ -354,7 +359,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
                         "text-[var(--dt-hour-midnight)]",
                     )}
                   >
-                    {cell.label}
+                    {formatClock(cell.fields, !!use24Hour, false)}
                   </span>
                   {!use24Hour && (
                     <span

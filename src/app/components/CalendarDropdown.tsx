@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { motion, AnimatePresence } from "motion/react";
@@ -82,9 +82,9 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
       document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  const days = calendarMonthDays(viewingMonth).map((date) => ({
+  const days = useMemo(() => isOpen ? calendarMonthDays(viewingMonth).map((date) => ({
     date, unavailable: startOfCalendarDate(date, homeTimezone) === null,
-  }));
+  })) : [], [isOpen, viewingMonth, homeTimezone]);
   const leadingBlanks = (calendarSurrogate(viewingMonth).getUTCDay() + 6) % 7;
 
   const handleDayClick = (day: string, unavailable: boolean) => {

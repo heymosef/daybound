@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Timeline } from "./Timeline";
 import { TimezoneRow } from "./TimezoneRow";
+import * as calendarFields from "../../utils/calendarDate";
 import { getAbbreviation } from "../../utils/timezoneUtils";
 
 beforeEach(() => {
@@ -154,4 +155,18 @@ it("renders fractional dividers on both sides of a brief St Johns date appearanc
   const nextLabel = container.querySelector('[data-date-label="2009-11-01"]');
   expect(nextLabel).toHaveTextContent("Sun, Nov 1");
   expect(parseFloat((nextLabel as HTMLElement).style.left)).toBeCloseTo(indices[2] * 100, 10);
+});
+
+
+it("retains converted rail fields across hover and minute progress while updating the real marker", () => {
+  const conversions = vi.spyOn(calendarFields, "getZonedFields");
+  const { rerender } = renderRail({ now: new Date("2026-03-07T21:15:00Z"), timezone: "UTC", isLive: true });
+  expect(conversions.mock.calls.length).toBeGreaterThan(25);
+  conversions.mockClear();
+  rerender(<Timeline now={new Date("2026-03-07T21:15:00Z")} timezone="UTC" isLive selectedDateOffset={0} use24Hour hoveredHourIndex={5} />);
+  expect(conversions).not.toHaveBeenCalled();
+  rerender(<Timeline now={new Date("2026-03-07T21:16:00Z")} timezone="UTC" isLive selectedDateOffset={0} use24Hour hoveredHourIndex={5} />);
+  expect(conversions).toHaveBeenCalledTimes(1);
+  expect(screen.getByTestId("current-marker")).toHaveTextContent("21:16");
+  expect(screen.getByTestId("timeline-rail")).toHaveAttribute("data-start", "2026-03-07T09:00:00.000Z");
 });

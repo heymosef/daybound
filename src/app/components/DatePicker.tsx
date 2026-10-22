@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useLayoutEffect } from "react";
+import React, { useState, useRef, useCallback, useLayoutEffect, useMemo } from "react";
 import { CalendarDays, X } from "lucide-react";
 import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { addCalendarDays, calendarDifference, formatCalendarDate, getZonedFields, LIVE_SELECTION, startOfCalendarDate, type DateSelection } from "../../utils/calendarDate";
@@ -13,7 +13,7 @@ interface DatePickerProps {
   homeTimezone: string;
 }
 
-export const DatePicker: React.FC<DatePickerProps> = ({
+const DatePickerInner: React.FC<DatePickerProps> = ({
   selection,
   onSelectDate,
   now,
@@ -29,6 +29,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const isLive = selection.mode === "live";
   const selectedDate = selection.mode === "date" ? selection.date : homeToday;
   const selectedDateOffset = calendarDifference(selectedDate, homeToday);
+  const stripDays = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+    const date = addCalendarDays(homeToday, i);
+    return { date, unavailable: startOfCalendarDate(date, homeTimezone) === null,
+      month: formatCalendarDate(date, { month: "short" }) };
+  }), [homeToday, homeTimezone]);
 
   useLayoutEffect(() => {
     const wrap = wrapperRef.current;
@@ -126,9 +131,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
         <div className="flex items-center p-[0.125em] bg-[var(--dt-control-bg)] rounded-md overflow-x-auto [&::-webkit-scrollbar]:hidden">
           <div className="flex items-center min-w-max">
-            {Array.from({ length: 7 }).map((_, i) => {
-              const date = addCalendarDays(homeToday, i);
-              const unavailable = startOfCalendarDate(date, homeTimezone) === null;
+            {stripDays.map(({ date, unavailable, month }, i) => {
               const isSelected = i === selectedDateOffset;
 
               return (
@@ -152,7 +155,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                     {Number(date.slice(8))}
                   </span>
                   <span className="text-[clamp(10px,0.5vw+8px,12px)] leading-none font-medium opacity-90">
-                    {formatCalendarDate(date, { month: "short" })}
+                    {month}
                   </span>
                 </button>
               );
@@ -210,3 +213,5 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     </div>
   );
 };
+
+export const DatePicker = React.memo(DatePickerInner);

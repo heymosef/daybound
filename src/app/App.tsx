@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Clock, X } from "lucide-react";
 import { useAnalytics } from "../analytics/AnalyticsProvider";
 import { useTime } from "../hooks/useTime";
@@ -14,7 +14,7 @@ import {
   TimezoneConfig,
   AppSettings,
 } from "../utils/timezoneUtils";
-import { LIVE_SELECTION, resolveDateSelection, startOfCalendarDate, type DateSelection } from "../utils/calendarDate";
+import { LIVE_SELECTION, calendarDifference, getZonedFields, isCalendarDate, startOfCalendarDate, type DateSelection } from "../utils/calendarDate";
 import { TimezoneRow } from "./components/TimezoneRow";
 import { AddTimezone } from "./components/AddTimezone";
 import { DatePicker } from "./components/DatePicker";
@@ -233,25 +233,32 @@ function App() {
     timezones.find((t) => t.isHome)?.timezone ||
     timezones[0]?.timezone ||
     Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const dateView = resolveDateSelection(selection, now, homeTimezone);
-  const { isLive, offset: selectedDateOffset, instant: displayTime } = dateView;
-  const effectiveSelection: DateSelection = isLive ? LIVE_SELECTION : { mode: "date", date: dateView.selectedDate };
+  const selectedDate = selection.mode === "date" ? selection.date : null;
+  const homeToday = getZonedFields(now, homeTimezone).date;
+  const selectedStart = useMemo(() => selectedDate && isCalendarDate(selectedDate)
+    ? startOfCalendarDate(selectedDate, homeTimezone) : null, [selectedDate, homeTimezone]);
+  const unavailable = selectedDate !== null && selectedDate >= homeToday && selectedStart === null;
+  const isLive = selectedDate === null || selectedDate < homeToday || selectedStart === null;
+  const selectedDateOffset = isLive ? 0 : calendarDifference(selectedDate!, homeToday);
+  const displayTime = isLive ? now : selectedStart!;
+  const effectiveSelection = isLive ? LIVE_SELECTION : selection;
+  const timezoneIds = useMemo(() => timezones.map((timezone) => timezone.timezone), [timezones]);
 
   useEffect(() => {
-    if (selection.mode === "date" && dateView.isLive) {
+    if (selection.mode === "date" && isLive) {
       setSelection(LIVE_SELECTION);
-      if (dateView.unavailable) setDateFeedback("This date does not exist in the home timezone. Choose another date.");
+      if (unavailable) setDateFeedback("This date does not exist in the home timezone. Choose another date.");
     }
-  }, [selection, dateView.isLive, dateView.unavailable]);
+  }, [selection, isLive, unavailable]);
 
-  const handleSelectDate = (next: DateSelection) => {
+  const handleSelectDate = useCallback((next: DateSelection) => {
     if (next.mode === "date" && startOfCalendarDate(next.date, homeTimezone) === null) {
       setDateFeedback("This date does not exist in the home timezone. Choose another date.");
       return;
     }
     setDateFeedback("");
     setSelection(next);
-  };
+  }, [homeTimezone]);
 
   // Initialize default timezone if empty
   useEffect(() => {
@@ -279,7 +286,7 @@ function App() {
     setTimezones,
   ]);
 
-  const handleAddTimezone = (
+  const handleAddTimezone = useCallback((
     timezone: string,
     label?: string,
   ) => {
@@ -294,26 +301,26 @@ function App() {
       ...(label ? { label } : {}),
     };
     const updated = [...timezones, newTimezone];
-    setTimezones(updated);
+    setTimezones((previous) => previous.some((row) => row.timezone === timezone) ? previous : [...previous, newTimezone]);
     capture("timezone_added", { timezone_count_after: updated.length });
-  };
+  }, [capture, setTimezones, timezones]);
 
-  const handleRemoveTimezone = (id: string) => {
+  const handleRemoveTimezone = useCallback((id: string) => {
     const updated = timezones.filter((tz) => tz.id !== id);
-    setTimezones(updated);
+    setTimezones((previous) => previous.filter((row) => row.id !== id));
     capture("timezone_removed", { timezone_count_after: updated.length });
-  };
+  }, [capture, setTimezones, timezones]);
 
-  const handleRename = (id: string, newLabel: string) => {
-    setTimezones(
-      timezones.map((tz) =>
+  const handleRename = useCallback((id: string, newLabel: string) => {
+    setTimezones((previous) =>
+      previous.map((tz) =>
         tz.id === id ? { ...tz, label: newLabel } : tz,
       ),
     );
     capture("timezone_renamed");
-  };
+  }, [capture, setTimezones]);
 
-  const moveTimezone = (
+  const moveTimezone = useCallback((
     id: string,
     direction: "up" | "down",
   ) => {
@@ -337,9 +344,9 @@ function App() {
     }
     setTimezones(newTimezones);
     capture("timezone_reordered", { direction });
-  };
+  }, [capture, setTimezones, timezones]);
 
-  const handleSetHome = (id: string) => {
+  const handleSetHome = useCallback((id: string) => {
     const newTimezones = timezones.map((tz) => ({
       ...tz,
       isHome: tz.id === id,
@@ -353,7 +360,7 @@ function App() {
       setTimezones([homeTz, ...others]);
       capture("home_timezone_changed");
     }
-  };
+  }, [capture, setTimezones, timezones]);
 
   if (timezonesLoading || settingsLoading) {
     return (
@@ -395,9 +402,7 @@ function App() {
               <div className="flex-shrink-0 w-full md:w-auto">
                 <AddTimezone
                   onAdd={handleAddTimezone}
-                  existingTimezones={timezones.map(
-                    (t) => t.timezone,
-                  )}
+                  existingTimezones={timezoneIds}
                 />
               </div>
 

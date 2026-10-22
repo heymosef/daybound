@@ -19,11 +19,11 @@ Source audited/planned at `b77ff08`; October 22, 2026. [Original audit](audit-20
 | [002](002-dependency-runtime-security.md) | Dependency security / supported runtime | P1 | 001 | DONE (238ff08; focused/static/install/audit verified) |
 | [003](003-calendar-navigation.md) | Stable calendar browsing | P1 | 001 | DONE (fa5d857; lifecycle regressions reviewed) |
 | [005](005-persistence-recovery.md) | Validated storage / recovery | P1 | 001 | DONE (94ec757; recovery/preservation tests reviewed) |
-| [007](007-fixed-calendar-selection.md) | Fixed calendar selection | P1 | 001,003; App integration after005 | IN PROGRESS (implemented; staff-directed boundary/direction corrections) |
-| [004](004-fractional-timezone-timeline.md) | Accurate rail, fractional zones / DST | P1 | 001,003,007 | IN PROGRESS (implemented; staff-directed boundary/direction corrections) |
-| [006](006-minimal-analytics-opt-out.md) | Minimal analytics / opt-out | P1 | 001,002,005 | IN PROGRESS (isolated transport slice; UI integration later) |
-| [008](008-render-performance.md) | Clock/render/startup optimization | P2 | 001–007 | TODO |
-| [009](009-cleanup-docs-final-verification.md) | Cleanup, onboarding / final validation | P2 | Cleanup after002; final gates after001–008 | TODO |
+| [007](007-fixed-calendar-selection.md) | Fixed calendar selection | P1 | 001,003; App integration after005 | DONE (c4bf6e2,7bf6d4f +6069064 corrections; staff APPROVED) |
+| [004](004-fractional-timezone-timeline.md) | Accurate rail, fractional zones / DST | P1 | 001,003,007 | DONE (c4bf6e2,7bf6d4f +6069064 corrections; staff APPROVED) |
+| [006](006-minimal-analytics-opt-out.md) | Minimal analytics / opt-out | P1 | 001,002,005 | DONE (bb1c2db +transport commits; staff APPROVED) |
+| [008](008-render-performance.md) | Clock/render/startup optimization | P2 | 001–007 | IN PROGRESS |
+| [009](009-cleanup-docs-final-verification.md) | Cleanup, onboarding / final validation | P2 | Cleanup after002; final gates after001–008 | IN PROGRESS (independent cleanup/harness; final gates later) |
 | [010](010-portable-configuration.md) | Portable configuration design | P3 | 005,009 | DEFERRED: plan only |
 | [011](011-working-hours-overlap.md) | Working-hours overlap design | P3 | 004,005,007,009 | DEFERRED: plan only |
 
@@ -39,7 +39,7 @@ Numbers retain audit traceability; dependencies control execution. Execute date-
 ## Review and evidence
 
 - Plan review APPROVED by GPT-6 Astra / High before source edits: `plans/staff-review.md`.
-- Implementation IN PROGRESS: bootstrap001/002 first.
+- Implementation IN PROGRESS:001–007 implemented;008 and independent009 cleanup underway.
 - Full validation PENDING: `plans/validation.md`.
 - Measurements PENDING: `plans/performance-evidence.md`.
 

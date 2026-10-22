@@ -1,0 +1,13 @@
+# Date correction staff review
+
+**Verdict: APPROVE.** Reviewed `6069064391cf3dadf3ad1445d59e0c1de5d3fbae` against `7bf6d4f`. This closes TIME-03 and UX-01 from `plans/date-review.md`; plans 004/007 may proceed into plan 008 after integration.
+
+Reviewer: GPT-6 Astra, High reasoning effort. Date: October 22, 2026. Scope: changed calendar/rail helpers, Timeline effect, focused regressions and recorded validation. Read-only code inspection; no duplicate suite, live traffic or source edits.
+
+The shared primitive now discovers offset discontinuities, partitions constant-offset spans, enumerates midnight candidates with epoch-day arithmetic, includes discontinuity instants, compares the immediately preceding millisecond, and sorts/deduplicates within half-open bounds. Earliest-date selection and timeline boundaries therefore share the same corrected behavior. The St_Johns one-minute appearances and backward jumps no longer depend on date-sample alignment. The 1988, 2009 and 2010 tests verify exact first/rollback/later boundaries; the 00:05 rail and rendered fractional dividers specifically exercise the prior failure. Internal arithmetic preserves astronomical year zero while public inputs remain valid AD calendar keys.
+
+The code and evidence explicitly state the hourly offset-scan assumption: at most one offset discontinuity per bracket for supported IANA timezone data. This is acceptable for the application's Intl/IANA domain. It is not a proof for arbitrary synthetic offset functions or an unconditional promise about all future timezone-rule data; two changes wholly inside a bracket can be missed. Crucially, the corrected algorithm makes no minimum-duration or monotonicity assumption about calendar dates, which was the demonstrated defect. No further sampling change is required for this correction.
+
+Timeline now updates the previous relative offset even when fixed-date view identity is stable. The regression checks that offset 44→43 preserves the existing wrapper and first cell, then selecting the next date at offset 44 produces the actual forward Motion transform. This repairs direction bookkeeping without restoring midnight remounts.
+
+Inspected evidence records eight predecessor failures, then 58/58 focused tests under UTC and America/Vancouver, 44/44 helper/model tests under Asia/Kathmandu, typecheck, lint and whitespace checks. These checks were owned by the correction implementer and were not rerun by this reviewer. Existing skipped/repeated midnight, fractional-offset/DST, final-cell/right-endpoint and early-year cases remain covered. Integrated final validation and real-browser layout remain plan 009 responsibilities.

@@ -31,7 +31,7 @@ interface AddTimezoneProps {
   existingTimezones: string[];
 }
 
-export const AddTimezone: React.FC<AddTimezoneProps> = ({
+const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
   onAdd,
   existingTimezones,
 }) => {
@@ -44,6 +44,7 @@ export const AddTimezone: React.FC<AddTimezoneProps> = ({
   const listRef = useRef<HTMLDivElement>(null);
 
   const allTimezones = useMemo(() => getCommonTimezones(), []);
+  const existingSet = useMemo(() => new Set(existingTimezones), [existingTimezones]);
 
   // Build unified search results: IANA direct matches + city alias matches
   const { availableResults, alreadyAddedResults } =
@@ -74,7 +75,7 @@ export const AddTimezone: React.FC<AddTimezoneProps> = ({
           iana: tz,
           isAlias: false,
         };
-        if (existingTimezones.includes(tz)) {
+        if (existingSet.has(tz)) {
           alreadyAdded.push(result);
         } else {
           available.push(result);
@@ -96,7 +97,7 @@ export const AddTimezone: React.FC<AddTimezoneProps> = ({
           iana: info.timezone,
           isAlias: true,
         };
-        if (existingTimezones.includes(info.timezone)) {
+        if (existingSet.has(info.timezone)) {
           alreadyAdded.push(result);
         } else {
           available.push(result);
@@ -107,7 +108,7 @@ export const AddTimezone: React.FC<AddTimezoneProps> = ({
         availableResults: available.slice(0, 50),
         alreadyAddedResults: alreadyAdded,
       };
-    }, [search, allTimezones, existingTimezones]);
+    }, [search, allTimezones, existingSet]);
 
   // Reset highlight when results change
   useEffect(() => {
@@ -398,3 +399,4 @@ export const AddTimezone: React.FC<AddTimezoneProps> = ({
     </div>
   );
 };
+export const AddTimezone = React.memo(AddTimezoneInner);

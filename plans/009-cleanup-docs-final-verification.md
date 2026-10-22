@@ -37,6 +37,8 @@ Only these paths may change for this plan (wildcards mean existing files or focu
 - `plans/validation.md`
 - `scripts/check-env.mjs`
 - `src/analytics/analytics.test.tsx`
+- `scripts/browser-fixtures.mjs`
+- `package.json` and `package-lock.json` (only normal uninstall of date helpers proven unused after cleanup)
 
 Run `git diff --stat b77ff08..HEAD -- '.gitignore' '.env.example' 'README.md' 'AGENTS.md' 'guidelines/Guidelines.md' '.cursor/debug-99805d.log' 'src/utils/timezoneUtils.ts' 'vite.config.ts' 'plans/README.md' 'plans/validation.md' 'scripts/check-env.mjs' 'src/analytics/analytics.test.tsx'` and compare changes from approved predecessors before editing. Expected predecessor changes are reconciled, not blindly overwritten. All changes must trace to this plan's intent. Out of scope: global/model configuration, public PRs/issues, pushes, deployments, external service/dashboard writes, unrelated redesigns, .env values, production data. New plan/evidence files live under plans/.
 
@@ -48,7 +50,7 @@ Existing commands: `npm ci` (isolated worktree), `npm test -- <test-files>`, `np
 
 ### Step 1: Remove verified stale code/artifacts
 
-Remove tracked diagnostic log, add narrow ignore pattern, remove empty guidelines scaffold and obsolete Make-only comments. Remove the uncalled formatting helper/unused imports after checking current call sites. Do not remove used SVG/logo/fonts or rewrite history. Do not delete remote branches or alter user's unrelated local branches. Coordinate manifest dependency removal with002 rather than create a second lockfile owner.
+Remove tracked diagnostic log, add narrow ignore pattern, remove empty guidelines scaffold and obsolete Make-only comments. Remove the uncalled formatting helper/unused imports after checking current call sites. Do not remove used SVG/logo/fonts or rewrite history. Do not delete remote branches or alter user's unrelated local branches. Coordinate manifest dependency removal with002 rather than create a second lockfile owner. After 004 replaced date conversion, remove date-fns/date-fns-tz normally only if repository-wide import inspection proves no remaining runtime/test/config consumers after deleting the unused helper. No other dependency updates in this slice.
 
 **Verify:** `rg -n 'formatTimezoneTime|culori|Add your own guidelines here' src package.json guidelines` → no stale usages; missing removed directory is expected; git diff contains no secret values.
 
@@ -57,6 +59,10 @@ Remove tracked diagnostic log, add narrow ignore pattern, remove empty guideline
 Document supported Node24/npm, npm ci/dev/test/typecheck/lint/build/verification commands, analytics env with placeholder-only .env.example, operation without analytics config, storage failure semantics, selected-date/DST contract, privacy opt-out, and static custom-domain deployment. Add concise AGENTS.md capturing the user-provided model ownership, semantic waiting, retrieval/delegation and single validation-owner instructions verbatim or faithfully; add project commands and local-only commit boundaries. Do not configure model routing. Keep future feature plans explicitly deferred.
 
 **Verify:** `npm run typecheck && npm run lint` → documented scripts exist and pass; tracked example contains placeholders only.
+
+### Browser fixture preparation
+
+A separate local-only generator may build ignored smoke pages that import the real App, styles and provider through Vite. Use generated entry files under node_modules/.cache/daybound-smoke and a separate ignored output directory. Bootstrap deterministic clocks/storage failures before the app module; expose fixture controls as actual DOM buttons, so browser actions use the supported CUA tools. Do not add fixture controls to the product. Intercept fetch offline before mounting a provider injected with a fake phc token, .invalid host and explicit production fixture context. Normal production localhost must remain analytics-disabled. Render request counts/payloads/cancellation observations for read-only browser inspection. Never use a live analytics key or send real traffic. Primary owns actual desktop/mobile CUA interaction and screenshots. This harness proves local App flows, not live ingestion or remote CI.
 
 ### Step 3: Run integrated final candidate validation
 

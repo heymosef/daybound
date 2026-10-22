@@ -2,6 +2,7 @@ import React from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
+import * as calendarFields from "../utils/calendarDate";
 import { AnalyticsProvider } from "../analytics/AnalyticsProvider";
 import { ANALYTICS_PREFERENCE_KEY, createAnalytics } from "../analytics/analytics";
 
@@ -249,6 +250,7 @@ describe("App fixed calendar selection lifecycle", () => {
   const advanceTo = (instant: string) => act(() => {
     vi.setSystemTime(new Date(instant));
     vi.advanceTimersByTime(1000);
+    window.dispatchEvent(new Event("focus"));
   });
 
   it("keeps a far-future chosen date across midnight and home changes across the date line", () => {
@@ -390,4 +392,32 @@ describe("App minimal analytics transport integration", () => {
     expect(controller.getSnapshot()).toMatchObject({ enabled: false, preferenceStatus: "unavailable" });
     expect(request).not.toHaveBeenCalled();
   });
+});
+
+
+it("reuses fixed-date and calendar-day resolutions through hover, closed/open minute updates", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
+  localStorage.clear();
+  localStorage.setItem("timezone_config", '[{"id":"utc","timezone":"UTC","isHome":true}]');
+  const starts = vi.spyOn(calendarFields, "startOfCalendarDate");
+  const { container, unmount } = render(<App />);
+  expect(starts.mock.calls.length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole("button", { name: "3 Mar" }));
+  starts.mockClear();
+  fireEvent.mouseEnter(container.querySelector('[data-timeline-cell="5"]')!);
+  expect(starts).not.toHaveBeenCalled();
+  act(() => vi.advanceTimersByTime(60000));
+  expect(starts).not.toHaveBeenCalled();
+  expect(container.querySelector("[data-preview-instant]")).toHaveAttribute("data-preview-instant", "2026-03-03T00:00:00.000Z");
+  fireEvent.click(screen.getByRole("button", { name: "Open calendar" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next month" }));
+  expect(screen.getByText("April 2026")).toBeInTheDocument();
+  starts.mockClear();
+  act(() => vi.advanceTimersByTime(60000));
+  expect(starts).not.toHaveBeenCalled();
+  expect(screen.getByText("April 2026")).toBeInTheDocument();
+  unmount();
+  starts.mockRestore();
+  vi.useRealTimers();
 });
