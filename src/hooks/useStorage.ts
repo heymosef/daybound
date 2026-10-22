@@ -1,39 +1,36 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef, type SetStateAction } from "react";
+import { readPersistentValue, type PersistenceParser } from "../utils/persistence";
 
 export function usePersistentState<T>(
   key: string,
   initialValue: T,
+  parse: PersistenceParser<T>,
 ) {
-  const [state, setState] = useState<T>(() => {
+  const [snapshot, setSnapshot] = useState(() => readPersistentValue(key, initialValue, parse));
+  const lastWrite = useRef<typeof snapshot | null>(null);
+
+  useEffect(() => {
+    // Never overwrite unread saved data with fallback defaults during this visit.
+    if (!snapshot.canPersist || !snapshot.needsWrite || lastWrite.current === snapshot) return;
+    lastWrite.current = snapshot;
+    let status: typeof snapshot.status = "saved";
     try {
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const sameType =
-          typeof parsed === typeof initialValue &&
-          Array.isArray(parsed) === Array.isArray(initialValue);
-        if (sameType) return parsed;
-        console.warn(`Corrupt localStorage for key "${key}", resetting`);
-        localStorage.removeItem(key);
-      }
-    } catch (error) {
-      console.warn("Failed to load state", error);
-      localStorage.removeItem(key);
+      window.localStorage.setItem(key, JSON.stringify(snapshot.value));
+    } catch {
+      status = "unavailable";
     }
-    return initialValue;
-  });
+    setSnapshot((current) => current === snapshot ? { ...current, status, needsWrite: false } : current);
+  }, [key, snapshot]);
 
-  const setValue = useCallback(
-    (newValue: T) => {
-      setState(newValue);
-      try {
-        localStorage.setItem(key, JSON.stringify(newValue));
-      } catch (error) {
-        console.warn("Failed to save state", error);
-      }
-    },
-    [key],
-  );
+  const setValue = useCallback((next: SetStateAction<T>) => {
+    // React may replay this updater. Persist only the committed value in the effect.
+    setSnapshot((current) => ({
+      ...current,
+      value: typeof next === "function" ? (next as (previous: T) => T)(current.value) : next,
+      needsWrite: true,
+    }));
+  }, []);
 
-  return [state, setValue, false] as const;
+  // Preserve the existing loading tuple slot; status is an explicit fourth value.
+  return [snapshot.value, setValue, false, snapshot.status] as const;
 }

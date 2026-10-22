@@ -4,6 +4,13 @@ import { usePostHog } from "@posthog/react";
 import { useTime } from "../hooks/useTime";
 import { usePersistentState } from "../hooks/useStorage";
 import {
+  DEFAULT_SETTINGS,
+  parseAppSettings,
+  parseTimezoneConfig,
+  parseNoticeDismissed,
+  readPersistentValue,
+} from "../utils/persistence";
+import {
   TimezoneConfig,
   AppSettings,
   getCityName,
@@ -25,14 +32,6 @@ import Daybound from "../imports/Daybound";
 
 // Register the squircle paint worklet for smooth corners (idempotent)
 registerSquircle();
-
-const DEFAULT_SETTINGS: AppSettings = {
-  use24Hour: false,
-  theme: "system",
-  designTheme: "te-1",
-  showBadge: true,
-  showWeekends: false,
-};
 
 // ── Theme color map (hex only – must match CSS hex fallbacks in theme.css) ──
 const THEME_COLORS: Record<string, { light: string; dark: string }> = {
@@ -86,8 +85,7 @@ function applySystemBarColor(color: string) {
 (function earlyThemeInit() {
   try {
     // Read persisted settings from localStorage (same key as usePersistentState)
-    const raw = localStorage.getItem("app_settings");
-    const saved: Partial<AppSettings> = raw ? JSON.parse(raw) : {};
+    const { value: saved } = readPersistentValue("app_settings", DEFAULT_SETTINGS, parseAppSettings);
     const designTheme = saved.designTheme || "te-1";
     const mode = saved.theme || "system";
 
@@ -143,19 +141,22 @@ function applySystemBarColor(color: string) {
 
 function App() {
   const now = useTime();
-  const [timezones, setTimezones, timezonesLoading] =
-    usePersistentState<TimezoneConfig[]>("timezone_config", []);
-  const [settings, setSettings, settingsLoading] =
+  const [timezones, setTimezones, timezonesLoading, timezonePersistence] =
+    usePersistentState<TimezoneConfig[]>("timezone_config", [], parseTimezoneConfig);
+  const [settings, setSettings, settingsLoading, settingsPersistence] =
     usePersistentState<AppSettings>(
       "app_settings",
       DEFAULT_SETTINGS,
+      parseAppSettings,
     );
-  const [localSaveNoticeDismissed, setLocalSaveNoticeDismissed] =
+  const [localSaveNoticeDismissed, setLocalSaveNoticeDismissed, , noticePersistence] =
     usePersistentState<boolean>(
       "local_save_notice_dismissed",
       false,
+      parseNoticeDismissed,
     );
 
+  const savingUnavailable = [timezonePersistence, settingsPersistence, noticePersistence].includes("unavailable");
   const designTheme = settings.designTheme || "te-1";
 
   // ── PostHog analytics ──────────────────────────────────────────────
@@ -454,24 +455,27 @@ function App() {
             </div>
           </div>
 
-          {!localSaveNoticeDismissed && (
-            <div
-              role="status"
-              className="flex items-center gap-[0.625em] p-[0.75em] bg-[var(--dt-accent-wash)] rounded-sm text-[var(--dt-text-secondary)]"
-            >
-              <span className="flex-grow text-[clamp(12px,0.6vw+9px,14px)] leading-normal">
-                Your changes are saved locally on this device. You can close this page and come back anytime.
-              </span>
-              <button
-                type="button"
-                aria-label="Dismiss local save notice"
-                onClick={() => setLocalSaveNoticeDismissed(true)}
-                className="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md text-[var(--dt-text-muted)] hover:text-[var(--dt-text)] hover:bg-[var(--dt-bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)] transition-colors"
+          <div role="status" className={savingUnavailable || !localSaveNoticeDismissed ? undefined : "sr-only"}>
+            {(savingUnavailable || !localSaveNoticeDismissed) && (
+              <div
+                className="flex items-center gap-[0.625em] p-[0.75em] bg-[var(--dt-accent-wash)] rounded-sm text-[var(--dt-text-secondary)]"
               >
-                <X size={16} />
-              </button>
-            </div>
-          )}
+                <span className="flex-grow text-[clamp(12px,0.6vw+9px,14px)] leading-normal">
+                  {savingUnavailable
+                    ? "Changes work for this visit, but cannot be saved on this device."
+                    : "Your changes are saved locally on this device. You can close this page and come back anytime."}
+                </span>
+                {!savingUnavailable && <button
+                  type="button"
+                  aria-label="Dismiss local save notice"
+                  onClick={() => setLocalSaveNoticeDismissed(true)}
+                  className="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md text-[var(--dt-text-muted)] hover:text-[var(--dt-text)] hover:bg-[var(--dt-bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)] transition-colors"
+                >
+                  <X size={16} />
+                </button>}
+              </div>
+            )}
+          </div>
 
           <div className="divide-y divide-[var(--dt-border)]">
             {timezones.length === 0 ? (
