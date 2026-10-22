@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { usePostHog } from "@posthog/react";
+import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { motion, AnimatePresence } from "motion/react";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
 import { addCalendarMonths, calendarMonthDays, calendarSurrogate, formatCalendarDate, getZonedFields, LIVE_SELECTION, startOfCalendarDate, startOfCalendarMonth, type DateSelection } from "../../utils/calendarDate";
@@ -32,7 +32,7 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
   homeTimezone,
   now,
 }) => {
-  const posthog = usePostHog();
+  const { capture } = useAnalytics();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const today = getZonedFields(now, homeTimezone).date;
   const selectedDate = selection.mode === "date" ? selection.date : today;
@@ -105,7 +105,7 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
   const handlePrevMonth = () => {
     const newMonth = addCalendarMonths(viewingMonth, -1);
     setViewingMonth(newMonth);
-    posthog?.capture("calendar_month_navigated", {
+    capture("calendar_month_navigated", {
       direction: "backward",
       months_from_today: monthsFromToday(newMonth),
     });
@@ -114,7 +114,7 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
   const handleNextMonth = () => {
     const newMonth = addCalendarMonths(viewingMonth, 1);
     setViewingMonth(newMonth);
-    posthog?.capture("calendar_month_navigated", {
+    capture("calendar_month_navigated", {
       direction: "forward",
       months_from_today: monthsFromToday(newMonth),
     });

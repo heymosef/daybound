@@ -1,10 +1,11 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState, useCallback, useId } from "react";
 import {
   Settings,
   Check,
 } from "lucide-react";
 import { AppSettings, TimezoneConfig, getCityName } from "../../utils/timezoneUtils";
 import { motion, AnimatePresence } from "motion/react";
+import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
 
 interface SettingsMenuProps {
@@ -21,6 +22,8 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
   onSetHome,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const analytics = useAnalytics();
+  const analyticsDescriptionId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -301,6 +304,30 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                   </span>
                 </button>
               </div>
+            </div>
+            <div className="p-[0.75em] border-t border-[var(--dt-border)]">
+              <button
+                type="button"
+                role="menuitemcheckbox"
+                aria-checked={analytics.enabled}
+                aria-describedby={analyticsDescriptionId}
+                disabled={!analytics.available}
+                onClick={() => analytics.setEnabled(!analytics.enabled)}
+                className="w-full flex items-center justify-between gap-2 px-[0.5em] py-[0.375em] rounded-md text-[clamp(12px,0.66vw+4.62px,15px)] text-[var(--dt-text-secondary)] hover:bg-[var(--dt-surface-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                <span>Share usage analytics</span>
+                <span aria-hidden="true" className={`flex items-center justify-center w-[1.25em] h-[1.25em] shrink-0 rounded border ${analytics.enabled ? "bg-[var(--dt-accent)] border-[var(--dt-accent)]" : "border-[var(--dt-border-strong)]"}`}>
+                  {analytics.enabled && <Check size={10} className="text-[var(--dt-text-inverse)]" />}
+                </span>
+              </button>
+              <p id={analyticsDescriptionId} className="px-[0.5em] mt-1 text-xs leading-normal text-[var(--dt-text-muted)]">
+                Only basic usage events are shared. Labels and searches stay on this device.
+              </p>
+              <p role="status" aria-label="Usage analytics status" className="px-[0.5em] mt-1 text-xs leading-normal text-[var(--dt-text-secondary)]">
+                {!analytics.available ? "Usage analytics is unavailable here." :
+                  analytics.preferenceStatus === "unavailable" ? "Off for this visit; preference could not be saved." :
+                  analytics.enabled ? "On" : "Off"}
+              </p>
             </div>
           </motion.div>
         )}

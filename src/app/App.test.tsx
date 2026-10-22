@@ -2,10 +2,9 @@ import React from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
+import { AnalyticsProvider } from "../analytics/AnalyticsProvider";
+import { ANALYTICS_PREFERENCE_KEY, createAnalytics } from "../analytics/analytics";
 
-vi.mock("@posthog/react", () => ({
-  usePostHog: () => null,
-}));
 
 const LOCAL_SAVE_NOTICE_COPY =
   "Your changes are saved locally on this device. You can close this page and come back anytime.";
@@ -147,12 +146,12 @@ describe("App persistence recovery", () => {
     const user = userEvent.setup();
     vi.spyOn(window, "localStorage", "get").mockImplementation(() => { throw new DOMException("Blocked", "SecurityError"); });
     render(<App />);
-    expect(screen.getByRole("status")).toHaveTextContent(STORAGE_FAILURE_COPY);
+    expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(STORAGE_FAILURE_COPY);
     expect(screen.queryByText(LOCAL_SAVE_NOTICE_COPY)).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /settings/i }));
     await user.click(screen.getByRole("menuitemradio", { name: "24H" }));
     expect(screen.getByRole("menuitemradio", { name: "24H" })).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByRole("status")).toHaveTextContent(STORAGE_FAILURE_COPY);
+    expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(STORAGE_FAILURE_COPY);
   });
 
   it.each(["app_settings", "timezone_config", "local_save_notice_dismissed"])("reports an independent read failure for %s", (blockedKey) => {
@@ -162,7 +161,7 @@ describe("App persistence recovery", () => {
       return read.call(this, key);
     });
     render(<App />);
-    expect(screen.getByRole("status")).toHaveTextContent(STORAGE_FAILURE_COPY);
+    expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(STORAGE_FAILURE_COPY);
     expect(screen.getByRole("button", { name: /settings/i })).toBeInTheDocument();
   });
 
@@ -178,7 +177,7 @@ describe("App persistence recovery", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("All reads denied"); });
     const write = vi.spyOn(Storage.prototype, "setItem");
     render(<App />);
-    expect(screen.getByRole("status")).toHaveTextContent(STORAGE_FAILURE_COPY);
+    expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(STORAGE_FAILURE_COPY);
     await user.click(screen.getByRole("button", { name: /settings/i }));
     await user.click(screen.getByRole("menuitemradio", { name: "24H" }));
     expect(screen.getByRole("menuitemradio", { name: "24H" })).toHaveAttribute("aria-checked", "true");
@@ -189,7 +188,7 @@ describe("App persistence recovery", () => {
   it("shows a later save failure despite an earlier successful notice dismissal", async () => {
     const user = userEvent.setup();
     render(<App />);
-    const status = screen.getByRole("status");
+    const status = screen.getByRole("status", { name: "Local save status" });
     await user.click(screen.getByRole("button", { name: "Dismiss local save notice" }));
     expect(status).toBeEmptyDOMElement();
     expect(localStorage.getItem("local_save_notice_dismissed")).toBe("true");
@@ -211,7 +210,7 @@ describe("App persistence recovery", () => {
       write.call(this, key, value);
     });
     await user.click(screen.getByRole("button", { name: "Dismiss local save notice" }));
-    expect(screen.getByRole("status")).toHaveTextContent(STORAGE_FAILURE_COPY);
+    expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(STORAGE_FAILURE_COPY);
   });
 
   it("uses validated settings for synchronous theme initialization without writing storage", async () => {
@@ -266,7 +265,7 @@ describe("App fixed calendar selection lifecycle", () => {
     fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "east" } });
     expectView("date", "2026-04-14T10:00:00.000Z");
     expect(localStorage.getItem("selected_date")).toBeNull();
-    expect(screen.getByRole("status")).toHaveTextContent(LOCAL_SAVE_NOTICE_COPY);
+    expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(LOCAL_SAVE_NOTICE_COPY);
   });
 
   it("retains preview when the selected date becomes today, then returns live once past", () => {
@@ -299,5 +298,96 @@ describe("App fixed calendar selection lifecycle", () => {
     unmount();
     render(<App />);
     expectView("live", "2026-03-02T23:59:50.000Z");
+  });
+});
+
+
+describe("App minimal analytics transport integration", () => {
+  const options = { token: "phc_offline_fixture", host: "https://analytics.example.invalid", production: true, hostname: "daybound.example.invalid", doNotTrack: () => false };
+  const request = vi.fn<typeof fetch>();
+  const privateLabel = "PrivateDashboardAccount Orchid8472";
+  const privateRename = "PrivateCustomerPayroll Tanager3819";
+  let originalURL: string;
+  let originalTitle: string;
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem("timezone_config", JSON.stringify([
+      { id: "private-row-id", timezone: "UTC", label: privateLabel, isHome: true },
+      { id: "other-private-id", timezone: "Europe/London", label: "SecretOtherOffice Wren6681", isHome: false },
+    ]));
+    originalURL = window.location.href;
+    originalTitle = document.title;
+    window.history.replaceState({}, "", "/PrivateDashboardPath?account=PrivateAccountQuery#PrivateHash");
+    document.title = "PrivateDashboardTitle";
+    request.mockReset().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", request);
+  });
+  afterEach(() => {
+    window.history.replaceState({}, "", originalURL);
+    document.title = originalTitle;
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("sends actual rename/home-change events without any editable or browser data", () => {
+    render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
+    expect(request).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText(privateLabel));
+    fireEvent.change(screen.getByRole("textbox", { name: "Edit timezone label" }), { target: { value: privateRename } });
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Edit timezone label" }), { key: "Enter" });
+    expect(screen.getByText(privateRename)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "other-private-id" } });
+    const flags = { $process_person_profile: false, $geoip_disable: true };
+    expect(request.mock.calls.map(([url, init]) => {
+      expect(url).toBe("https://analytics.example.invalid/i/v0/e/");
+      expect(init).toEqual({ method: "POST", headers: { "Content-Type": "application/json" }, body: expect.any(String), credentials: "omit", referrerPolicy: "no-referrer", redirect: "error", signal: expect.any(AbortSignal) });
+      const body = JSON.parse(String(init!.body));
+      expect(body).toEqual({ api_key: options.token, event: expect.any(String), distinct_id: expect.stringMatching(/^[\da-f-]{36}$/), timestamp: expect.any(String), properties: flags });
+      return body.event;
+    })).toEqual(["timezone_renamed", "home_timezone_changed"]);
+    const envelopes = JSON.stringify(request.mock.calls);
+    for (const text of [privateLabel, privateRename, "SecretOtherOffice", "private-row-id", "other-private-id", "PrivateDashboardPath", "PrivateAccountQuery", "PrivateHash", "PrivateDashboardTitle", "home_city", "$current_url", "$referrer", "Europe/London"]) expect(envelopes).not.toContain(text);
+  });
+
+  it("honors opt-out before the first real App action and after reload", () => {
+    localStorage.setItem(ANALYTICS_PREFERENCE_KEY, '{"version":1,"enabled":false}');
+    const { unmount } = render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Open calendar" }));
+    expect(request).not.toHaveBeenCalled();
+    unmount();
+    render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    expect(screen.getByRole("menuitemcheckbox", { name: "Share usage analytics" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("status", { name: "Usage analytics status" })).toHaveTextContent(/^Off$/);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it("renders working App and an unavailable analytics control with no configuration", () => {
+    render(<AnalyticsProvider options={{ production: true, hostname: "daybound.example.invalid" }}><App /></AnalyticsProvider>);
+    expect(screen.getByText(privateLabel)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open calendar" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    expect(screen.getByRole("menuitemcheckbox", { name: "Share usage analytics" })).toBeDisabled();
+    expect(screen.getByRole("status", { name: "Usage analytics status" })).toHaveTextContent("Usage analytics is unavailable here.");
+    expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(LOCAL_SAVE_NOTICE_COPY);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes analytics write failure from successful app preference storage", () => {
+    const write = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === ANALYTICS_PREFERENCE_KEY) throw new DOMException("Full", "QuotaExceededError");
+      write.call(this, key, value);
+    });
+    const controller = createAnalytics(options);
+    render(<AnalyticsProvider controller={controller}><App /></AnalyticsProvider>);
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    expect(screen.getByRole("status", { name: "Usage analytics status" })).toHaveTextContent("Off for this visit; preference could not be saved.");
+    expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(LOCAL_SAVE_NOTICE_COPY);
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Share usage analytics" }));
+    expect(controller.getSnapshot()).toMatchObject({ enabled: false, preferenceStatus: "unavailable" });
+    expect(request).not.toHaveBeenCalled();
   });
 });

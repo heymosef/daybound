@@ -3,7 +3,6 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CalendarDropdown } from "./CalendarDropdown";
 
-vi.mock("@posthog/react", () => ({ usePostHog: () => null }));
 
 const NOW = new Date("2026-03-02T14:30:00Z");
 

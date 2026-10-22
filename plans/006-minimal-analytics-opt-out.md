@@ -37,7 +37,9 @@ Only these paths may change for this plan (wildcards mean existing files or focu
 - `src/app/components/SettingsMenu.tsx`
 - `src/app/components/SettingsMenu.test.tsx`
 - `src/app/components/DatePicker.tsx`
+- `src/app/components/DatePicker.test.tsx` (remove obsolete SDK mocks/update provider integration)
 - `src/app/components/CalendarDropdown.tsx`
+- `src/app/components/CalendarDropdown.test.tsx` (remove obsolete SDK mocks/update provider integration)
 - `src/utils/persistence.ts`
 - `src/utils/persistence.test.ts`
 - `package.json`

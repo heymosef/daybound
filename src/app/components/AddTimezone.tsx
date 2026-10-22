@@ -12,7 +12,7 @@ import {
   type SearchResult,
 } from "../../utils/timezoneUtils";
 import { motion, AnimatePresence } from "motion/react";
-import { usePostHog } from "@posthog/react";
+import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
 
 /** Normalize underscores ↔ spaces for matching */
@@ -26,20 +26,6 @@ const matchesQuery = (text: string, query: string): boolean => {
   return normalize(text).includes(q);
 };
 
-const MAX_QUERY_LEN = 64;
-
-/** Strip diacritics, punctuation, digits, emojis; keep letters, spaces, hyphens, apostrophes. */
-const sanitizeQuery = (raw: string): string =>
-  raw
-    .replace(/_/g, " ")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z\s'-]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, MAX_QUERY_LEN);
-
 interface AddTimezoneProps {
   onAdd: (timezone: string, label?: string) => void;
   existingTimezones: string[];
@@ -49,7 +35,7 @@ export const AddTimezone: React.FC<AddTimezoneProps> = ({
   onAdd,
   existingTimezones,
 }) => {
-  const posthog = usePostHog();
+  const { capture } = useAnalytics();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -163,7 +149,7 @@ export const AddTimezone: React.FC<AddTimezoneProps> = ({
         e.preventDefault();
         setIsOpen(true);
         setTimeout(() => inputRef.current?.focus(), 10);
-        posthog?.capture("keyboard_shortcut_used", {
+        capture("keyboard_shortcut_used", {
           shortcut: e.metaKey ? "cmd_k" : "ctrl_k",
         });
       }
@@ -171,7 +157,7 @@ export const AddTimezone: React.FC<AddTimezoneProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () =>
       window.removeEventListener("keydown", handleKeyDown);
-  }, [posthog]);
+  }, [capture]);
 
   const handleSelect = useCallback(
     (result: SearchResult) => {
@@ -231,22 +217,19 @@ export const AddTimezone: React.FC<AddTimezoneProps> = ({
     if (trimmed.length < 3) return;
     if (!noResults) return;
 
-    const sanitized = sanitizeQuery(trimmed);
-    if (!sanitized || sanitized.length < 2) return;
-    if (lastNoResultQuery.current === sanitized) return;
+    if (lastNoResultQuery.current === trimmed) return;
 
     const timer = window.setTimeout(() => {
-      lastNoResultQuery.current = sanitized;
-      const words = sanitized.split(" ").filter(Boolean);
-      posthog?.capture("timezone_search_no_results", {
-        query_sanitized: sanitized,
+      lastNoResultQuery.current = trimmed;
+      const words = trimmed.split(/\s+/).filter(Boolean);
+      capture("timezone_search_no_results", {
         query_length: trimmed.length,
         query_words: words.length,
       });
     }, 700);
 
     return () => window.clearTimeout(timer);
-  }, [search, noResults, posthog]);
+  }, [search, noResults, capture]);
 
   return (
     <div className="relative w-full md:w-[24.5em] h-full" ref={wrapperRef}>

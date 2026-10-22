@@ -13,9 +13,6 @@ class ResizeObserverStub {
 }
 vi.stubGlobal("ResizeObserver", ResizeObserverStub);
 
-vi.mock("@posthog/react", () => ({
-  usePostHog: () => null,
-}));
 
 vi.mock("motion/react", () => ({
   motion: {

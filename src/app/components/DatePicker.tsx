@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useLayoutEffect } from "react";
 import { CalendarDays, X } from "lucide-react";
-import { usePostHog } from "@posthog/react";
+import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { addCalendarDays, calendarDifference, formatCalendarDate, getZonedFields, LIVE_SELECTION, startOfCalendarDate, type DateSelection } from "../../utils/calendarDate";
 import { motion, AnimatePresence } from "motion/react";
 import { EASE_OUT } from "../../utils/animation";
@@ -19,7 +19,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   now,
   homeTimezone,
 }) => {
-  const posthog = usePostHog();
+  const { capture } = useAnalytics();
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -50,7 +50,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
   const handleStripSelect = (offset: number) => {
     onSelectDate(offset === 0 ? LIVE_SELECTION : { mode: "date", date: addCalendarDays(homeToday, offset) });
-    posthog?.capture("date_selected_strip", { date_offset: offset });
+    capture("date_selected_strip", { date_offset: offset });
   };
 
   const handleCalendarSelect = useCallback(
@@ -60,9 +60,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       const monthDistance = (Number(pickedDate.slice(0, 4)) - Number(homeToday.slice(0, 4))) * 12 +
         Number(pickedDate.slice(5, 7)) - Number(homeToday.slice(5, 7));
       onSelectDate(next);
-      posthog?.capture("date_selected_calendar", { date_offset: offset, month_distance: monthDistance });
+      capture("date_selected_calendar", { date_offset: offset, month_distance: monthDistance });
     },
-    [onSelectDate, posthog, homeToday],
+    [onSelectDate, capture, homeToday],
   );
 
   const handleCalendarClose = useCallback(
@@ -74,9 +74,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         | "today_button",
     ) => {
       setIsCalendarOpen(false);
-      posthog?.capture("calendar_closed", { method });
+      capture("calendar_closed", { method });
     },
-    [posthog],
+    [capture],
   );
 
   const toggleCalendar = () => {
@@ -84,7 +84,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       setIsCalendarOpen(false);
     } else {
       setIsCalendarOpen(true);
-      posthog?.capture("calendar_opened");
+      capture("calendar_opened");
     }
   };
 
@@ -189,7 +189,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           type="button"
           onClick={() => {
             onSelectDate(LIVE_SELECTION);
-            posthog?.capture("date_selected_strip", { date_offset: 0 });
+            capture("date_selected_strip", { date_offset: 0 });
           }}
           aria-label="Back to today"
           className="flex items-center gap-[0.25em] px-[0.5em] py-[0.25em] bg-[var(--dt-accent-wash)] border border-[var(--dt-accent-70)] rounded-md flex-shrink-0 h-full transition-all duration-200 text-[var(--dt-accent)] hover:bg-[var(--dt-accent-70)] hover:text-[var(--dt-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)]"

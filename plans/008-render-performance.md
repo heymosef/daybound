@@ -60,6 +60,8 @@ Schedule the next absolute minute boundary with a self-adjusting timeout (not an
 
 ### Step 2: Stabilize derived data and profile
 
+Post007 correctness review identified additional work to measure here: CalendarDropdown resolves every viewed-month date even when closed; fixed previews repeat bounded start-of-date searches. Include both closed/open calendar and unchanged selected-date Intl counts in before/after evidence. Memoize stable date/zone results with bounded caches or skip hidden work. Date-glide/remount identity follows actual selected date/anchor, not a derived offset decrementing at midnight. Keep the fixed-date midnight regression.
+
 Memoize selected-day absolute Date by primitive timestamp/date/zone, memoize timezone IDs/Set, use functional callbacks so unchanged rows/search props stay stable. Cache pure rail conversions by hour anchor/zone/format/weekend, separate hover decoration and marker progress. Measure render/conversion counts with representative 1/10/25 rows under minute ticks, hover and settings changes. Read React best-practices guidance; avoid stale closure custom memo comparators or global unbounded caches.
 
 **Verify:** `npm test -- src/app/components/Timeline.test.tsx src/app/components/AddTimezone.test.tsx src/app/App.test.tsx src/utils/timeline.test.ts` → all correctness cases remain; measured redundant conversions/search scans reduced.
