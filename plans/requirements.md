@@ -4,20 +4,20 @@ This is the completion checklist for the user goal, not evidence that work is do
 
 | Requirement | Planned authoritative proof | Current state |
 |---|---|---|
-| Plans for all nine findings | 001–009 exist with current code, bounded scopes, commands, done criteria | Drafted |
-| Plans for optional features only | 010–011 exist, DEFERRED; no export/overlap feature source added | Drafted |
-| Recommended order and parallel work | README dependency/ownership table, followed in commits | Drafted |
+| Plans for all nine findings | 001–009 exist with current code, bounded scopes, commands, done criteria | Complete; numbered plans and dependency index reviewed |
+| Plans for optional features only | 010–011 exist, DEFERRED; no export/overlap feature source added | Complete; numbered plans and dependency index reviewed |
+| Recommended order and parallel work | README dependency/ownership table, followed in commits | Complete; numbered plans and dependency index reviewed |
 | Senior staff review using GPT-6 Astra / High | Requested model/effort spawn plus reviewer verdict before first source edit | APPROVED before source edits; staff-review.md |
 | Material assumptions resolved | Four direct user answers recorded in README; any new product blocker asked before dependent work | Initial decisions resolved |
-| Verification baseline | Typecheck/lint configs cover source/tests/configs, repaired specific selectors, PR/Pages check gates | Pending |
-| Dependency security/runtime | Supported local Node24 command evidence; clean npm ci; npm ls; high/critical audit zero; least-privilege workflows; update config | Pending |
-| Stable calendar navigation | Render/rerender regressions with now changing, reopen selected month; browser flow | Pending |
-| Correct fractional/DST rail | Model and rendered tests prove exact anchor, 25 elapsed-hour cells, precise fractional boundaries, UTC/fractional labels, DST gaps/repeats | Pending |
-| Robust persistence | Real App/hook tests for malformed/legacy/blocked/quota cases; valid data preserved; truthful failure notice | Pending |
-| Minimal analytics and durable opt-out | Initialization and whole-payload tests; no free text/default URL leakage; no replay/log/autocapture; in-flight requests aborted and no delayed dispatch; dev/no-config/blocked-storage safe | Pending |
-| Fixed calendar date semantics | Actual App midnight/home-zone integration tests; fixed today remains preview; past/Today action/reload goes live | Pending |
-| Performance optimization with evidence | Clock behavioral tests, meaningful conversion/render counts, before/after gzip and font waterfall/decision notes | Pending |
-| Cleanup/onboarding | No debug log/scaffold/unused helper/culori, useful README/env example/AGENTS; no private values | Pending |
+| Verification baseline | Typecheck/lint configs cover source/tests/configs, repaired specific selectors, PR/Pages check gates | 238ff08; bootstrap evidence/review; final gates pending |
+| Dependency security/runtime | Supported local Node24 command evidence; clean npm ci; npm ls; high/critical audit zero; least-privilege workflows; update config | 238ff08; clean install/audit/npm ls verified; final repeat pending |
+| Stable calendar navigation | Render/rerender regressions with now changing, reopen selected month; browser flow | fa5d857; calendar lifecycle tests reviewed; browser pending |
+| Correct fractional/DST rail | Model and rendered tests prove exact anchor, 25 elapsed-hour cells, precise fractional boundaries, UTC/fractional labels, DST gaps/repeats | 7bf6d4f +6069064; rendered/model matrices; staff APPROVED; browser pending |
+| Robust persistence | Real App/hook tests for malformed/legacy/blocked/quota cases; valid data preserved; truthful failure notice | 94ec757; real App/parser/hook recovery tests reviewed; browser pending |
+| Minimal analytics and durable opt-out | Initialization and whole-payload tests; no free text/default URL leakage; no replay/log/autocapture; in-flight requests aborted and no delayed dispatch; dev/no-config/blocked-storage safe | cc10f91,0581ef8,bb1c2db; actual envelope/cancellation/lifecycle tests; staff APPROVED; browser pending |
+| Fixed calendar date semantics | Actual App midnight/home-zone integration tests; fixed today remains preview; past/Today action/reload goes live | c4bf6e2 +6069064; actual App state transitions; staff APPROVED; browser pending |
+| Performance optimization with evidence | Clock behavioral tests, meaningful conversion/render counts, before/after gzip and font waterfall/decision notes | 008 focused tests/profile complete; final source review and font observation pending |
+| Cleanup/onboarding | No debug log/scaffold/unused helper/culori, useful README/env example/AGENTS; no private values | 55008f1; actual cleanup/docs/harness inspected; staff APPROVED; integration pending |
 | Full integrated verification | One complete final supported-runtime typecheck/lint/test/build/audit run; timezone matrix; browser desktop/mobile checklist | Pending |
 | Review actual implementation | Full source diff/test inspection, staff verdict, resolutions of actionable findings | Pending |
 | Commits stay local | Worktree branch/log/status evidence; no pushes/PR/deployment; original checkout untouched except plans | Pending |
