@@ -1,3 +1,4 @@
+import { offlineAnalyticsOptions, createFetchMock } from "../test/analytics";
 import React from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -301,12 +302,29 @@ describe("App fixed calendar selection lifecycle", () => {
     render(<App />);
     expectView("live", "2026-03-02T23:59:50.000Z");
   });
+
+  it("falls back to live with feedback when a home-city change makes the selected date unavailable", () => {
+    vi.setSystemTime(new Date("2011-12-29T12:00:00Z"));
+    localStorage.clear();
+    localStorage.setItem("timezone_config", JSON.stringify([
+      { id: "utc", timezone: "UTC", isHome: true },
+      { id: "apia", timezone: "Pacific/Apia", isHome: false },
+    ]));
+    const { unmount } = render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "30 Dec" }));
+    expect(document.querySelector("[data-preview-instant]")).toHaveAttribute("data-preview-instant", "2011-12-30T00:00:00.000Z");
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "apia" } });
+    expect(document.querySelector("[data-date-mode]")).toHaveAttribute("data-date-mode", "live");
+    expect(document.querySelector("[data-preview-instant]")).toHaveAttribute("data-preview-instant", "2011-12-29T12:00:00.000Z");
+    expect(screen.getByText("This date does not exist in the home timezone. Choose another date.")).toHaveAttribute("role", "status");
+    unmount();
+  });
 });
 
-
 describe("App minimal analytics transport integration", () => {
-  const options = { token: "phc_offline_fixture", host: "https://analytics.example.invalid", production: true, hostname: "daybound.example.invalid", doNotTrack: () => false };
-  const request = vi.fn<typeof fetch>();
+  const options = offlineAnalyticsOptions();
+  let request: ReturnType<typeof createFetchMock>;
   const privateLabel = "PrivateDashboardAccount Orchid8472";
   const privateRename = "PrivateCustomerPayroll Tanager3819";
   let originalURL: string;
@@ -321,7 +339,7 @@ describe("App minimal analytics transport integration", () => {
     originalTitle = document.title;
     window.history.replaceState({}, "", "/PrivateDashboardPath?account=PrivateAccountQuery#PrivateHash");
     document.title = "PrivateDashboardTitle";
-    request.mockReset().mockResolvedValue(new Response(null, { status: 200 }));
+    request = createFetchMock();
     vi.stubGlobal("fetch", request);
   });
   afterEach(() => {

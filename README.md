@@ -27,7 +27,7 @@ npm audit --audit-level=high
 python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
 ```
 
-Open [the local production build](http://127.0.0.1:4173). Analytics is disabled on loopback hosts. The offline browser fixtures use a separate port and output directory; see [fixture instructions](plans/browser-fixtures.md). The primary validation owner runs the complete suite once on the integrated candidate; other work uses focused checks.
+Open [the local production build](http://127.0.0.1:4173). Analytics is disabled on loopback hosts. The offline browser fixtures use a separate port and output directory; see [fixture instructions](docs/browser-testing.md). The primary validation owner runs the complete suite once on the integrated candidate; other work uses focused checks.
 
 ## Dates and local saving
 
@@ -60,7 +60,11 @@ The existing Pages workflow validates and builds `dist/`, then publishes it on m
 - `src/utils/`: Calendar, timeline, persistence and timezone helpers.
 - `src/analytics/`: Minimal usage transport and React provider.
 - `scripts/browser-fixtures.mjs`: Ignored offline smoke-page generator.
-- `plans/`: Approved maintenance plans and validation evidence. Plans010/011 remain deferred designs.
+- `docs/`: Current behavior, analytics reports, timezone updates and browser testing.
+- `plans/`: The two deferred feature designs; completed-work history is retained in Git.
+
+See [maintenance decisions](docs/maintenance-decisions.md) for behavior to preserve
+and verification limits.
 
 ## Timeline exploration and timezone updates
 

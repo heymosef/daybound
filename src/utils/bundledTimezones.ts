@@ -1,3 +1,4 @@
+import { utcOffsetLabel } from "./formatOffset";
 import { Instant, ZoneId, type ZoneRules } from "@js-joda/core";
 import "@js-joda/timezone";
 import metadata from "./timezoneAliases.json";
@@ -30,13 +31,6 @@ export function canonicalTimezone(value: unknown): string | undefined {
 const commonNames = ["UTC", ...zoneNames.filter(name => /^(Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Europe|Indian|Pacific)\//.test(name)).sort()];
 export const getTimezoneNames = () => commonNames;
 
-export function utcOffsetLabel(offsetSeconds: number): string {
-  const absolute = Math.abs(offsetSeconds);
-  const hours = String(Math.floor(absolute / 3600)).padStart(2, "0");
-  const minutes = String(Math.floor(absolute % 3600 / 60)).padStart(2, "0");
-  const seconds = absolute % 60;
-  return `UTC${offsetSeconds < 0 ? "-" : "+"}${hours}:${minutes}${seconds ? `:${String(seconds).padStart(2, "0")}` : ""}`;
-}
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // Official naming announcement: https://news.gov.bc.ca/releases/2026CITZ0009-001073
 const PCT_NAMED_FROM = Date.parse("2026-09-17T07:00:00Z");

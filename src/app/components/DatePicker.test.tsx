@@ -2,17 +2,7 @@ import React from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DatePicker } from "./DatePicker";
-import { format, addDays, startOfDay } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
 import { addCalendarDays, getZonedFields } from "../../utils/calendarDate";
-
-class ResizeObserverStub {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-vi.stubGlobal("ResizeObserver", ResizeObserverStub);
-
 
 vi.mock("motion/react", () => ({
   motion: {
@@ -79,10 +69,7 @@ function renderDatePicker(
 describe("DatePicker strip", () => {
   it("renders 7 day buttons", () => {
     renderDatePicker();
-    const dayButtons = screen.getAllByRole("button").filter(
-      (btn) => !btn.getAttribute("aria-label")?.includes("calendar"),
-    );
-    expect(dayButtons.length).toBeGreaterThanOrEqual(7);
+    expect(within(screen.getByRole("group", { name: "Next seven days" })).getAllByRole("button")).toHaveLength(7);
   });
 
   it("shows TODAY pill when today is selected", () => {
@@ -132,16 +119,8 @@ describe("DatePicker strip", () => {
     const user = userEvent.setup();
     const { onSelectDate } = renderDatePicker();
 
-    const tomorrow = addDays(NOW, 1);
-    const tomorrowDay = String(tomorrow.getDate());
-    const dayButtons = screen
-      .getAllByRole("button")
-      .filter((btn) => btn.textContent?.includes(tomorrowDay));
-
-    if (dayButtons.length > 0) {
-      await user.click(dayButtons[0]);
-      expect(onSelectDate).toHaveBeenCalledWith({ mode: "date", date: "2026-03-03" });
-    }
+    await user.click(screen.getByRole("button", { name: "3 Mar" }));
+    expect(onSelectDate).toHaveBeenCalledExactlyOnceWith({ mode: "date", date: "2026-03-03" });
   });
 
   it("applies selected styling to the active offset", () => {
@@ -164,7 +143,7 @@ describe("Calendar dropdown", () => {
     await user.click(calendarButton);
     expect(calendarButton).toHaveAttribute("aria-expanded", "true");
 
-    expect(screen.getByText(format(NOW, "MMMM yyyy"))).toBeInTheDocument();
+    expect(screen.getByText("March 2026")).toBeInTheDocument();
   });
 
   it("shows current month with navigation arrows", async () => {
@@ -191,7 +170,7 @@ describe("Calendar dropdown", () => {
       screen.getByRole("button", { name: /open calendar/i }),
     );
 
-    const todayLabel = format(NOW, "EEEE, MMMM d, yyyy");
+    const todayLabel = "Monday, March 2, 2026";
     const todayCell = screen.getByRole("button", {
       name: todayLabel,
     });
@@ -206,17 +185,10 @@ describe("Calendar dropdown", () => {
       screen.getByRole("button", { name: /open calendar/i }),
     );
 
-    const yesterday = addDays(NOW, -1);
-    const yesterdayLabel = format(yesterday, "EEEE, MMMM d, yyyy");
-    const yesterdayCell = screen.queryByRole("button", {
-      name: yesterdayLabel,
-    });
-
-    if (yesterdayCell) {
-      expect(yesterdayCell).toHaveAttribute("aria-disabled", "true");
-      await user.click(yesterdayCell);
-      expect(onSelectDate).not.toHaveBeenCalled();
-    }
+    const yesterdayCell = screen.getByRole("button", { name: "Sunday, March 1, 2026" });
+    expect(yesterdayCell).toHaveAttribute("aria-disabled", "true");
+    await user.click(yesterdayCell);
+    expect(onSelectDate).not.toHaveBeenCalled();
   });
 
   it("selects a future date and closes the dropdown", async () => {
@@ -227,8 +199,7 @@ describe("Calendar dropdown", () => {
       screen.getByRole("button", { name: /open calendar/i }),
     );
 
-    const futureDate = addDays(NOW, 5);
-    const futureLabel = format(futureDate, "EEEE, MMMM d, yyyy");
+    const futureLabel = "Saturday, March 7, 2026";
     const futureCell = screen.getByRole("button", {
       name: futureLabel,
     });
@@ -255,9 +226,8 @@ describe("Calendar dropdown", () => {
     });
     await user.click(nextMonthButton);
 
-    const nextMonth = addDays(NOW, 31);
     expect(
-      screen.getByText(format(nextMonth, "MMMM yyyy")),
+      screen.getByText("April 2026"),
     ).toBeInTheDocument();
 
     expect(
@@ -307,11 +277,9 @@ describe("Calendar dropdown", () => {
 describe("Viewing label for far-future dates", () => {
   it("shows viewing label when selectedDateOffset > 6", () => {
     renderDatePicker({ selectedDateOffset: 14 });
-    const homeToday = startOfDay(toZonedTime(NOW, "UTC"));
-    const expectedDate = addDays(homeToday, 14);
     const backButton = screen.getByRole("button", { name: /back to today/i });
-    expect(within(backButton).getByText(String(expectedDate.getDate()))).toBeInTheDocument();
-    expect(within(backButton).getByText(format(expectedDate, "MMM"))).toBeInTheDocument();
+    expect(within(backButton).getByText("16")).toBeInTheDocument();
+    expect(within(backButton).getByText("Mar")).toBeInTheDocument();
   });
 
   it("hides viewing label when selectedDateOffset <= 6", () => {
@@ -350,8 +318,7 @@ describe("Timezone-aware date handling", () => {
       screen.getByRole("button", { name: /open calendar/i }),
     );
 
-    const sydneyToday = startOfDay(toZonedTime(TZ_NOW, "Australia/Sydney"));
-    const todayLabel = format(sydneyToday, "EEEE, MMMM d, yyyy");
+    const todayLabel = "Tuesday, March 3, 2026";
     const todayCell = screen.getByRole("button", { name: todayLabel });
     expect(todayCell.className).toContain("bg-[var(--dt-accent)]");
   });
@@ -367,18 +334,10 @@ describe("Timezone-aware date handling", () => {
       screen.getByRole("button", { name: /open calendar/i }),
     );
 
-    const sydneyToday = startOfDay(toZonedTime(TZ_NOW, "Australia/Sydney"));
-    const yesterday = addDays(sydneyToday, -1);
-    const yesterdayLabel = format(yesterday, "EEEE, MMMM d, yyyy");
-    const yesterdayCell = screen.queryByRole("button", {
-      name: yesterdayLabel,
-    });
-
-    if (yesterdayCell) {
-      expect(yesterdayCell).toHaveAttribute("aria-disabled", "true");
-      await user.click(yesterdayCell);
-      expect(onSelectDate).not.toHaveBeenCalled();
-    }
+    const yesterdayCell = screen.getByRole("button", { name: "Monday, March 2, 2026" });
+    expect(yesterdayCell).toHaveAttribute("aria-disabled", "true");
+    await user.click(yesterdayCell);
+    expect(onSelectDate).not.toHaveBeenCalled();
   });
 
   it("viewing label shows correct date in home timezone", () => {
@@ -387,11 +346,9 @@ describe("Timezone-aware date handling", () => {
       homeTimezone: "Australia/Sydney",
       selectedDateOffset: 14,
     });
-    const sydneyToday = startOfDay(toZonedTime(TZ_NOW, "Australia/Sydney"));
-    const expectedDate = addDays(sydneyToday, 14);
     const backButton = screen.getByRole("button", { name: /back to today/i });
-    expect(within(backButton).getByText(String(expectedDate.getDate()))).toBeInTheDocument();
-    expect(within(backButton).getByText(format(expectedDate, "MMM"))).toBeInTheDocument();
+    expect(within(backButton).getByText("17")).toBeInTheDocument();
+    expect(within(backButton).getByText("Mar")).toBeInTheDocument();
   });
 });
 

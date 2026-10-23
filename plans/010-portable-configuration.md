@@ -5,15 +5,15 @@
 - Category: direction/design; priority P3.
 - Planned at: b77ff08, 2026-10-22.
 - Status: DEFERRED — planning only, as explicitly selected by the user.
-- Depends on: 005, 009.
+- Depends on the existing validated storage/recovery layer in `src/utils/persistence.ts`.
 - Repository: /Users/mohammed/Documents/Cursor/daybound-web-app.
 - Worktree for future implementation: /Users/mohammed/.codex/worktrees/daybound-maintenance/daybound-web-app.
 
 ## Current state and intent
 
-The user explicitly deferred implementation. Current App persists timezone_config/app_settings/local_save_notice_dismissed in localStorage; there is no import/export UI. Reuse the validated schema/migration layer from005.
+The user explicitly deferred implementation. Current App persists timezone_config/app_settings/local_save_notice_dismissed in localStorage; there is no import/export UI. Reuse the validated schema/migration layer in `src/utils/persistence.ts`.
 
-Daybound uses React18, date-fns3/date-fns-tz3, Tailwind theme variables and localStorage. Existing Testing Library/Vitest patterns are in src/app/App.test.tsx and DatePicker.test.tsx. Retain device-local operation, keyboard focus, theme tokens and reduced-motion behavior.
+Daybound uses React18, bundled IANA timezone rules, Tailwind theme variables and localStorage. Existing Testing Library/Vitest patterns are in src/app/App.test.tsx and DatePicker.test.tsx. Retain device-local operation, keyboard focus, theme tokens and reduced-motion behavior.
 
 ## Proposed scope and design investigation
 
@@ -23,7 +23,7 @@ Potential source scope, subject to a future approved implementation plan: src/ut
 
 ## Steps for the future owner
 
-1. Reconcile against current HEAD and completed predecessor plans using git diff; read live validators/time helpers. Do not copy stale audit snippets as implementation.
+1. Reconcile against current HEAD using git diff; read live validators/time helpers and `docs/maintenance-decisions.md`. Do not copy stale audit snippets as implementation.
 2. Ask the unresolved product-policy questions above, with concrete examples and a recommended small initial contract. Do not assume answers or implement while questions are pending.
 3. Write a self-contained final API/UX specification, schema migration and regression matrix; obtain staff review.
 4. Only after explicit implementation authorization, use an isolated local worktree/branch, implement focused commits, and run the stated gates. No pushes, public issues/PRs or deployment.

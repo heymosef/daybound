@@ -45,7 +45,7 @@ unless the user explicitly requests that exact configuration change.
 Use Node24 (see `.nvmrc`) and npm with `npm ci`. Commands: `npm run dev`,
 `npm run typecheck`, `npm run lint`, `npm test`, and `npm run build`.
 `node scripts/browser-fixtures.mjs` builds ignored offline browser fixtures;
-see README and `plans/browser-fixtures.md`. Keep fixture controls out of product
+see README and `docs/browser-testing.md`. Keep fixture controls out of product
 code. Never use real analytics credentials for verification.
 
 For this maintenance effort, work in the assigned isolated worktree and make

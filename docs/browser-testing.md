@@ -80,8 +80,8 @@ imports are blocked; integrated local fonts can load from the same fixture origi
 No live analytics key or host is read or embedded by the generator.
 
 This harness prepares offline verification. It is not evidence of completed
-browser smoke, live ingestion, deployment, or remote CI. Primary records actual
-desktop/mobile CUA results in the final validation evidence.
+browser smoke, live ingestion, deployment, or remote CI. Record actual desktop/mobile observations with the change being verified.
+See [maintenance decisions and verification limits](maintenance-decisions.md).
 
 ## BC permanent-time regression
 

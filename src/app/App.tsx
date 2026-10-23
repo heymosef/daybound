@@ -19,7 +19,7 @@ import {
   AppSettings,
   getCityName,
 } from "../utils/timezoneUtils";
-import { LIVE_SELECTION, calendarDifference, getZonedFields, isCalendarDate, startOfCalendarDate, type DateSelection } from "../utils/calendarDate";
+import { LIVE_SELECTION, calendarDifference, getZonedFields, HOUR_MS, isCalendarDate, startOfCalendarDate, type DateSelection } from "../utils/calendarDate";
 import { TimezoneRow } from "./components/TimezoneRow";
 import { AddTimezone } from "./components/AddTimezone";
 import { DatePicker } from "./components/DatePicker";
@@ -144,15 +144,15 @@ function applySystemBarColor(color: string) {
 
 function App() {
   const now = useTime();
-  const [timezones, setTimezones, timezonesLoading, timezonePersistence] =
+  const [timezones, setTimezones, timezonePersistence] =
     usePersistentState<TimezoneConfig[]>("timezone_config", [], parseTimezoneConfig);
-  const [settings, setSettings, settingsLoading, settingsPersistence] =
+  const [settings, setSettings, settingsPersistence] =
     usePersistentState<AppSettings>(
       "app_settings",
       DEFAULT_SETTINGS,
       parseAppSettings,
     );
-  const [localSaveNoticeDismissed, setLocalSaveNoticeDismissed, , noticePersistence] =
+  const [localSaveNoticeDismissed, setLocalSaveNoticeDismissed, noticePersistence] =
     usePersistentState<boolean>(
       "local_save_notice_dismissed",
       false,
@@ -258,7 +258,7 @@ function App() {
   // Follow the shared rail's reference instant without changing its anchor.
   // Selecting a date remains an explicit action that resets the pan position.
   const surfacedSelection: DateSelection = exploration
-    ? { mode: "date", date: getZonedFields(new Date(exploration.base + exploration.hours * 3_600_000), homeTimezone).date }
+    ? { mode: "date", date: getZonedFields(new Date(exploration.base + exploration.hours * HOUR_MS), homeTimezone).date }
     : isLive ? LIVE_SELECTION : selection;
   const baseTime = displayTime.getTime();
   const handlePanTimeline = useCallback((delta: number) => {
@@ -296,7 +296,7 @@ function App() {
 
   // Initialize default timezone if empty
   useEffect(() => {
-    if (!timezonesLoading && !initialized) {
+    if (!initialized) {
       if (timezones.length === 0) {
         try {
           const localZone =
@@ -314,7 +314,6 @@ function App() {
       setInitialized(true);
     }
   }, [
-    timezonesLoading,
     timezones.length,
     initialized,
     setTimezones,
@@ -402,21 +401,6 @@ function App() {
       }
     }
   }, [capture, setTimezones, timezones]);
-
-  if (timezonesLoading || settingsLoading) {
-    return (
-      <>
-        <div
-          className="fixed inset-0 bg-[var(--dt-bg)]"
-          style={{ zIndex: -1 }}
-          aria-hidden="true"
-        />
-        <div className="min-h-dvh flex items-center justify-center bg-[var(--dt-bg)]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--dt-accent)]"></div>
-        </div>
-      </>
-    );
-  }
 
   // Render main app
   return (

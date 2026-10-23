@@ -1,4 +1,4 @@
-import { utcOffsetLabel } from "../../utils/bundledTimezones";
+import { utcOffsetLabel } from "../../utils/formatOffset";
 import React, { useState, useMemo } from "react";
 import { formatCalendarDate, getZonedFields } from "../../utils/calendarDate";
 import { formatClock, dayPeriod } from "../../utils/timeline";

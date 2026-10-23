@@ -139,4 +139,4 @@ await build({
 await copyFile(path.join(project, "public/city-data-credits.html"), path.join(output, "city-data-credits.html"));
 console.log(`Offline fixture built at ${output}/index.html`);
 console.log(`Serve: python3 -m http.server 4174 --bind 127.0.0.1 --directory ${output}`);
-console.log("Open http://127.0.0.1:4174/?scenario=midnight&analytics=on (see plans/browser-fixtures.md)");
+console.log("Open http://127.0.0.1:4174/?scenario=midnight&analytics=on (see docs/browser-testing.md)");

@@ -1,3 +1,4 @@
+import { utcOffsetLabel } from "./formatOffset";
 import { calendarDateTransitions, formatCalendarDate, getZonedFields, HOUR_MS } from "./calendarDate";
 
 export const TOTAL_HOURS = 25;
@@ -16,14 +17,6 @@ export function formatZonedClock(instant: Date, timezone: string, use24Hour: boo
   const fields = getZonedFields(instant, timezone);
   return `${formatClock(fields, use24Hour, true, pad24)}${use24Hour ? "" : ` ${dayPeriod(fields)}`}`;
 }
-export function formatOffset(offsetSeconds: number): string {
-  const absolute = Math.abs(offsetSeconds);
-  const hours = String(Math.floor(absolute / 3600)).padStart(2, "0");
-  const minutes = String(Math.floor(absolute % 3600 / 60)).padStart(2, "0");
-  const seconds = absolute % 60;
-  return `UTC${offsetSeconds < 0 ? "-" : "+"}${hours}:${minutes}${seconds ? `:${String(seconds).padStart(2, "0")}` : ""}`;
-}
-
 export function createTimeline(instant: Date, timezone: string, isLive: boolean, use24Hour = false) {
   const epoch = instant.getTime();
   const anchor = isLive ? Math.floor(epoch / HOUR_MS) * HOUR_MS : epoch;
@@ -38,7 +31,7 @@ export function createTimeline(instant: Date, timezone: string, isLive: boolean,
       label: formatClock(fields, use24Hour, false), period: dayPeriod(fields).toLowerCase(),
       isNight: fields.hour < 7 || fields.hour >= 19,
       isWeekend: fields.weekday === "Sat" || fields.weekday === "Sun",
-      description: `${fields.date} ${formatClock(fields, true)} ${formatOffset(fields.offsetSeconds)} (${new Date(time).toISOString()})`,
+      description: `${fields.date} ${formatClock(fields, true)} ${utcOffsetLabel(fields.offsetSeconds)} (${new Date(time).toISOString()})`,
     };
   });
 

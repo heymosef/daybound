@@ -1,4 +1,5 @@
-import { createTimeline, formatOffset, formatZonedClock } from "./timeline";
+import { utcOffsetLabel } from "./formatOffset";
+import { createTimeline, formatZonedClock } from "./timeline";
 import { getZonedFields, startOfCalendarDate } from "./calendarDate";
 
 it("uses the same UTC-hour live anchor and elapsed progress for every row", () => {
@@ -93,9 +94,9 @@ it("keeps both Lord Howe half-hour shift labels", () => {
   expect(fall.cells[2].label).toBe("1:30");
 });
 it("formats fractional and historical second offsets explicitly", () => {
-  expect(formatOffset(20700)).toBe("UTC+05:45");
-  expect(formatOffset(-12600)).toBe("UTC-03:30");
-  expect(formatOffset(19828)).toBe("UTC+05:30:28");
+  expect(utcOffsetLabel(20700)).toBe("UTC+05:45");
+  expect(utcOffsetLabel(-12600)).toBe("UTC-03:30");
+  expect(utcOffsetLabel(19828)).toBe("UTC+05:30:28");
 });
 
 it.each([

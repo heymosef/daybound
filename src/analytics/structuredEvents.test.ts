@@ -1,15 +1,16 @@
+import { offlineAnalyticsOptions, createFetchMock } from "../test/analytics";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createAnalytics, type AnalyticsController } from "./analytics";
 
-const request = vi.fn<typeof fetch>();
+let request: ReturnType<typeof createFetchMock>;
 let controller: AnalyticsController;
 const flags = { $process_person_profile: false, $geoip_disable: true };
 const privateText = "Private payroll office";
 beforeEach(() => {
   localStorage.clear();
-  request.mockReset().mockResolvedValue(new Response(null, { status: 200 }));
+  request = createFetchMock();
   vi.stubGlobal("fetch", request);
-  controller = createAnalytics({ token: "phc_offline_fixture", host: "https://analytics.invalid", production: true, hostname: "app.invalid", doNotTrack: () => false });
+  controller = createAnalytics(offlineAnalyticsOptions({ host: "https://analytics.invalid", hostname: "app.invalid" }));
   controller.start();
 });
 afterEach(() => { controller.dispose(); vi.unstubAllGlobals(); });

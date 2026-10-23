@@ -1,4 +1,4 @@
-import { addCalendarDays, addCalendarMonths, calendarDifference, calendarMonthDays, getZonedFields, isCalendarDate, resolveDateSelection, startOfCalendarDate } from "./calendarDate";
+import { addCalendarDays, addCalendarMonths, calendarDifference, calendarMonthDays, getZonedFields, isCalendarDate, startOfCalendarDate } from "./calendarDate";
 
 it.each(["2026-02-29", "2026-13-01", "2026-00-01", "2026-03-00", "0000-01-01", "2026-3-01", "garbage"])("rejects invalid key %s", (key) => expect(isCalendarDate(key)).toBe(false));
 it("uses UTC calendar fields for leap days and month/year arithmetic", () => {
@@ -34,16 +34,7 @@ it.each([
 });
 it("rejects an entirely skipped date rather than choosing a different day", () => {
   expect(startOfCalendarDate("2011-12-30", "Pacific/Apia")).toBeNull();
-  expect(resolveDateSelection({ mode: "date", date: "2011-12-30" }, new Date("2011-12-29T00:00:00Z"), "Pacific/Apia")).toMatchObject({ isLive: true, unavailable: true });
 });
-it("preserves a fixed date across midnight, home changes and equal-today; only past becomes live", () => {
-  const selection = { mode: "date", date: "2026-03-08" } as const;
-  expect(resolveDateSelection(selection, new Date("2026-03-07T23:59:59Z"), "UTC")).toMatchObject({ isLive: false, selectedDate: "2026-03-08", offset: 1 });
-  expect(resolveDateSelection(selection, new Date("2026-03-08T00:00:00Z"), "UTC")).toMatchObject({ isLive: false, selectedDate: "2026-03-08", offset: 0 });
-  expect(resolveDateSelection(selection, new Date("2026-03-08T00:00:00Z"), "Pacific/Honolulu")).toMatchObject({ isLive: false, selectedDate: "2026-03-08", offset: 1 });
-  expect(resolveDateSelection(selection, new Date("2026-03-09T00:00:00Z"), "UTC").isLive).toBe(true);
-});
-
 // These fixtures come from explicit-zone Intl fields, including the one-minute
 // appearance before a rollback crosses back to the previous calendar date.
 it.each([

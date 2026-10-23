@@ -1,3 +1,4 @@
+import { HOUR_MS } from "../../utils/calendarDate";
 import { useTimelineScrub } from "../../hooks/useTimelineScrub";
 import React, {
   useRef,
@@ -105,12 +106,12 @@ const TimelineInner: React.FC<TimelineProps> = ({
   }, [use24Hour]);
 
   const nowTime = now.getTime();
-  const viewTime = nowTime + panHours * 3_600_000;
+  const viewTime = nowTime + panHours * HOUR_MS;
   const realNow = currentTime?.getTime() ?? nowTime;
-  const anchorTime = isLive ? Math.floor(viewTime / 3_600_000) * 3_600_000 : nowTime + Math.floor(panHours) * 3_600_000;
+  const anchorTime = isLive ? Math.floor(viewTime / HOUR_MS) * HOUR_MS : nowTime + Math.floor(panHours) * HOUR_MS;
   // A row retains one exact frame; hover, minute progress and formatting do not reconvert its 25 cells.
   const model = useMemo(() => createTimeline(new Date(anchorTime), timezone, isLive), [anchorTime, timezone, isLive]);
-  const progress = (viewTime - model.start) / 3_600_000;
+  const progress = (viewTime - model.start) / HOUR_MS;
   const nowFractionPercent = progress / TOTAL_HOURS * 100;
   const railLeft = isLive ? "50%" : "0%";
   const railTransform = `translateX(${-nowFractionPercent}%)`;
@@ -122,7 +123,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
     dims.inner > 0 ? dims.inner / TOTAL_HOURS : 0;
 
   const railOffset = (isLive ? dims.outer / 2 : 0) - progress * cellWidth;
-  const markerLeftPx = railOffset + (realNow - model.start) / 3_600_000 * cellWidth;
+  const markerLeftPx = railOffset + (realNow - model.start) / HOUR_MS * cellWidth;
   useTimelineScrub(outerRef, cellWidth, onPan, onReset);
 
   const LABEL_WIDTH_ESTIMATE = 80;
@@ -323,7 +324,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
         >
           {model.cells.map((cell) => {
             const { index } = cell;
-            const isCurrentHour = isLive && Math.floor((realNow - model.start) / 3_600_000) === index;
+            const isCurrentHour = isLive && Math.floor((realNow - model.start) / HOUR_MS) === index;
             const isHovered = hoveredHourIndex === index;
             const isNight = cell.isNight;
             const isMidnight = model.boundaries.some((boundary) => boundary.time === cell.time);

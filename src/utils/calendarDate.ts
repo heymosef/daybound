@@ -114,17 +114,3 @@ export function startOfCalendarDate(key: string, timezone: string): Date | null 
   const first = boundaries.find((time) => getZonedFields(time, timezone).date === key);
   return first === undefined ? null : new Date(first);
 }
-
-export function resolveDateSelection(selection: DateSelection, now: Date, timezone: string) {
-  const today = getZonedFields(now, timezone).date;
-  const selected = selection.mode === "date" ? selection.date : today;
-  const valid = isCalendarDate(selected);
-  const start = selection.mode === "date" && valid && selected >= today ? startOfCalendarDate(selected, timezone) : null;
-  const unavailable = selection.mode === "date" && valid && selected >= today && start === null;
-  const isLive = selection.mode === "live" || !valid || selected < today || unavailable;
-  return {
-    isLive, today, selectedDate: isLive ? today : selected,
-    offset: isLive ? 0 : calendarDifference(selected, today),
-    instant: isLive ? now : start!, unavailable,
-  };
-}

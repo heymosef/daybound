@@ -31,6 +31,5 @@ export function usePersistentState<T>(
     }));
   }, []);
 
-  // Preserve the existing loading tuple slot; status is an explicit fourth value.
-  return [snapshot.value, setValue, false, snapshot.status] as const;
+  return [snapshot.value, setValue, snapshot.status] as const;
 }

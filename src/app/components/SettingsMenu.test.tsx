@@ -1,3 +1,4 @@
+import { offlineAnalyticsOptions, createFetchMock } from "../../test/analytics";
 import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -6,11 +7,11 @@ import { AnalyticsProvider } from "../../analytics/AnalyticsProvider";
 import { ANALYTICS_PREFERENCE_KEY, createAnalytics, type AnalyticsOptions } from "../../analytics/analytics";
 import { DEFAULT_SETTINGS } from "../../utils/persistence";
 
-const OPTIONS = { token: "phc_offline_fixture", host: "https://analytics.example.invalid", production: true, hostname: "daybound.example.invalid", doNotTrack: () => false };
-const request = vi.fn<typeof fetch>();
+const OPTIONS = offlineAnalyticsOptions();
+let request: ReturnType<typeof createFetchMock>;
 beforeEach(() => {
   localStorage.clear();
-  request.mockReset().mockResolvedValue(new Response(null, { status: 200 }));
+  request = createFetchMock();
   vi.stubGlobal("fetch", request);
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });

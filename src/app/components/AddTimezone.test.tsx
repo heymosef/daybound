@@ -1,3 +1,4 @@
+import { offlineAnalyticsOptions, createFetchMock } from "../../test/analytics";
 import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -8,14 +9,14 @@ import { AnalyticsProvider } from "../../analytics/AnalyticsProvider";
 import { loadCityCatalog } from "../../analytics/searchCatalog";
 import { createAnalytics } from "../../analytics/analytics";
 
-const OPTIONS = { token: "phc_offline_fixture", host: "https://analytics.example.invalid", production: true, hostname: "daybound.example.invalid", doNotTrack: () => false };
+const OPTIONS = offlineAnalyticsOptions();
 const PRIVATE_QUERY = "PrivateZebraProject ConfidentialSearch-8472";
-const request = vi.fn<typeof fetch>();
+let request: ReturnType<typeof createFetchMock>;
 beforeAll(async () => { await loadCityCatalog(); });
 beforeEach(() => {
   vi.useFakeTimers();
   localStorage.clear();
-  request.mockReset().mockResolvedValue(new Response(null, { status: 200 }));
+  request = createFetchMock();
   vi.stubGlobal("fetch", request);
 });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
