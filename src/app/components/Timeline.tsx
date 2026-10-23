@@ -30,6 +30,8 @@ interface TimelineProps {
   currentTime?: Date;
   onPan?: (hours: number) => void;
   onReset?: () => void;
+  selectedTime?: number;
+  onSelectTime?: (instant: number) => void;
 }
 
 const LABEL_PAD = 0; // px – clamping offset from the container edge
@@ -49,6 +51,8 @@ const TimelineInner: React.FC<TimelineProps> = ({
   currentTime,
   onPan,
   onReset,
+  selectedTime,
+  onSelectTime,
 }) => {
   // ── Refs & measurement ──
   const outerRef = useRef<HTMLDivElement>(null);
@@ -124,6 +128,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
 
   const railOffset = (isLive ? dims.outer / 2 : 0) - progress * cellWidth;
   const markerLeftPx = railOffset + (realNow - model.start) / HOUR_MS * cellWidth;
+  const keyboardCell = model.cells[Math.max(0, Math.min(TOTAL_HOURS - 1, Math.floor(progress)))];
   useTimelineScrub(outerRef, cellWidth, onPan, onReset);
 
   const LABEL_WIDTH_ESTIMATE = 80;
@@ -162,8 +167,15 @@ const TimelineInner: React.FC<TimelineProps> = ({
       data-date-mode={isLive ? "live" : "date"}
       data-preview-instant={new Date(viewTime).toISOString()}
       role={onPan ? "region" : undefined}
-      aria-label={onPan ? `${label ?? timezone.split("/").pop()?.replace(/_/g, " ")} timeline. Drag horizontally or use arrow keys to explore; Home returns to now.` : undefined}
+      aria-label={onPan ? `${label ?? timezone.split("/").pop()?.replace(/_/g, " ")} timeline. Drag horizontally or use arrow keys to browse; Enter selects a time; Home returns to now.` : undefined}
+      aria-description={onSelectTime ? `Enter selects ${keyboardCell.description}` : undefined}
       tabIndex={onPan ? 0 : undefined}
+      onKeyDown={event => {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ") && onSelectTime) {
+          event.preventDefault();
+          onSelectTime(keyboardCell.time);
+        }
+      }}
       style={{ touchAction: onPan ? "pan-y pinch-zoom" : undefined }}
       className={twMerge(
         "overflow-hidden w-full h-full relative select-none",
@@ -212,7 +224,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
       {/* ── Current-time marker (overlay, fades in/out) ── */}
       {/* Tip 2: exit faster than enter; Tip 4: ease-out enter, ease-in exit */}
       <AnimatePresence>
-        {isLive && dims.outer > 0 && (
+        {(isLive || selectedTime !== undefined) && dims.outer > 0 && (
           <motion.div
             key="current-marker"
             data-testid="current-marker"
@@ -324,24 +336,33 @@ const TimelineInner: React.FC<TimelineProps> = ({
         >
           {model.cells.map((cell) => {
             const { index } = cell;
-            const isCurrentHour = isLive && Math.floor((realNow - model.start) / HOUR_MS) === index;
+            const isSelected = selectedTime !== undefined && selectedTime >= cell.time && selectedTime < cell.time + HOUR_MS;
+            const isCurrentHour = isSelected || (selectedTime === undefined && isLive && Math.floor((realNow - model.start) / HOUR_MS) === index);
             const isHovered = hoveredHourIndex === index;
             const isNight = cell.isNight;
             const isMidnight = model.boundaries.some((boundary) => boundary.time === cell.time);
             const isWeekend = showWeekends && cell.isWeekend;
 
             return (
-              <div
+              <button
+                type="button"
                 key={index}
-                role="group"
                 aria-label={cell.description}
+                aria-pressed={isSelected}
+                tabIndex={-1}
+                disabled={!onSelectTime}
+                onClick={() => {
+                  onSelectTime?.(cell.time);
+                  outerRef.current?.focus({ preventScroll: true });
+                }}
                 title={cell.description}
                 data-timeline-cell={index}
                 data-instant={new Date(cell.time).toISOString()}
+                data-selected={isSelected || undefined}
                 onMouseEnter={() => onHoverHour?.(index)}
                 onMouseLeave={() => onHoverHour?.(null)}
                 style={{
-                  background: isHovered
+                  background: isSelected || isHovered
                     ? "var(--dt-surface-highlight)"
                     : isNight
                       ? "var(--dt-night)"
@@ -352,6 +373,8 @@ const TimelineInner: React.FC<TimelineProps> = ({
                   "flex flex-col items-center justify-center",
                   "pb-[0.25em] pt-[0.5em] group/hour",
                   "border-l border-transparent transition-colors duration-75",
+                  isSelected && "ring-2 ring-inset ring-[var(--dt-accent)]",
+                  onSelectTime && "cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dt-accent)]",
                 )}
               >
                 {/* Top Tick */}
@@ -399,7 +422,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
                 {isWeekend && (
                   <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--dt-accent)] opacity-40" />
                 )}
-              </div>
+              </button>
             );
           })}
           {model.boundaries.map((boundary) => (

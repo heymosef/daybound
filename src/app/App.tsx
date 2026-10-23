@@ -1,6 +1,6 @@
 import { initializeTheme } from "../utils/theme";
 import { useTheme } from "../hooks/useTheme";
-import { PAN_LIMIT_HOURS } from "../utils/timeline";
+import { formatZonedClock, PAN_LIMIT_HOURS } from "../utils/timeline";
 import { canonicalTimezone } from "../utils/bundledTimezones";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Clock, X } from "lucide-react";
@@ -20,7 +20,7 @@ import {
   AppSettings,
   getCityName,
 } from "../utils/timezoneUtils";
-import { LIVE_SELECTION, calendarDifference, getZonedFields, HOUR_MS, isCalendarDate, startOfCalendarDate, type DateSelection } from "../utils/calendarDate";
+import { LIVE_SELECTION, calendarDifference, getZonedFields, HOUR_MS, onCalendarDate, startOfCalendarDate, type DateSelection } from "../utils/calendarDate";
 import { TimezoneRow } from "./components/TimezoneRow";
 import { AddTimezone } from "./components/AddTimezone";
 import { DatePicker } from "./components/DatePicker";
@@ -68,7 +68,10 @@ function App() {
   }, [capture, settings, setSettings]);
 
   const [initialized, setInitialized] = useState(false);
-  const [selection, setSelection] = useState<DateSelection>(LIVE_SELECTION);
+  // A selected clock instant is independent of the shared rail's browsing position.
+  const [view, setView] = useState<{
+    base: number; hours: number; centered: boolean; selected: number | null; calendarTime: number;
+  } | null>(null);
   const [dateFeedback, setDateFeedback] = useState("");
   const [hoveredHourIndex, setHoveredHourIndex] = useState<
     number | null
@@ -78,56 +81,55 @@ function App() {
     timezones.find((t) => t.isHome)?.timezone ||
     timezones[0]?.timezone ||
     canonicalTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC";
-  const selectedDate = selection.mode === "date" ? selection.date : null;
   const homeToday = getZonedFields(now, homeTimezone).date;
-  const selectedStart = useMemo(() => selectedDate && isCalendarDate(selectedDate)
-    ? startOfCalendarDate(selectedDate, homeTimezone) : null, [selectedDate, homeTimezone]);
-  const unavailable = selectedDate !== null && selectedDate >= homeToday && selectedStart === null;
-  const isLive = selectedDate === null || selectedDate < homeToday || selectedStart === null;
-  const selectedDateOffset = isLive ? 0 : calendarDifference(selectedDate!, homeToday);
-  const displayTime = isLive ? now : selectedStart!;
-  const timelineContext = `${homeTimezone}|${isLive ? "live" : selectedDate}`;
-  const [explored, setExplored] = useState<{ context: string; base: number; hours: number } | null>(null);
-  const exploration = explored?.context === timelineContext ? explored : null;
-  const timelineTime = exploration ? new Date(exploration.base) : displayTime;
-  // Follow the shared rail's reference instant without changing its anchor.
-  // Selecting a date remains an explicit action that resets the pan position.
-  const surfacedSelection: DateSelection = exploration
-    ? { mode: "date", date: getZonedFields(new Date(exploration.base + exploration.hours * HOUR_MS), homeTimezone).date }
-    : isLive ? LIVE_SELECTION : selection;
-  const baseTime = displayTime.getTime();
+  const clockTime = view?.selected != null ? new Date(view.selected) : now;
+  const timelineTime = view ? new Date(view.base) : now;
+  const isLive = view?.centered ?? true;
+  const surfacedSelection: DateSelection = view
+    ? { mode: "date", date: getZonedFields(view.calendarTime, homeTimezone).date }
+    : LIVE_SELECTION;
+  const selectedDateOffset = surfacedSelection.mode === "date" ? calendarDifference(surfacedSelection.date, homeToday) : 0;
+  const nowTime = now.getTime();
   const handlePanTimeline = useCallback((delta: number) => {
     if (!Number.isFinite(delta)) return;
-    setExplored(previous => {
-      const origin = previous?.context === timelineContext ? previous : { context: timelineContext, base: baseTime, hours: 0 };
-      return { ...origin, hours: Math.max(-PAN_LIMIT_HOURS, Math.min(PAN_LIMIT_HOURS, origin.hours + delta)) };
+    setView(previous => {
+      const origin = previous ?? { base: nowTime, hours: 0, centered: true, selected: null, calendarTime: nowTime };
+      const hours = Math.max(-PAN_LIMIT_HOURS, Math.min(PAN_LIMIT_HOURS, origin.hours + delta));
+      return { ...origin, hours, calendarTime: Math.trunc(origin.base + hours * HOUR_MS) };
     });
     setHoveredHourIndex(null);
-  }, [timelineContext, baseTime]);
+  }, [nowTime]);
+  const handleSelectTime = useCallback((instant: number) => {
+    setView(previous => ({
+      ...(previous ?? { base: nowTime, hours: 0, centered: true }),
+      selected: instant, calendarTime: instant,
+    }));
+  }, [nowTime]);
   const returnToNow = useCallback(() => {
-    setExplored(null);
-    setSelection(LIVE_SELECTION);
+    setView(null);
+    setHoveredHourIndex(null);
     document.querySelector<HTMLButtonElement>('[aria-current="date"]')?.focus();
   }, []);
 
   const timezoneIds = useMemo(() => timezones.map((timezone) => timezone.timezone), [timezones]);
 
-  useEffect(() => {
-    if (selection.mode === "date" && isLive) {
-      setSelection(LIVE_SELECTION);
-      if (unavailable) setDateFeedback("This date does not exist in the home timezone. Choose another date.");
-    }
-  }, [selection, isLive, unavailable]);
-
   const handleSelectDate = useCallback((next: DateSelection) => {
-    if (next.mode === "date" && startOfCalendarDate(next.date, homeTimezone) === null) {
+    if (next.mode === "live") {
+      setView(null);
+      setDateFeedback("");
+      setHoveredHourIndex(null);
+      return;
+    }
+    const start = startOfCalendarDate(next.date, homeTimezone);
+    if (start === null) {
       setDateFeedback("This date does not exist in the home timezone. Choose another date.");
       return;
     }
     setDateFeedback("");
-    setExplored(null);
-    setSelection(next);
-  }, [homeTimezone]);
+    const selected = onCalendarDate(next.date, view?.selected ?? nowTime, homeTimezone);
+    setView({ base: start.getTime(), hours: 0, centered: false, selected, calendarTime: selected });
+    setHoveredHourIndex(null);
+  }, [homeTimezone, nowTime, view?.selected]);
 
   // Initialize default timezone if empty
   useEffect(() => {
@@ -228,7 +230,7 @@ function App() {
     
     if (homeTz) {
       setTimezones([homeTz, ...others]);
-      setExplored(null);
+      setView(previous => previous?.selected != null ? { ...previous, calendarTime: previous.selected } : null);
       if (!timezones.find((tz) => tz.id === id)?.isHome) {
         const city = homeTz.city ? pickerCity(pickerResultId(homeTz.timezone, homeTz.city)) : undefined;
         capture("home_timezone_changed", { reference_timezone: homeTz.timezone,
@@ -311,6 +313,9 @@ function App() {
           </div>
 
           {dateFeedback && <p role="status" className="text-sm text-[var(--dt-text-secondary)]">{dateFeedback}</p>}
+          <p role="status" aria-label="Selected time" className="sr-only">
+            {view?.selected != null ? `${getZonedFields(view.selected, homeTimezone).date}, ${formatZonedClock(clockTime, homeTimezone, settings.use24Hour)} in ${getCityName(homeTimezone)}. All city clocks show this moment.` : ""}
+          </p>
           <div className="divide-y divide-[var(--dt-border)]">
             {timezones.length === 0 ? (
               <div className="py-20 text-center">
@@ -356,9 +361,11 @@ function App() {
                     >
                       <TimezoneRow
                         config={tz}
-                        now={now}
+                        now={clockTime}
                         timelineTime={timelineTime}
-                        panHours={exploration?.hours ?? 0}
+                        panHours={view?.hours ?? 0}
+                        selectedTime={view?.selected ?? undefined}
+                        onSelectTime={handleSelectTime}
                         onPan={handlePanTimeline}
                         onResetTimeline={returnToNow}
                         onRemove={handleRemoveTimezone}

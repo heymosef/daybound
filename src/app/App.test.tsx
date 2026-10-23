@@ -254,41 +254,49 @@ describe("App fixed calendar selection lifecycle", () => {
     window.dispatchEvent(new Event("focus"));
   });
 
-  it("keeps a far-future chosen date across midnight and home changes across the date line", () => {
+  const expectClocks = (instant: string) => {
+    for (const clock of screen.getAllByTestId("row-clock")) expect(clock).toHaveAttribute("datetime", instant);
+  };
+
+  it("preserves the selected instant across midnight and home changes across the date line", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Open calendar" }));
     fireEvent.click(screen.getByRole("button", { name: "Next month" }));
     fireEvent.click(screen.getByRole("button", { name: "Wednesday, April 15, 2026" }));
     expectView("date", "2026-04-15T00:00:00.000Z");
+    expectClocks("2026-04-15T23:59:50.000Z");
+    expect(screen.getAllByTestId("row-clock")[0].parentElement).toHaveTextContent("Wed, Apr 15");
     advanceTo("2026-03-03T00:00:00Z");
-    expectView("date", "2026-04-15T00:00:00.000Z");
+    expectClocks("2026-04-15T23:59:50.000Z");
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));
     fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "west" } });
-    expectView("date", "2026-04-15T10:00:00.000Z");
+    expectClocks("2026-04-15T23:59:50.000Z");
     fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "east" } });
-    expectView("date", "2026-04-14T10:00:00.000Z");
+    expectClocks("2026-04-15T23:59:50.000Z");
+    expect(screen.getByRole("button", { name: "Back to today" })).toHaveTextContent("16Apr");
     expect(localStorage.getItem("selected_date")).toBeNull();
-    expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(LOCAL_SAVE_NOTICE_COPY);
   });
 
-  it("retains preview when the selected date becomes today, then returns live once past", () => {
+  it("holds a selected time even after its date passes, until Today is explicitly chosen", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "3 Mar" }));
-    expectView("date", "2026-03-03T00:00:00.000Z");
-    advanceTo("2026-03-03T12:00:00Z");
-    expectView("date", "2026-03-03T00:00:00.000Z");
-    advanceTo("2026-03-04T00:00:00Z");
-    expectView("live", "2026-03-04T00:00:01.000Z");
+    expectClocks("2026-03-03T23:59:50.000Z");
+    advanceTo("2026-03-04T12:00:00Z");
+    expectClocks("2026-03-03T23:59:50.000Z");
+    fireEvent.click(screen.getByRole("button", { current: "date" }));
+    expectClocks("2026-03-04T12:00:01.000Z");
+    expectView("live", "2026-03-04T12:00:01.000Z");
   });
 
-  it("keeps selected-today after a home change and immediately falls back if the home date passes it", () => {
+  it("uses the home city's clock time for the initial future date", () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "3 Mar" }));
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));
     fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "east" } });
-    expectView("date", "2026-03-02T10:00:00.000Z");
-    advanceTo("2026-03-03T12:00:00Z");
-    expectView("live", "2026-03-03T12:00:01.000Z");
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByRole("button", { name: "4 Mar" }));
+    expectClocks("2026-03-03T23:59:50.000Z");
+    expectView("date", "2026-03-03T10:00:00.000Z");
+    expect(screen.getAllByTestId("row-clock")[0].parentElement).toHaveTextContent("Wed, Mar 4");
   });
 
   it("returns live through explicit Today and starts live after reload", () => {
@@ -297,28 +305,27 @@ describe("App fixed calendar selection lifecycle", () => {
     fireEvent.click(screen.getByRole("button", { current: "date" }));
     expectView("live", "2026-03-02T23:59:50.000Z");
     fireEvent.click(screen.getByRole("button", { name: "3 Mar" }));
-    expectView("date", "2026-03-03T00:00:00.000Z");
+    expectClocks("2026-03-03T23:59:50.000Z");
     unmount();
     render(<App />);
     expectView("live", "2026-03-02T23:59:50.000Z");
   });
 
-  it("falls back to live with feedback when a home-city change makes the selected date unavailable", () => {
+  it("preserves an instant when a new home timezone skipped its original calendar date", () => {
     vi.setSystemTime(new Date("2011-12-29T12:00:00Z"));
-    localStorage.clear();
     localStorage.setItem("timezone_config", JSON.stringify([
       { id: "utc", timezone: "UTC", isHome: true },
       { id: "apia", timezone: "Pacific/Apia", isHome: false },
     ]));
-    const { unmount } = render(<App />);
+    render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "30 Dec" }));
-    expect(document.querySelector("[data-preview-instant]")).toHaveAttribute("data-preview-instant", "2011-12-30T00:00:00.000Z");
+    expectClocks("2011-12-30T12:00:00.000Z");
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));
     fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "apia" } });
-    expect(document.querySelector("[data-date-mode]")).toHaveAttribute("data-date-mode", "live");
-    expect(document.querySelector("[data-preview-instant]")).toHaveAttribute("data-preview-instant", "2011-12-29T12:00:00.000Z");
-    expect(screen.getByText("This date does not exist in the home timezone. Choose another date.")).toHaveAttribute("role", "status");
-    unmount();
+    expectClocks("2011-12-30T12:00:00.000Z");
+    expect(screen.getAllByTestId("row-clock")[0].parentElement).toHaveTextContent("Sat, Dec 31");
+    expect(screen.getByRole("button", { name: "31 Dec", pressed: true })).toBeInTheDocument();
+    expect(screen.queryByText("This date does not exist in the home timezone. Choose another date.")).not.toBeInTheDocument();
   });
 });
 
@@ -523,6 +530,56 @@ describe("synchronized timeline exploration", () => {
   afterEach(() => { vi.useRealTimers(); });
   const views = () => screen.getAllByRole("region", { name: /timeline\. Drag/ });
   const instants = () => views().map(view => view.getAttribute("data-preview-instant"));
+  const clocksAt = (instant: string) => {
+    for (const clock of screen.getAllByTestId("row-clock")) expect(clock).toHaveAttribute("datetime", instant);
+  };
+  it("shows future city dates, selects a shared column, and keeps the chosen time on another date", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "23 Oct" }));
+    clocksAt("2026-10-23T19:43:00.000Z");
+    const clocks = screen.getAllByTestId("row-clock");
+    expect(clocks[0].parentElement).toHaveTextContent("Fri, Oct 23");
+    expect(clocks[1].parentElement).toHaveTextContent("Sat, Oct 24");
+    const originalView = instants();
+    fireEvent.click(within(views()[1]).getByRole("button", { name: /2026-10-23 12:00/ }));
+    clocksAt("2026-10-23T03:00:00.000Z");
+    expect(instants()).toEqual(originalView);
+    expect(views()[1]).toHaveFocus();
+    for (const rail of views()) expect(within(rail).getByRole("button", { pressed: true })).toHaveAttribute("data-instant", "2026-10-23T03:00:00.000Z");
+    act(() => vi.advanceTimersByTime(60000));
+    fireEvent.keyDown(views()[0], { key: "ArrowRight", shiftKey: true });
+    clocksAt("2026-10-23T03:00:00.000Z");
+    fireEvent.click(screen.getByRole("button", { name: "24 Oct" }));
+    clocksAt("2026-10-24T03:00:00.000Z");
+    fireEvent.click(screen.getByRole("button", { name: "22 Oct" }));
+    clocksAt("2026-10-22T19:44:00.000Z");
+  });
+  it("selects fractional-offset slots in Today mode and updates the calendar on a home change", () => {
+    localStorage.setItem("timezone_config", JSON.stringify([
+      { id: "utc", timezone: "UTC", isHome: true },
+      { id: "kathmandu", timezone: "Asia/Kathmandu", isHome: false },
+    ]));
+    render(<App />);
+    fireEvent.click(within(views()[1]).getByRole("button", { name: /2026-10-23 0:45/ }));
+    clocksAt("2026-10-22T19:00:00.000Z");
+    expect(screen.getAllByTestId("row-clock")[1]).toHaveAttribute("aria-label", "00:45");
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "kathmandu" } });
+    clocksAt("2026-10-22T19:00:00.000Z");
+    expect(screen.getByRole("button", { name: "23 Oct", pressed: true })).toBeInTheDocument();
+  });
+  it("lets the keyboard browse, select a printed time, and restore live time", () => {
+    render(<App />);
+    views()[0].focus();
+    fireEvent.keyDown(views()[0], { key: "ArrowRight" });
+    fireEvent.keyDown(views()[0], { key: "Enter" });
+    clocksAt("2026-10-22T20:00:00.000Z");
+    act(() => vi.advanceTimersByTime(60000));
+    clocksAt("2026-10-22T20:00:00.000Z");
+    fireEvent.keyDown(views()[0], { key: "Home" });
+    clocksAt("2026-10-22T19:44:00.000Z");
+    expect(screen.getByRole("button", { current: "date" })).toHaveFocus();
+  });
   it("reaches 24 hours ahead on all rows, freezes the view across minutes, and leaves clocks live", () => {
     render(<App />);
     for (let i = 0; i < 4; i++) fireEvent.keyDown(views()[0], { key: "ArrowRight", shiftKey: true });
@@ -539,7 +596,7 @@ describe("synchronized timeline exploration", () => {
     expect(instants()[0]).toBe("2026-10-22T19:44:00.000Z");
     expect(screen.getByRole("button", { name: "22 Oct", pressed: true })).toBeInTheDocument();
   });
-  it("resets exploration on date selection and home changes", () => {
+  it("resets browsing on date selection and preserves the selected instant on home changes", () => {
     render(<App />);
     fireEvent.keyDown(views()[0], { key: "ArrowRight" });
     fireEvent.click(screen.getByRole("button", { name: "23 Oct" }));
@@ -548,8 +605,8 @@ describe("synchronized timeline exploration", () => {
     fireEvent.keyDown(views()[0], { key: "ArrowRight" });
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));
     fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "tokyo" } });
-    expect(instants()[0]).toBe("2026-10-22T15:00:00.000Z");
-    expect(screen.getByRole("button", { name: "23 Oct", pressed: true })).toBeInTheDocument();
+    expect(instants()[0]).toBe("2026-10-23T01:00:00.000Z");
+    expect(screen.getByRole("button", { name: "24 Oct", pressed: true })).toBeInTheDocument();
   });
   it("updates the calendar as the rail crosses a date, and can reselect the surfaced date", () => {
     render(<App />);
@@ -573,7 +630,7 @@ describe("synchronized timeline exploration", () => {
     expect(screen.getByRole("button", { name: "22 Oct", pressed: true })).toBeInTheDocument();
     act(() => vi.advanceTimersByTime(60000));
     expect(instants()[0]).toBe("2026-10-22T23:00:00.000Z");
-    for (const clock of screen.getAllByTestId("row-clock")) expect(clock).toHaveAttribute("datetime", "2026-10-22T19:44:00.000Z");
+    for (const clock of screen.getAllByTestId("row-clock")) expect(clock).toHaveAttribute("datetime", "2026-10-23T19:43:00.000Z");
     fireEvent.keyDown(views()[1], { key: "ArrowRight" });
     expect(instants()).toEqual(["2026-10-23T00:00:00.000Z", "2026-10-23T00:00:00.000Z"]);
     expect(screen.getByRole("button", { name: "23 Oct", pressed: true })).toBeInTheDocument();

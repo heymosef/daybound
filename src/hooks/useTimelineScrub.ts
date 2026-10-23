@@ -12,6 +12,7 @@ export function useTimelineScrub(ref: RefObject<HTMLElement>, cellWidth: number,
     let drag: { id: number; x: number; y: number; lastX: number; active: boolean } | undefined;
     let frame = 0;
     let pending = 0;
+    let suppressClick = false;
     const width = () => latest.current.cellWidth || (parseFloat(getComputedStyle(viewport).fontSize) || 16) * 3.25;
     const flush = () => {
       cancelAnimationFrame(frame); frame = 0;
@@ -19,8 +20,8 @@ export function useTimelineScrub(ref: RefObject<HTMLElement>, cellWidth: number,
     };
     const down = (event: PointerEvent) => {
       if (!event.isPrimary || event.button !== 0) return;
+      suppressClick = false;
       drag = { id: event.pointerId, x: event.clientX, y: event.clientY, lastX: event.clientX, active: false };
-      viewport.setPointerCapture?.(event.pointerId);
     };
     const move = (event: PointerEvent) => {
       if (!drag || drag.id !== event.pointerId) return;
@@ -28,8 +29,10 @@ export function useTimelineScrub(ref: RefObject<HTMLElement>, cellWidth: number,
       const dy = event.clientY - drag.y;
       if (!drag.active) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) < 6) return;
-        if (Math.abs(dy) > Math.abs(dx)) { drag = undefined; return; }
+        if (Math.abs(dy) > Math.abs(dx)) { suppressClick = true; drag = undefined; return; }
         drag.active = true;
+        suppressClick = true;
+        viewport.setPointerCapture?.(event.pointerId);
         viewport.dataset.scrubbing = "true";
       }
       pending += drag.lastX - event.clientX;
@@ -39,6 +42,17 @@ export function useTimelineScrub(ref: RefObject<HTMLElement>, cellWidth: number,
     const end = () => {
       flush(); drag = undefined;
       delete viewport.dataset.scrubbing;
+    };
+    const lostCapture = (event: PointerEvent) => {
+      // Touch starts with implicit capture on the cell. Transferring it to the
+      // viewport must not end the drag when the cell's loss bubbles through us.
+      if (event.target === viewport) end();
+    };
+    const click = (event: MouseEvent) => {
+      if (!suppressClick) return;
+      suppressClick = false;
+      event.preventDefault();
+      event.stopPropagation();
     };
     const wheel = (event: WheelEvent) => {
       if (event.ctrlKey) return; // Preserve pinch zoom.
@@ -64,18 +78,20 @@ export function useTimelineScrub(ref: RefObject<HTMLElement>, cellWidth: number,
     viewport.addEventListener("pointermove", move);
     viewport.addEventListener("pointerup", end);
     viewport.addEventListener("pointercancel", end);
-    viewport.addEventListener("lostpointercapture", end);
+    viewport.addEventListener("lostpointercapture", lostCapture);
     viewport.addEventListener("wheel", wheel, { passive: false });
     viewport.addEventListener("keydown", key);
+    viewport.addEventListener("click", click, true);
     return () => {
       cancelAnimationFrame(frame);
       viewport.removeEventListener("pointerdown", down);
       viewport.removeEventListener("pointermove", move);
       viewport.removeEventListener("pointerup", end);
       viewport.removeEventListener("pointercancel", end);
-      viewport.removeEventListener("lostpointercapture", end);
+      viewport.removeEventListener("lostpointercapture", lostCapture);
       viewport.removeEventListener("wheel", wheel);
       viewport.removeEventListener("keydown", key);
+      viewport.removeEventListener("click", click, true);
       delete viewport.dataset.scrubbing;
     };
   }, [ref, enabled]);

@@ -1,4 +1,14 @@
-import { addCalendarDays, addCalendarMonths, calendarDifference, calendarMonthDays, getZonedFields, isCalendarDate, startOfCalendarDate } from "./calendarDate";
+import { addCalendarDays, addCalendarMonths, calendarDifference, calendarMonthDays, getZonedFields, isCalendarDate, onCalendarDate, startOfCalendarDate } from "./calendarDate";
+
+it.each([
+  ["Asia/Kathmandu", "2026-03-07T21:00:00Z", "2026-03-09", "2026-03-08T21:00:00.000Z"],
+  ["America/Vancouver", "2026-10-23T19:28:00Z", "2026-11-03", "2026-11-03T19:28:00.000Z"],
+  ["America/New_York", "2026-03-07T07:30:00Z", "2026-03-08", "2026-03-08T07:30:00.000Z"],
+  ["America/New_York", "2026-10-31T05:30:00Z", "2026-11-01", "2026-11-01T05:30:00.000Z"],
+  ["America/New_York", "2026-11-02T06:30:00Z", "2026-11-01", "2026-11-01T06:30:00.000Z"],
+])("moves a clock to another date using bundled rules in %s", (zone, reference, date, expected) => {
+  expect(new Date(onCalendarDate(date, Date.parse(reference), zone)).toISOString()).toBe(expected);
+});
 
 it.each(["2026-02-29", "2026-13-01", "2026-00-01", "2026-03-00", "0000-01-01", "2026-3-01", "garbage"])("rejects invalid key %s", (key) => expect(isCalendarDate(key)).toBe(false));
 it("uses UTC calendar fields for leap days and month/year arithmetic", () => {

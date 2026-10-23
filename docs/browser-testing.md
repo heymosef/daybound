@@ -94,7 +94,21 @@ Use `?scenario=bc-fall&reset=1` to start at 2026-11-01T08:59:30Z with
 Vancouver, Los Angeles and other recently changed Canadian zones. Advance one
 minute: Vancouver shows 02:00 PCT, Los Angeles 01:00 PST. Drag any timeline or
 use Shift+ArrowRight to explore 24 hours ahead; advance the clock again to verify
-the explored view holds while row clocks advance. No live analytics are used.
+the explored view holds while unselected row clocks advance. Tap a visible slot:
+all clocks and their local dates must match that instant, matching columns are
+highlighted, and Advance minute must leave those clocks fixed. A subsequent
+swipe must move only the view; tapping Today restores live time. Choose another
+future date to retain the selected home-city time, and change home city to retain
+the same instant while updating its calendar date. No live analytics are used.
 The offline CSP permits the app's own blob Paint Worklet while all fetches are
 intercepted and connect-src remains none. This preserves the product's corner
 rendering during visual checks.
+
+Time-selection verification, 2026-10-23: the production preview and offline fixture
+were checked at desktop size and 390×844. Future row dates, synchronized slot
+selection, fixed clocks after Advance minute, swipe without selection, keyboard
+Enter/Home, and Today reset passed. Browser pointer controls were used; a physical
+touchscreen and screen-reader speech were not tested. Automated coverage includes
+implicit touch-capture transfer, fractional offsets, DST gaps/repeated hours, and
+home-city date-line changes. Final checks passed on Node24: typecheck, lint,
+396 tests across 23 files, and production/fixture builds.

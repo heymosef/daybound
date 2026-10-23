@@ -31,7 +31,7 @@ Open [the local production build](http://127.0.0.1:4173). Analytics is disabled 
 
 ## Dates and local saving
 
-The rail contains 25 consecutive elapsed-hour cells. A selected calendar date is a preview, including when it equals today. It stays fixed across home midnight and home-zone changes until it becomes past; Today returns to the live view. Reload starts live. Missing midnight uses the first existing instant, repeated midnight uses its earliest occurrence, and a wholly skipped local date is unavailable. Fractional offsets and DST changes retain their exact instants.
+The rail contains 25 consecutive elapsed-hour cells. Choosing a future date sets all city clocks to the current home-city time on that date. Tapping a slot selects its exact instant and highlights the matching column across cities. The clocks and their local dates hold until another selection or Today; changing home city preserves the instant. Choosing another date retains the selected home-city time of day. Today and reload restore live clocks. Missing midnight uses the first existing instant, repeated midnight uses its earliest occurrence, and a wholly skipped date is unavailable. When moving a clock time between dates, a missing time shifts forward through the gap; a repeated time prefers the original UTC offset when available. Fractional offsets and DST changes retain their exact instants.
 
 Time zones, labels, themes and display settings use browser `localStorage`. Valid saved rows and fields survive partial recovery; malformed values fall back safely. If storage is blocked or full, changes can remain available for the current visit and the app displays a saving notice. It cannot promise that those changes will survive reload. Selected dates are transient.
 
@@ -72,10 +72,12 @@ Drag or swipe a timeline to explore all cities together; horizontal trackpad
 scrolling also works. With a timeline focused, use arrow keys, Shift+arrow keys
 or Page Up/Down. Exploration
 can move 24 hours in either direction from its starting point, including backward
-from a selected date across midnight. The view holds while city clocks remain live.
+from a selected date across midnight. Browsing holds the view without changing the clocks.
 The top date controls follow the home-city date at the rail’s reference instant
-(the center in Today mode, the leading edge for a chosen date). Tap today’s date
-(or press Home), choose a date, or change the reference city to reset the view.
+(the center in Today mode, the leading edge for a chosen date); selecting a slot
+sets the calendar to that instant's home-city date. Press Enter or Space to select
+the slot at the reference point. Tap today’s date (or press Home) to restore live
+time, including when Today is already selected. Choosing a date resets the pan.
 Vertical page scrolling and pinch zoom remain available.
 
 Calendar popups fit the visible viewport, opening above the trigger or scrolling

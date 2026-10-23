@@ -6,18 +6,23 @@ overlap remain [deferred designs](../plans/README.md).
 
 ## Behavior to preserve
 
-- A fixed calendar date survives home midnight and home-city changes. Once past
-  or wholly unavailable in the home zone, it returns to live Today with feedback
-  for an unavailable date. Explicit Today and reload return to the live view.
+- Choosing a future date sets the clocks to the current home-city time of day
+  on that date; choosing another date preserves the selected home-city time.
+  A selected instant stays fixed across midnight and home-city changes; each
+  city's clock/date and the home calendar use its converted local fields.
+  Explicit Today (even when already selected) and reload restore live clocks.
 - Timelines share exact instants and 25 elapsed-hour cells; fractional offsets,
   DST gaps/repeats and date boundaries remain precise. Missing midnight uses the
   first existing instant, repeated midnight its earliest occurrence, and wholly
   skipped dates are unavailable.
-- Scrubbing moves every timeline together and freezes the explored instant while
-  city clocks stay live. Both modes allow 24 hours backward/forward from their
+- Scrubbing moves every timeline together and freezes the explored instant without
+  changing the clocks. Tapping a column selects its exact instant across all cities
+  and highlights the corresponding cells; Enter/Space selects the reference slot.
+  Both modes allow 24 hours backward/forward from their
   starting point. The top date controls follow the home-city date at the center
-  in Today mode or the leading edge for a selected date. Today, date selection,
-  or a home-city change resets the pan. Vertical scrolling, pinch zoom, keyboard
+  in Today mode or the leading edge for a selected date; tapping a slot uses its
+  home-city date. Today and date selection reset the pan. A home-city change
+  resets unselected browsing and preserves a selected instant. Vertical scrolling, pinch zoom, keyboard
   navigation and reduced-motion preferences remain available.
 - The calendar popup fits the visible viewport, supports short-screen scrolling,
   restores keyboard focus and keeps exiting content inert.

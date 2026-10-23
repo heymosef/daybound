@@ -1,4 +1,5 @@
 import { bundledZonedFields } from "./bundledTimezones";
+import { LocalDate, ZoneId, ZoneOffset, ZonedDateTime } from "@js-joda/core";
 
 export type DateSelection = { mode: "live" } | { mode: "date"; date: string };
 export const LIVE_SELECTION: DateSelection = { mode: "live" };
@@ -29,6 +30,15 @@ export function calendarSurrogate(key: string): Date {
 
 export function getZonedFields(instant: Date | number, timezone: string) {
   return bundledZonedFields(instant instanceof Date ? instant.getTime() : instant, timezone);
+}
+
+/** Preserve wall-clock time; prefer the original offset in an overlap, shift forward through a gap. */
+export function onCalendarDate(date: string, reference: number, timezone: string): number {
+  if (!isCalendarDate(date)) throw new RangeError("Invalid calendar date");
+  const fields = getZonedFields(reference, timezone);
+  const local = LocalDate.parse(date).atTime(fields.hour, fields.minute, fields.second, 0);
+  return ZonedDateTime.ofLocal(local, ZoneId.of(timezone), ZoneOffset.ofTotalSeconds(fields.offsetSeconds))
+    .toInstant().toEpochMilli();
 }
 
 export const addCalendarDays = (key: string, days: number): string => {

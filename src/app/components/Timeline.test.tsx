@@ -70,16 +70,16 @@ it("renders Kolkata 02:30 correctly in the real row, marker and rail during the 
 
 it("exposes repeated-hour offsets and exact instants in rendered accessible cell names", () => {
   renderRail({ now: new Date("2026-11-01T12:00:00Z"), timezone: "America/New_York", isLive: true });
-  expect(screen.getByRole("group", { name: "2026-11-01 1:00 UTC-04:00 (2026-11-01T05:00:00.000Z)" })).toHaveTextContent("1");
-  expect(screen.getByRole("group", { name: "2026-11-01 1:00 UTC-05:00 (2026-11-01T06:00:00.000Z)" })).toHaveTextContent("1");
-  expect(screen.getAllByRole("group")).toHaveLength(25);
+  expect(screen.getByRole("button", { name: "2026-11-01 1:00 UTC-04:00 (2026-11-01T05:00:00.000Z)" })).toHaveTextContent("1");
+  expect(screen.getByRole("button", { name: "2026-11-01 1:00 UTC-05:00 (2026-11-01T06:00:00.000Z)" })).toHaveTextContent("1");
+  expect(screen.getAllByRole("button")).toHaveLength(25);
 });
 
 it("shares hover indices and live anchor/marker geometry between rows", () => {
   function Pair() {
     const [hovered, setHovered] = useState<number | null>(null);
     return <>{["UTC", "Asia/Kathmandu"].map((timezone) => <Timeline key={timezone} now={new Date("2026-03-07T21:15:00Z")} timezone={timezone}
-      isLive selectedDateOffset={0} use24Hour hoveredHourIndex={hovered} onHoverHour={setHovered} />)}</>;
+      isLive selectedDateOffset={0} use24Hour hoveredHourIndex={hovered} onHoverHour={setHovered} onSelectTime={vi.fn()} />)}</>;
   }
   const { container } = render(<Pair />);
   const cells = container.querySelectorAll('[data-timeline-cell="5"]');
@@ -137,9 +137,9 @@ it.each([
 
 it("renders the missing New York spring hour as an instant jump from 1 to 3", () => {
   renderRail({ now: new Date("2026-03-08T12:00:00Z"), timezone: "America/New_York", isLive: true });
-  expect(screen.getByRole("group", { name: "2026-03-08 1:00 UTC-05:00 (2026-03-08T06:00:00.000Z)" })).toHaveTextContent("1");
-  expect(screen.getByRole("group", { name: "2026-03-08 3:00 UTC-04:00 (2026-03-08T07:00:00.000Z)" })).toHaveTextContent("3");
-  expect(screen.queryByRole("group", { name: /^2026-03-08 2:00/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "2026-03-08 1:00 UTC-05:00 (2026-03-08T06:00:00.000Z)" })).toHaveTextContent("1");
+  expect(screen.getByRole("button", { name: "2026-03-08 3:00 UTC-04:00 (2026-03-08T07:00:00.000Z)" })).toHaveTextContent("3");
+  expect(screen.queryByRole("button", { name: /^2026-03-08 2:00/ })).not.toBeInTheDocument();
 });
 
 it("preserves the motion wrapper at midnight then glides forward to the next date", () => {
@@ -187,4 +187,15 @@ it("retains converted rail fields across hover and minute progress while updatin
   expect(conversions).toHaveBeenCalledTimes(1);
   expect(screen.getByTestId("current-marker")).toHaveTextContent("21:16");
   expect(screen.getByTestId("timeline-rail")).toHaveAttribute("data-start", "2026-03-07T09:00:00.000Z");
+});
+
+it("selects the exact repeated-hour instant and exposes a pressed column", () => {
+  const select = vi.fn();
+  const { rerender } = renderRail({ now: new Date("2026-11-01T12:00:00Z"), timezone: "America/New_York", isLive: true, onSelectTime: select });
+  fireEvent.click(screen.getByRole("button", { name: "2026-11-01 1:00 UTC-05:00 (2026-11-01T06:00:00.000Z)" }));
+  expect(select).toHaveBeenCalledExactlyOnceWith(Date.parse("2026-11-01T06:00:00Z"));
+  rerender(<Timeline now={new Date("2026-11-01T12:00:00Z")} currentTime={new Date("2026-11-01T06:00:00Z")} timezone="America/New_York" isLive selectedDateOffset={0}
+    selectedTime={Date.parse("2026-11-01T06:00:00Z")} onSelectTime={select} />);
+  expect(screen.getByRole("button", { name: /2026-11-01 1:00 UTC-05:00/, pressed: true })).toHaveAttribute("data-selected", "true");
+  expect(screen.getByRole("button", { name: /2026-11-01 1:00 UTC-04:00/ })).toHaveAttribute("aria-pressed", "false");
 });

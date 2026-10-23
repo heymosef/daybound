@@ -34,6 +34,8 @@ interface TimezoneRowProps {
   panHours?: number;
   onPan?: (hours: number) => void;
   onResetTimeline?: () => void;
+  selectedTime?: number;
+  onSelectTime?: (instant: number) => void;
   isLive: boolean;
   selectedDateOffset: number;
 }
@@ -58,6 +60,8 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
   panHours,
   onPan,
   onResetTimeline,
+  selectedTime,
+  onSelectTime,
   isLive,
   selectedDateOffset,
 }) => {
@@ -199,6 +203,7 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
               key={use24Hour ? "24h" : "12h"}
               data-testid="row-clock"
               dateTime={now.toISOString()}
+              aria-label={clock}
               initial={{
                 opacity: 0,
                 y: formatState.direction * -6,
@@ -292,6 +297,8 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
           panHours={panHours}
           onPan={onPan}
           onReset={onResetTimeline}
+          selectedTime={selectedTime}
+          onSelectTime={onSelectTime}
           timezone={timezone}
           label={cityName}
           isHome={isHome}
