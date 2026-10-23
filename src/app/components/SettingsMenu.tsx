@@ -322,7 +322,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 </span>
               </button>
               <p id={analyticsDescriptionId} className="px-[0.5em] mt-1 text-xs leading-normal text-[var(--dt-text-muted)]">
-                Usage actions, city selections, and a filtered sample of unsuccessful searches may be shared. Custom labels stay on this device.
+                Usage actions, settings choices, selected cities, and a filtered sample of unsuccessful searches may be shared. Custom labels stay on this device.
               </p>
               <a href={`${import.meta.env.BASE_URL}city-data-credits.html`} target="_blank" rel="noreferrer"
                 className="inline-block px-[0.5em] mt-1 text-xs underline text-[var(--dt-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)]">

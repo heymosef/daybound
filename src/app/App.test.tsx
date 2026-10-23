@@ -345,11 +345,80 @@ describe("App minimal analytics transport integration", () => {
       expect(url).toBe("https://analytics.example.invalid/i/v0/e/");
       expect(init).toEqual({ method: "POST", headers: { "Content-Type": "application/json" }, body: expect.any(String), credentials: "omit", referrerPolicy: "no-referrer", redirect: "error", signal: expect.any(AbortSignal) });
       const body = JSON.parse(String(init!.body));
-      expect(body).toEqual({ api_key: options.token, event: expect.any(String), distinct_id: expect.stringMatching(/^[\da-f-]{36}$/), timestamp: expect.any(String), properties: flags });
+      expect(body).toEqual({ api_key: options.token, event: expect.any(String), distinct_id: expect.stringMatching(/^[\da-f-]{36}$/), timestamp: expect.any(String),
+        properties: body.event === "home_timezone_changed" ? { ...flags, reference_timezone: "Europe/London" } : flags });
       return body.event;
     })).toEqual(["timezone_renamed", "home_timezone_changed"]);
     const envelopes = JSON.stringify(request.mock.calls);
-    for (const text of [privateLabel, privateRename, "SecretOtherOffice", "private-row-id", "other-private-id", "PrivateDashboardPath", "PrivateAccountQuery", "PrivateHash", "PrivateDashboardTitle", "home_city", "$current_url", "$referrer", "Europe/London"]) expect(envelopes).not.toContain(text);
+    for (const text of [privateLabel, privateRename, "SecretOtherOffice", "private-row-id", "other-private-id", "PrivateDashboardPath", "PrivateAccountQuery", "PrivateHash", "PrivateDashboardTitle", "home_city", "$current_url", "$referrer"]) expect(envelopes).not.toContain(text);
+  });
+
+  const eventBodies = () => request.mock.calls.map(([, init]) => JSON.parse(String(init!.body)));
+
+  it("records only actual settings changes, without startup, no-op or reload snapshots", () => {
+    const { unmount } = render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
+    expect(request).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "12H" }));
+    expect(request).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "24H" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Dark" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Gamut" }));
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Timezone badge" }));
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Indicate weekends" }));
+    expect(eventBodies().map(({ event, properties }) => ({ event, ...properties }))).toEqual([
+      { setting: "time_format", value: "24h" }, { setting: "appearance", value: "dark" },
+      { setting: "design_theme", value: "gamut" }, { setting: "timezone_badge", value: false },
+      { setting: "weekend_indicator", value: true },
+    ].map((properties) => ({ event: "settings_changed", ...properties, $process_person_profile: false, $geoip_disable: true })));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "24H" }));
+    expect(request).toHaveBeenCalledTimes(5);
+    unmount();
+    render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
+    expect(request).toHaveBeenCalledTimes(5);
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    expect(screen.getByRole("menuitemradio", { name: "24H" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("preserves a picker alias through rename/reload and reports it when explicitly made home", async () => {
+    const { unmount } = render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "Seattle" } });
+    fireEvent.click(screen.getByRole("option", { name: /Seattle/ }));
+    const added = JSON.parse(localStorage.getItem("timezone_config")!).find((row: { city?: string }) => row.city === "Seattle");
+    expect(added).toMatchObject({ timezone: "America/Los_Angeles", city: "Seattle" });
+    await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByText("Seattle"));
+    fireEvent.change(screen.getByRole("textbox", { name: "Edit timezone label" }), { target: { value: privateRename } });
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Edit timezone label" }), { key: "Enter" });
+    unmount();
+    render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    const homeSelect = within(screen.getByRole("menu")).getByRole("combobox");
+    fireEvent.change(homeSelect, { target: { value: added.id } });
+    expect(eventBodies().filter(({ event }) => event === "home_timezone_changed").map(({ properties }) => properties)).toEqual([{
+      reference_timezone: "America/Los_Angeles", reference_result_id: "America/Los_Angeles|Seattle",
+      reference_city: "Seattle", reference_country: "USA", $process_person_profile: false, $geoip_disable: true,
+    }]);
+    fireEvent.change(homeSelect, { target: { value: added.id } });
+    expect(eventBodies().filter(({ event }) => event === "home_timezone_changed")).toHaveLength(1);
+    expect(JSON.stringify(request.mock.calls)).not.toContain(privateRename);
+    expect(JSON.stringify(request.mock.calls)).not.toContain(added.id);
+  });
+
+  it("keeps settings and home editable while opted out and does not replay them on opt-in", () => {
+    localStorage.setItem(ANALYTICS_PREFERENCE_KEY, '{"version":1,"enabled":false}');
+    render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "24H" }));
+    fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "other-private-id" } });
+    expect(JSON.parse(localStorage.getItem("app_settings")!).use24Hour).toBe(true);
+    expect(JSON.parse(localStorage.getItem("timezone_config")!)[0].id).toBe("other-private-id");
+    expect(request).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Share usage analytics" }));
+    expect(request).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "12H" }));
+    expect(eventBodies()).toHaveLength(1);
+    expect(eventBodies()[0]).toMatchObject({ event: "settings_changed", properties: { setting: "time_format", value: "12h" } });
   });
 
   it("honors opt-out before the first real App action and after reload", () => {

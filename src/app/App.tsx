@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Clock, X } from "lucide-react";
 import { useAnalytics } from "../analytics/AnalyticsProvider";
+import { pickerCity, pickerResultId } from "../analytics/searchCatalog";
+import { settingsChanges } from "../analytics/structuredEvents";
 import { useTime } from "../hooks/useTime";
 import { usePersistentState } from "../hooks/useStorage";
 import {
@@ -13,6 +15,7 @@ import {
 import {
   TimezoneConfig,
   AppSettings,
+  getCityName,
 } from "../utils/timezoneUtils";
 import { LIVE_SELECTION, calendarDifference, getZonedFields, isCalendarDate, startOfCalendarDate, type DateSelection } from "../utils/calendarDate";
 import { TimezoneRow } from "./components/TimezoneRow";
@@ -159,6 +162,11 @@ function App() {
 
   const { capture } = useAnalytics();
 
+  const handleSettingsChange = useCallback((next: AppSettings) => {
+    setSettings(next);
+    for (const event of settingsChanges(settings, next)) capture("settings_changed", event);
+  }, [capture, settings, setSettings]);
+
   // Apply Theme (light/dark/system) - Class List Management
   useEffect(() => {
     const root = window.document.documentElement;
@@ -294,11 +302,13 @@ function App() {
     if (timezones.some((tz) => tz.timezone === timezone))
       return;
 
+    const standardCity = pickerCity(pickerResultId(timezone, label ?? getCityName(timezone)));
     const newTimezone: TimezoneConfig = {
       id: crypto.randomUUID(),
       timezone,
       isHome: false,
       ...(label ? { label } : {}),
+      ...(standardCity ? { city: standardCity.name } : {}),
     };
     const updated = [...timezones, newTimezone];
     setTimezones((previous) => previous.some((row) => row.timezone === timezone) ? previous : [...previous, newTimezone]);
@@ -358,7 +368,11 @@ function App() {
     
     if (homeTz) {
       setTimezones([homeTz, ...others]);
-      capture("home_timezone_changed");
+      if (!timezones.find((tz) => tz.id === id)?.isHome) {
+        const city = homeTz.city ? pickerCity(pickerResultId(homeTz.timezone, homeTz.city)) : undefined;
+        capture("home_timezone_changed", { reference_timezone: homeTz.timezone,
+          ...(city ? { reference_result_id: city.id } : {}) });
+      }
     }
   }, [capture, setTimezones, timezones]);
 
@@ -419,7 +433,7 @@ function App() {
                 <div className="flex-shrink-0 flex items-stretch md:ml-auto">
                   <SettingsMenu
                     settings={settings}
-                    onSettingsChange={setSettings}
+                    onSettingsChange={handleSettingsChange}
                     timezones={timezones}
                     onSetHome={handleSetHome}
                   />

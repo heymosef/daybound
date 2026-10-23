@@ -94,12 +94,13 @@ describe("minimal HTTP event envelopes", () => {
     c.capture("calendar_month_navigated", { ...input, direction: "forward", months_from_today: 1 });
     // Exercise untyped callers too: no-property events must never forward their input.
     const rawCapture = c.capture as (event: string, properties?: unknown) => void;
-    for (const name of ["timezone_renamed", "home_timezone_changed", "calendar_opened"]) rawCapture(name, input);
+    for (const name of ["timezone_renamed", "calendar_opened"]) rawCapture(name, input);
+    rawCapture("home_timezone_changed", { ...input, reference_timezone: "US/Pacific" });
     expect(fetchMock).toHaveBeenCalledTimes(11);
     expect(fetchMock.mock.calls.map((_, i) => request(i).body.properties)).toEqual([
       { timezone_count_after: 2 }, { direction: "up" }, { shortcut: "cmd_k" },
       { query_length: 24, query_words: 3 }, { date_offset: 2 }, { date_offset: 31, month_distance: 1 },
-      { method: "escape" }, { direction: "forward", months_from_today: 1 }, {}, {}, {},
+      { method: "escape" }, { direction: "forward", months_from_today: 1 }, {}, {}, { reference_timezone: "America/Los_Angeles" },
     ].map((p) => ({ ...p, $process_person_profile: false, $geoip_disable: true })));
     expect(JSON.stringify(fetchMock.mock.calls)).not.toContain(privateText);
   });

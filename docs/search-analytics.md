@@ -6,6 +6,9 @@ These reports become populated after publishing the new build with the existing
 PostHog public configuration. Local preview/development stays disabled. No live
 dashboard, account settings or production deployment is changed by this work.
 
+Settings and manually chosen reference cities are covered in the
+[structured usage reports](usage-analytics.md).
+
 ## Reports to add in PostHog
 
 1. **Missing cities:** event `timezone_search_attempted`, filter `search_version = 2`

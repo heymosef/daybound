@@ -1,4 +1,5 @@
 import { projectSearchEvent, type SearchAttemptEvent, type SearchClosedEvent, type SearchSelectedEvent } from "./searchEvents";
+import { projectHomeChange, projectSettingsChange, type HomeTimezoneChangedEvent, type SettingsChangedEvent } from "./structuredEvents";
 
 /** Explicit events only. Search text is restricted to the approved filtered sample. */
 export interface AnalyticsEvents {
@@ -6,7 +7,8 @@ export interface AnalyticsEvents {
   timezone_removed: { timezone_count_after: number };
   timezone_renamed: undefined;
   timezone_reordered: { direction: "up" | "down" };
-  home_timezone_changed: undefined;
+  home_timezone_changed: HomeTimezoneChangedEvent;
+  settings_changed: SettingsChangedEvent;
   keyboard_shortcut_used: { shortcut: "cmd_k" | "ctrl_k" };
   timezone_search_no_results: { query_length: number; query_words: number };
   timezone_search_attempted: SearchAttemptEvent;
@@ -87,7 +89,9 @@ function project(event: keyof AnalyticsEvents, input: unknown): Properties | und
   switch (event) {
     case "timezone_search_attempted": case "timezone_search_selected": case "timezone_search_closed":
       return projectSearchEvent(event, p);
-    case "timezone_renamed": case "home_timezone_changed": case "calendar_opened": return {};
+    case "home_timezone_changed": return projectHomeChange(p);
+    case "settings_changed": return projectSettingsChange(p);
+    case "timezone_renamed": case "calendar_opened": return {};
     case "timezone_added": case "timezone_removed":
       return integer(p.timezone_count_after, 0, 100) ? { timezone_count_after: p.timezone_count_after } : undefined;
     case "timezone_reordered":
