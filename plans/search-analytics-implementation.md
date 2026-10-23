@@ -116,5 +116,9 @@ localhost preview remains the normal product path with analytics disabled.
 All code, catalogue, templates, tests and documentation are local. PostHog tools
 were used for documentation/skills only; no project reads/writes or test traffic
 were sent to an actual project. No push/deployment/global model/runtime change.
-The original checkout will receive the verified local commit by fast-forward,
-and its already-running preview will be rebuilt for the user.
+The original checkout main was fast-forwarded to 3a4f9d1 and its existing
+127.0.0.1:4173 preview rebuilt successfully under Node 24. The resulting product
+page shows the updated settings copy and city-data credits, keeps localhost
+analytics disabled, and reports no browser console errors. Its settings panel
+fits the observed 1280 × 720 viewport. The temporary offline fixture tab/server
+were closed; the normal product preview remains running for the user.
