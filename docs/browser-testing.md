@@ -99,7 +99,10 @@ all clocks and their local dates must match that instant, matching columns are
 highlighted, and Advance minute must leave those clocks fixed. A subsequent
 swipe must move only the view; tapping Today restores live time. Choose another
 future date to retain the selected home-city time, and change home city to retain
-the same instant while updating its calendar date. No live analytics are used.
+the same instant while updating its calendar date. While selected, there must be
+no time line or time pill. Tap the highlighted column again in either row to
+clear it and restore live Today; Enter/Space should toggle the reference slot.
+No live analytics are used.
 The offline CSP permits the app's own blob Paint Worklet while all fetches are
 intercepted and connect-src remains none. This preserves the product's corner
 rendering during visual checks.
@@ -112,3 +115,8 @@ touchscreen and screen-reader speech were not tested. Automated coverage include
 implicit touch-capture transfer, fractional offsets, DST gaps/repeated hours, and
 home-city date-line changes. Final checks passed on Node24: typecheck, lint,
 396 tests across 23 files, and production/fixture builds.
+
+Follow-up toggle check, 2026-10-23: the refreshed production preview showed no
+time marker/pill during selection. Clicking the corresponding highlighted cell
+in another city cleared all selected columns and restored live Today. Typecheck,
+lint, all 402 tests across 23 files, and the production build passed.

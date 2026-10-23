@@ -18,6 +18,9 @@ overlap remain [deferred designs](../plans/README.md).
 - Scrubbing moves every timeline together and freezes the explored instant without
   changing the clocks. Tapping a column selects its exact instant across all cities
   and highlights the corresponding cells; Enter/Space selects the reference slot.
+  Tapping a selected cell again (in any row) clears the selection and restores
+  live Today. Enter/Space also toggles the reference slot. The time line and pill
+  are hidden during selection; the selected column remains highlighted.
   Both modes allow 24 hours backward/forward from their
   starting point. The top date controls follow the home-city date at the center
   in Today mode or the leading edge for a selected date; tapping a slot uses its

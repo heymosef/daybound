@@ -533,6 +533,33 @@ describe("synchronized timeline exploration", () => {
   const clocksAt = (instant: string) => {
     for (const clock of screen.getAllByTestId("row-clock")) expect(clock).toHaveAttribute("datetime", instant);
   };
+  it.each([false, true])("clears a selected column from either city and restores Today in future-date mode=%s", (future) => {
+    render(<App />);
+    if (future) fireEvent.click(screen.getByRole("button", { name: "23 Oct" }));
+    fireEvent.click(within(views()[0]).getByRole("button", { name: future ? /^2026-10-23 3:00 / : /^2026-10-22 20:00 / }));
+    act(() => vi.advanceTimersByTime(60000));
+    fireEvent.click(within(views()[1]).getByRole("button", { pressed: true }));
+    clocksAt("2026-10-22T19:44:00.000Z");
+    for (const rail of views()) expect(within(rail).queryByRole("button", { pressed: true })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "22 Oct", pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Selected time" })).toHaveTextContent("Showing live time.");
+  });
+  it("clears the highlighted column even when date selection chose a time partway through that hour", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "23 Oct" }));
+    clocksAt("2026-10-23T19:43:00.000Z");
+    fireEvent.click(within(views()[0]).getByRole("button", { pressed: true }));
+    clocksAt("2026-10-22T19:43:00.000Z");
+  });
+  it("lets Enter clear the same slot selected by Enter", () => {
+    render(<App />);
+    fireEvent.keyDown(views()[0], { key: "ArrowRight" });
+    fireEvent.keyDown(views()[0], { key: "Enter" });
+    clocksAt("2026-10-22T20:00:00.000Z");
+    expect(views()[0]).toHaveAttribute("aria-description", "Enter clears the selected time and restores live clocks.");
+    fireEvent.keyDown(views()[0], { key: "Enter" });
+    clocksAt("2026-10-22T19:43:00.000Z");
+  });
   it("shows future city dates, selects a shared column, and keeps the chosen time on another date", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "23 Oct" }));

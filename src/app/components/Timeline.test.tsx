@@ -198,4 +198,14 @@ it("selects the exact repeated-hour instant and exposes a pressed column", () =>
     selectedTime={Date.parse("2026-11-01T06:00:00Z")} onSelectTime={select} />);
   expect(screen.getByRole("button", { name: /2026-11-01 1:00 UTC-05:00/, pressed: true })).toHaveAttribute("data-selected", "true");
   expect(screen.getByRole("button", { name: /2026-11-01 1:00 UTC-04:00/ })).toHaveAttribute("aria-pressed", "false");
+  expect(screen.queryByTestId("current-marker")).not.toBeInTheDocument();
+});
+
+it.each([false, true])("hides the time line and pill while a column is selected in centered mode=%s", (isLive) => {
+  const selected = new Date("2026-03-08T06:00:00Z");
+  const { rerender } = renderRail({ now: selected, currentTime: selected, timezone: "UTC", isLive, selectedTime: selected.getTime() });
+  expect(screen.queryByTestId("current-marker")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { pressed: true })).toHaveAttribute("data-selected", "true");
+  rerender(<Timeline now={selected} timezone="UTC" isLive selectedDateOffset={0} />);
+  expect(screen.getByTestId("current-marker")).toBeInTheDocument();
 });

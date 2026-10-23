@@ -100,10 +100,14 @@ function App() {
     setHoveredHourIndex(null);
   }, [nowTime]);
   const handleSelectTime = useCallback((instant: number) => {
-    setView(previous => ({
-      ...(previous ?? { base: nowTime, hours: 0, centered: true }),
-      selected: instant, calendarTime: instant,
-    }));
+    setView(previous => {
+      if (previous?.selected != null && previous.selected >= instant && previous.selected < instant + HOUR_MS) return null;
+      return {
+        ...(previous ?? { base: nowTime, hours: 0, centered: true }),
+        selected: instant, calendarTime: instant,
+      };
+    });
+    setHoveredHourIndex(null);
   }, [nowTime]);
   const returnToNow = useCallback(() => {
     setView(null);
@@ -314,7 +318,7 @@ function App() {
 
           {dateFeedback && <p role="status" className="text-sm text-[var(--dt-text-secondary)]">{dateFeedback}</p>}
           <p role="status" aria-label="Selected time" className="sr-only">
-            {view?.selected != null ? `${getZonedFields(view.selected, homeTimezone).date}, ${formatZonedClock(clockTime, homeTimezone, settings.use24Hour)} in ${getCityName(homeTimezone)}. All city clocks show this moment.` : ""}
+            {view?.selected != null ? `${getZonedFields(view.selected, homeTimezone).date}, ${formatZonedClock(clockTime, homeTimezone, settings.use24Hour)} in ${getCityName(homeTimezone)}. All city clocks show this moment.` : "Showing live time."}
           </p>
           <div className="divide-y divide-[var(--dt-border)]">
             {timezones.length === 0 ? (

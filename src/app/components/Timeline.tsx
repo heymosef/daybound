@@ -167,8 +167,9 @@ const TimelineInner: React.FC<TimelineProps> = ({
       data-date-mode={isLive ? "live" : "date"}
       data-preview-instant={new Date(viewTime).toISOString()}
       role={onPan ? "region" : undefined}
-      aria-label={onPan ? `${label ?? timezone.split("/").pop()?.replace(/_/g, " ")} timeline. Drag horizontally or use arrow keys to browse; Enter selects a time; Home returns to now.` : undefined}
-      aria-description={onSelectTime ? `Enter selects ${keyboardCell.description}` : undefined}
+      aria-label={onPan ? `${label ?? timezone.split("/").pop()?.replace(/_/g, " ")} timeline. Drag horizontally or use arrow keys to browse; Enter selects or clears a time; Home returns to now.` : undefined}
+      aria-description={onSelectTime ? selectedTime !== undefined && selectedTime >= keyboardCell.time && selectedTime < keyboardCell.time + HOUR_MS
+        ? "Enter clears the selected time and restores live clocks." : `Enter selects ${keyboardCell.description}` : undefined}
       tabIndex={onPan ? 0 : undefined}
       onKeyDown={event => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ") && onSelectTime) {
@@ -200,7 +201,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
                 }
                 animate={{
                   opacity:
-                    isLive &&
+                    isLive && selectedTime === undefined &&
                     fl.x > markerLeftPx - 120 &&
                     fl.x < markerLeftPx + 50
                       ? 0
@@ -223,8 +224,8 @@ const TimelineInner: React.FC<TimelineProps> = ({
 
       {/* ── Current-time marker (overlay, fades in/out) ── */}
       {/* Tip 2: exit faster than enter; Tip 4: ease-out enter, ease-in exit */}
-      <AnimatePresence>
-        {(isLive || selectedTime !== undefined) && dims.outer > 0 && (
+      {selectedTime === undefined && <AnimatePresence>
+        {isLive && dims.outer > 0 && (
           <motion.div
             key="current-marker"
             data-testid="current-marker"
@@ -285,7 +286,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>}
 
       {/* Fade only the movable cells; the real-time marker, date labels and focus outline stay crisp. */}
       <div className={`absolute inset-0 ${onPan ? "scroll-fade-x" : ""}`}
