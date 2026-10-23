@@ -1,3 +1,4 @@
+import { utcOffsetLabel } from "../../utils/bundledTimezones";
 import React, { useState, useMemo } from "react";
 import { formatCalendarDate, getZonedFields } from "../../utils/calendarDate";
 import { formatClock, dayPeriod } from "../../utils/timeline";
@@ -30,6 +31,9 @@ interface TimezoneRowProps {
   showWeekends: boolean;
   hoveredHourIndex: number | null;
   onHoverHour: (index: number | null) => void;
+  panHours?: number;
+  onPan?: (hours: number) => void;
+  onResetTimeline?: () => void;
   isLive: boolean;
   selectedDateOffset: number;
 }
@@ -51,6 +55,9 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
   showWeekends,
   hoveredHourIndex,
   onHoverHour,
+  panHours,
+  onPan,
+  onResetTimeline,
   isLive,
   selectedDateOffset,
 }) => {
@@ -165,7 +172,8 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
                   {cityName}
                 </span>
                 {showBadge && (
-                  <span className="text-[clamp(10px,0.5vw+8px,12px)] font-medium text-[var(--dt-text-secondary)] border border-[var(--dt-border-strong)] px-[0.25em] rounded bg-[var(--dt-surface)]">
+                  <span title={`${abbreviation} · ${utcOffsetLabel(fields.offsetSeconds)}`}
+                  className="text-[clamp(10px,0.5vw+8px,12px)] font-medium text-[var(--dt-text-secondary)] border border-[var(--dt-border-strong)] px-[0.25em] rounded bg-[var(--dt-surface)]">
                     {abbreviation}
                   </span>
                 )}
@@ -187,9 +195,10 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
       <div className="col-span-1 md:col-span-1 flex flex-col items-end justify-center pr-0 md:px-0 md:pr-[1.5em] md:border-r border-[var(--dt-border)] md:h-full overflow-hidden">
         <div className="flex flex-col items-end">
           <AnimatePresence mode="popLayout">
-            <motion.div
+            <motion.time
               key={use24Hour ? "24h" : "12h"}
               data-testid="row-clock"
+              dateTime={now.toISOString()}
               initial={{
                 opacity: 0,
                 y: formatState.direction * -6,
@@ -212,7 +221,7 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
               <MorphingTime>
                 {clock}
               </MorphingTime>
-            </motion.div>
+            </motion.time>
           </AnimatePresence>
           <div
             className={`text-[clamp(13px,0.84vw+5.39px,16px)] whitespace-nowrap ${isHome ? "text-[var(--dt-accent)]" : "text-[var(--dt-text-secondary)]"}`}
@@ -279,7 +288,12 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
       <div className="col-span-3 md:col-span-1 w-full h-[4.5em] md:h-full overflow-hidden relative border-t-0 border-transparent mt-3 md:mt-0 pt-0">
         <Timeline
           now={timelineTime}
+          currentTime={now}
+          panHours={panHours}
+          onPan={onPan}
+          onReset={onResetTimeline}
           timezone={timezone}
+          label={cityName}
           isHome={isHome}
           homeTimezone={homeTimezone}
           use24Hour={use24Hour}

@@ -82,3 +82,14 @@ No live analytics key or host is read or embedded by the generator.
 This harness prepares offline verification. It is not evidence of completed
 browser smoke, live ingestion, deployment, or remote CI. Primary records actual
 desktop/mobile CUA results in the final validation evidence.
+
+## BC permanent-time regression
+
+Use `?scenario=bc-fall&reset=1` to start at 2026-11-01T08:59:30Z with
+Vancouver, Los Angeles and other recently changed Canadian zones. Advance one
+minute: Vancouver shows 02:00 PCT, Los Angeles 01:00 PST. Drag any timeline or
+use Shift+ArrowRight to explore 24 hours ahead; advance the clock again to verify
+the explored view holds while row clocks advance. No live analytics are used.
+The offline CSP permits the app's own blob Paint Worklet while all fetches are
+intercepted and connect-src remains none. This preserves the product's corner
+rendering during visual checks.

@@ -1,3 +1,4 @@
+import { getTimezoneNames } from "./bundledTimezones";
 import { getZonedFields } from "./calendarDate";
 
 export interface TimezoneConfig {
@@ -17,40 +18,7 @@ export interface AppSettings {
   showWeekends: boolean;
 }
 
-let _cachedTimezones: string[] | null = null;
-
-export const getCommonTimezones = (): string[] => {
-  if (_cachedTimezones) return _cachedTimezones;
-
-  if (
-    typeof Intl !== "undefined" &&
-    "supportedValuesOf" in Intl
-  ) {
-    try {
-      _cachedTimezones = Intl.supportedValuesOf("timeZone");
-      return _cachedTimezones;
-    } catch (e) {
-      console.warn("Intl.supportedValuesOf failed", e);
-    }
-  }
-
-  _cachedTimezones = [
-    "UTC",
-    "America/New_York",
-    "America/Los_Angeles",
-    "America/Chicago",
-    "America/Toronto",
-    "America/Vancouver",
-    "Europe/London",
-    "Europe/Paris",
-    "Europe/Berlin",
-    "Asia/Tokyo",
-    "Asia/Singapore",
-    "Australia/Sydney",
-    "Pacific/Auckland",
-  ];
-  return _cachedTimezones;
-};
+export const getCommonTimezones = getTimezoneNames;
 
 export const getAbbreviation = (
   date: Date,

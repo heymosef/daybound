@@ -1,10 +1,11 @@
+import { useTimelineScrub } from "../../hooks/useTimelineScrub";
 import React, {
   useRef,
   useState,
   useLayoutEffect,
   useMemo,
 } from "react";
-import { createTimeline, formatClock, formatZonedClock, TOTAL_HOURS, CENTER_INDEX } from "../../utils/timeline";
+import { createTimeline, formatClock, formatZonedClock, TOTAL_HOURS } from "../../utils/timeline";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { motion, AnimatePresence } from "motion/react";
@@ -14,6 +15,7 @@ import { EASE_OUT, EASE_IN } from "../../utils/animation";
 interface TimelineProps {
   now: Date;
   timezone: string;
+  label?: string;
   isHome?: boolean;
   homeTimezone?: string;
   className?: string;
@@ -23,6 +25,10 @@ interface TimelineProps {
   isLive: boolean;
   selectedDateOffset: number;
   showWeekends?: boolean;
+  panHours?: number;
+  currentTime?: Date;
+  onPan?: (hours: number) => void;
+  onReset?: () => void;
 }
 
 const LABEL_PAD = 0; // px – clamping offset from the container edge
@@ -30,6 +36,7 @@ const LABEL_PAD = 0; // px – clamping offset from the container edge
 const TimelineInner: React.FC<TimelineProps> = ({
   now,
   timezone,
+  label,
   className,
   use24Hour,
   hoveredHourIndex,
@@ -37,6 +44,10 @@ const TimelineInner: React.FC<TimelineProps> = ({
   isLive,
   selectedDateOffset,
   showWeekends,
+  panHours = 0,
+  currentTime,
+  onPan,
+  onReset,
 }) => {
   // ── Refs & measurement ──
   const outerRef = useRef<HTMLDivElement>(null);
@@ -94,26 +105,25 @@ const TimelineInner: React.FC<TimelineProps> = ({
   }, [use24Hour]);
 
   const nowTime = now.getTime();
-  const anchorTime = isLive ? Math.floor(nowTime / 3_600_000) * 3_600_000 : nowTime;
+  const viewTime = nowTime + panHours * 3_600_000;
+  const realNow = currentTime?.getTime() ?? nowTime;
+  const anchorTime = isLive ? Math.floor(viewTime / 3_600_000) * 3_600_000 : nowTime + Math.floor(panHours) * 3_600_000;
   // A row retains one exact frame; hover, minute progress and formatting do not reconvert its 25 cells.
   const model = useMemo(() => createTimeline(new Date(anchorTime), timezone, isLive), [anchorTime, timezone, isLive]);
-  const progress = isLive ? (nowTime - model.start) / 3_600_000 : 0;
+  const progress = (viewTime - model.start) / 3_600_000;
   const nowFractionPercent = progress / TOTAL_HOURS * 100;
   const railLeft = isLive ? "50%" : "0%";
-  const railTransform = isLive ? `translateX(-${nowFractionPercent}%)` : "translateX(0%)";
-  const markerLeftPx = dims.outer / 2;
+  const railTransform = `translateX(${-nowFractionPercent}%)`;
   // AnimatePresence retains the last mounted marker's children during exit.
-  const markerTimeDisplay = useMemo(() => formatZonedClock(new Date(nowTime), timezone, !!use24Hour, false), [nowTime, timezone, use24Hour]);
+  const markerTimeDisplay = useMemo(() => formatZonedClock(new Date(realNow), timezone, !!use24Hour, false), [realNow, timezone, use24Hour]);
   const dateBoundaries = model.segments;
 
   const cellWidth =
     dims.inner > 0 ? dims.inner / TOTAL_HOURS : 0;
 
-  const railOffset = isLive
-    ? dims.outer / 2 -
-      (progress / TOTAL_HOURS) *
-        dims.inner
-    : 0;
+  const railOffset = (isLive ? dims.outer / 2 : 0) - progress * cellWidth;
+  const markerLeftPx = railOffset + (realNow - model.start) / 3_600_000 * cellWidth;
+  useTimelineScrub(outerRef, cellWidth, onPan, onReset);
 
   const LABEL_WIDTH_ESTIMATE = 80;
 
@@ -149,9 +159,14 @@ const TimelineInner: React.FC<TimelineProps> = ({
     <div
       ref={outerRef}
       data-date-mode={isLive ? "live" : "date"}
-      data-preview-instant={now.toISOString()}
+      data-preview-instant={new Date(viewTime).toISOString()}
+      role={onPan ? "region" : undefined}
+      aria-label={onPan ? `${label ?? timezone.split("/").pop()?.replace(/_/g, " ")} timeline. Drag horizontally or use arrow keys to explore; Home returns to now.` : undefined}
+      tabIndex={onPan ? 0 : undefined}
+      style={{ touchAction: onPan ? "pan-y pinch-zoom" : undefined }}
       className={twMerge(
-        "overflow-hidden w-full h-full relative select-none cursor-default",
+        "overflow-hidden w-full h-full relative select-none",
+        onPan ? "cursor-grab data-[scrubbing=true]:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dt-accent)]" : "cursor-default",
         className,
       )}
     >
@@ -173,8 +188,8 @@ const TimelineInner: React.FC<TimelineProps> = ({
                 animate={{
                   opacity:
                     isLive &&
-                    fl.x > dims.outer / 2 - 120 &&
-                    fl.x < dims.outer / 2 + 50
+                    fl.x > markerLeftPx - 120 &&
+                    fl.x < markerLeftPx + 50
                       ? 0
                       : 1,
                   x: 0,
@@ -259,6 +274,10 @@ const TimelineInner: React.FC<TimelineProps> = ({
         )}
       </AnimatePresence>
 
+      {/* Fade only the movable cells; the real-time marker, date labels and focus outline stay crisp. */}
+      <div className={`absolute inset-0 ${onPan ? "scroll-fade-x" : ""}`}
+        style={onPan ? { "--scroll-fade-left": panHours > (isLive ? -12 : 0) ? "16px" : "0px",
+          "--scroll-fade-right": panHours < 24 ? "16px" : "0px" } as React.CSSProperties : undefined}>
       {/* ── Inner rail ── */}
       <div
         ref={innerRef}
@@ -304,7 +323,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
         >
           {model.cells.map((cell) => {
             const { index } = cell;
-            const isCurrentHour = isLive && index === CENTER_INDEX;
+            const isCurrentHour = isLive && Math.floor((realNow - model.start) / 3_600_000) === index;
             const isHovered = hoveredHourIndex === index;
             const isNight = cell.isNight;
             const isMidnight = model.boundaries.some((boundary) => boundary.time === cell.time);
@@ -398,6 +417,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
             </div>
           ))}
         </motion.div>
+      </div>
       </div>
     </div>
   );

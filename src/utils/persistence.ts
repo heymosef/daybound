@@ -1,3 +1,4 @@
+import { canonicalTimezone } from "./bundledTimezones";
 import type { AppSettings, TimezoneConfig } from "./timezoneUtils";
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -35,14 +36,7 @@ const optionalText = (value: unknown): string | undefined =>
   typeof value === "string" && value.length <= MAX_TEXT_LENGTH ? value : undefined;
 
 function isTimezone(value: unknown): value is string {
-  if (typeof value !== "string" || !value || /^[+-]/.test(value)) return false;
-  try {
-    // Intl accepts UTC and backward-compatible IANA aliases absent from supportedValuesOf.
-    new Intl.DateTimeFormat("en", { timeZone: value }).format(0);
-    return true;
-  } catch {
-    return false;
-  }
+  return typeof value === "string" && canonicalTimezone(value) !== undefined;
 }
 
 export function parseTimezoneConfig(value: unknown): TimezoneConfig[] {

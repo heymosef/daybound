@@ -61,3 +61,19 @@ The existing Pages workflow validates and builds `dist/`, then publishes it on m
 - `src/analytics/`: Minimal usage transport and React provider.
 - `scripts/browser-fixtures.mjs`: Ignored offline smoke-page generator.
 - `plans/`: Approved maintenance plans and validation evidence. Plans010/011 remain deferred designs.
+
+## Timeline exploration and timezone updates
+
+Drag or swipe a timeline to explore all cities together; horizontal trackpad
+scrolling also works. With a timeline focused, use arrow keys, Shift+arrow keys
+or Page Up/Down. Exploration
+can reach 24 hours ahead and holds its time while city clocks remain live.
+Return to now (or Home), choosing a date, or changing the reference city resets
+it. Vertical page scrolling and pinch zoom remain available.
+
+Calendar popups fit the visible viewport, opening above the trigger or scrolling
+internally when needed.
+
+Timezone rules are bundled independently of device updates, including BC's
+permanent Pacific Time/PCT. See [timezone sources and the update process](docs/timezone-data.md).
+Run `npm run tz:check` to compare the pinned rules with IANA's current release.

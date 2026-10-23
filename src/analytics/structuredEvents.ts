@@ -1,3 +1,4 @@
+import { canonicalTimezone } from "../utils/bundledTimezones";
 import type { AppSettings } from "../utils/timezoneUtils";
 import { pickerCity } from "./searchCatalog";
 
@@ -32,12 +33,6 @@ export function projectSettingsChange(p: Record<string, unknown>) {
     (["timezone_badge", "weekend_indicator"].includes(p.setting) && typeof p.value === "boolean");
   if (!valid || (typeof p.value !== "string" && typeof p.value !== "boolean")) return;
   return { setting: p.setting, value: p.value };
-}
-
-function canonicalTimezone(value: unknown): string | undefined {
-  if (typeof value !== "string" || value.length > 100 || /^[+-]/.test(value)) return;
-  try { return new Intl.DateTimeFormat("en", { timeZone: value }).resolvedOptions().timeZone; }
-  catch { return; }
 }
 
 /** Rebuild public fields from validated IANA/picker data; never use row labels/country. */

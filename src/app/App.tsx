@@ -1,3 +1,4 @@
+import { canonicalTimezone } from "../utils/bundledTimezones";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Clock, X } from "lucide-react";
 import { useAnalytics } from "../analytics/AnalyticsProvider";
@@ -240,7 +241,7 @@ function App() {
   const homeTimezone =
     timezones.find((t) => t.isHome)?.timezone ||
     timezones[0]?.timezone ||
-    Intl.DateTimeFormat().resolvedOptions().timeZone;
+    canonicalTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC";
   const selectedDate = selection.mode === "date" ? selection.date : null;
   const homeToday = getZonedFields(now, homeTimezone).date;
   const selectedStart = useMemo(() => selectedDate && isCalendarDate(selectedDate)
@@ -250,6 +251,25 @@ function App() {
   const selectedDateOffset = isLive ? 0 : calendarDifference(selectedDate!, homeToday);
   const displayTime = isLive ? now : selectedStart!;
   const effectiveSelection = isLive ? LIVE_SELECTION : selection;
+  const timelineContext = `${homeTimezone}|${isLive ? "live" : selectedDate}`;
+  const [explored, setExplored] = useState<{ context: string; base: number; hours: number } | null>(null);
+  const exploration = explored?.context === timelineContext ? explored : null;
+  const timelineTime = exploration ? new Date(exploration.base) : displayTime;
+  const baseTime = displayTime.getTime();
+  const handlePanTimeline = useCallback((delta: number) => {
+    if (!Number.isFinite(delta)) return;
+    setExplored(previous => {
+      const origin = previous?.context === timelineContext ? previous : { context: timelineContext, base: baseTime, hours: 0 };
+      return { ...origin, hours: Math.max(isLive ? -12 : 0, Math.min(24, origin.hours + delta)) };
+    });
+    setHoveredHourIndex(null);
+  }, [timelineContext, baseTime, isLive]);
+  const returnToNow = useCallback(() => {
+    setExplored(null);
+    setSelection(LIVE_SELECTION);
+    document.querySelector<HTMLButtonElement>('[aria-current="date"]')?.focus();
+  }, []);
+
   const timezoneIds = useMemo(() => timezones.map((timezone) => timezone.timezone), [timezones]);
 
   useEffect(() => {
@@ -265,6 +285,7 @@ function App() {
       return;
     }
     setDateFeedback("");
+    setExplored(null);
     setSelection(next);
   }, [homeTimezone]);
 
@@ -274,7 +295,7 @@ function App() {
       if (timezones.length === 0) {
         try {
           const localZone =
-            Intl.DateTimeFormat().resolvedOptions().timeZone;
+            canonicalTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC";
           const newTimezone: TimezoneConfig = {
             id: crypto.randomUUID(),
             timezone: localZone,
@@ -368,6 +389,7 @@ function App() {
     
     if (homeTz) {
       setTimezones([homeTz, ...others]);
+      setExplored(null);
       if (!timezones.find((tz) => tz.id === id)?.isHome) {
         const city = homeTz.city ? pickerCity(pickerResultId(homeTz.timezone, homeTz.city)) : undefined;
         capture("home_timezone_changed", { reference_timezone: homeTz.timezone,
@@ -464,6 +486,10 @@ function App() {
             )}
           </div>
 
+          <div className="flex min-h-11 items-center justify-between gap-3 text-sm text-[var(--dt-text-secondary)]">
+            <span>{exploration ? "Exploring · clocks stay live" : "Swipe timelines to explore"}</span>
+            <button type="button" disabled={!exploration} onClick={returnToNow} className="shrink-0 rounded-md px-3 py-2 bg-[var(--dt-control-bg)] text-[var(--dt-text)] disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dt-accent)]">Return to now</button>
+          </div>
           {dateFeedback && <p role="status" className="text-sm text-[var(--dt-text-secondary)]">{dateFeedback}</p>}
           <div className="divide-y divide-[var(--dt-border)]">
             {timezones.length === 0 ? (
@@ -483,7 +509,7 @@ function App() {
                 </p>
               </div>
             ) : (
-              <LayoutGroup>
+            <LayoutGroup>
                 <AnimatePresence>
                   {timezones.map((tz, index) => (
                     <motion.div
@@ -511,7 +537,10 @@ function App() {
                       <TimezoneRow
                         config={tz}
                         now={now}
-                        timelineTime={displayTime}
+                        timelineTime={timelineTime}
+                        panHours={exploration?.hours ?? 0}
+                        onPan={handlePanTimeline}
+                        onResetTimeline={returnToNow}
                         onRemove={handleRemoveTimezone}
                         onRename={handleRename}
                         onMove={moveTimezone}

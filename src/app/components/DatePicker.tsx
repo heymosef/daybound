@@ -24,6 +24,7 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const calendarButtonRef = useRef<HTMLButtonElement>(null);
   const firstButtonRef = useRef<HTMLButtonElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   useScrollFade(stripRef, "x");
@@ -85,6 +86,7 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
         | "today_button",
     ) => {
       setIsCalendarOpen(false);
+      if (method !== "outside_click") calendarButtonRef.current?.focus();
       capture("calendar_closed", { method });
     },
     [capture],
@@ -174,6 +176,7 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
 
       <div className="relative h-full">
         <button
+          ref={calendarButtonRef}
           onClick={toggleCalendar}
           className="flex items-center justify-center p-[0.5em] bg-[var(--dt-control-bg)] rounded-md transition-all duration-200 text-[var(--dt-text-secondary)] hover:text-[var(--dt-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)] h-full min-w-[2.5em]"
           aria-label="Open calendar"
@@ -188,6 +191,7 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
           onSelectDate={handleCalendarSelect}
           selection={selection}
           containerRef={containerRef}
+          anchorRef={calendarButtonRef}
           homeTimezone={homeTimezone}
           now={now}
         />

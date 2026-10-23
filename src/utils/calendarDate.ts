@@ -1,22 +1,9 @@
+import { bundledZonedFields } from "./bundledTimezones";
+
 export type DateSelection = { mode: "live" } | { mode: "date"; date: string };
 export const LIVE_SELECTION: DateSelection = { mode: "live" };
 export const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
-const formatters = new Map<string, Intl.DateTimeFormat>();
-
-function formatter(timezone: string): Intl.DateTimeFormat {
-  let result = formatters.get(timezone);
-  if (!result) {
-    result = new Intl.DateTimeFormat("en-US-u-ca-gregory-nu-latn", {
-      timeZone: timezone, era: "short", year: "numeric", month: "2-digit", day: "2-digit",
-      hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
-      weekday: "short", timeZoneName: "short",
-    });
-    if (formatters.size >= 128) formatters.delete(formatters.keys().next().value!);
-    formatters.set(timezone, result);
-  }
-  return result;
-}
 
 function surrogate(year: number, month: number, day: number): Date {
   const date = new Date(0);
@@ -41,22 +28,7 @@ export function calendarSurrogate(key: string): Date {
 }
 
 export function getZonedFields(instant: Date | number, timezone: string) {
-  const epoch = instant instanceof Date ? instant.getTime() : instant;
-  const parts = formatter(timezone).formatToParts(epoch);
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)!.value;
-  const year = part("era") === "BC" ? 1 - Number(part("year")) : Number(part("year"));
-  const month = Number(part("month"));
-  const day = Number(part("day"));
-  const hour = Number(part("hour"));
-  const minute = Number(part("minute"));
-  const second = Number(part("second"));
-  const localFields = surrogate(year, month, day);
-  localFields.setUTCHours(hour, minute, second);
-  return {
-    date: keyOf(localFields), year, month, day, hour, minute, second,
-    weekday: part("weekday"), abbreviation: part("timeZoneName"),
-    offsetSeconds: (localFields.getTime() - Math.floor(epoch / 1000) * 1000) / 1000,
-  };
+  return bundledZonedFields(instant instanceof Date ? instant.getTime() : instant, timezone);
 }
 
 export const addCalendarDays = (key: string, days: number): string => {
@@ -83,7 +55,7 @@ export function formatCalendarDate(key: string, options: Intl.DateTimeFormatOpti
 
 /**
  * All local-date boundaries in [start, end), including backward date jumps.
- * Intl exposes fields, not transitions: hourly OFFSET brackets assume at most
+ * Hourly OFFSET brackets assume at most
  * one offset change per hour (as in the supported IANA timezone data). They do
  * not assume that calendar dates are monotonic or last at least an hour.
  */

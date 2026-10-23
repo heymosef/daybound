@@ -380,14 +380,13 @@ describe("App minimal analytics transport integration", () => {
     expect(screen.getByRole("menuitemradio", { name: "24H" })).toHaveAttribute("aria-checked", "true");
   });
 
-  it("preserves a picker alias through rename/reload and reports it when explicitly made home", async () => {
+  it("preserves a picker alias through rename/reload and reports it when explicitly made home", () => {
     const { unmount } = render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "Seattle" } });
     fireEvent.click(screen.getByRole("option", { name: /Seattle/ }));
     const added = JSON.parse(localStorage.getItem("timezone_config")!).find((row: { city?: string }) => row.city === "Seattle");
     expect(added).toMatchObject({ timezone: "America/Los_Angeles", city: "Seattle" });
-    await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
-    fireEvent.click(screen.getByText("Seattle"));
+    fireEvent.click(screen.getByText("Seattle", { selector: "span.truncate" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Edit timezone label" }), { target: { value: privateRename } });
     fireEvent.keyDown(screen.getByRole("textbox", { name: "Edit timezone label" }), { key: "Enter" });
     unmount();
@@ -489,4 +488,58 @@ it("reuses fixed-date and calendar-day resolutions through hover, closed/open mi
   unmount();
   starts.mockRestore();
   vi.useRealTimers();
+});
+
+
+describe("synchronized timeline exploration", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-22T19:43:00Z"));
+    localStorage.clear();
+    localStorage.setItem("app_settings", JSON.stringify({ use24Hour: true }));
+    localStorage.setItem("timezone_config", JSON.stringify([
+      { id: "utc", timezone: "UTC", isHome: true },
+      { id: "tokyo", timezone: "Asia/Tokyo", isHome: false },
+    ]));
+  });
+  afterEach(() => { vi.useRealTimers(); });
+  const views = () => screen.getAllByRole("region", { name: /timeline\. Drag/ });
+  const instants = () => views().map(view => view.getAttribute("data-preview-instant"));
+  it("reaches 24 hours ahead on all rows, freezes the view across minutes, and leaves clocks live", () => {
+    render(<App />);
+    for (let i = 0; i < 4; i++) fireEvent.keyDown(views()[0], { key: "ArrowRight", shiftKey: true });
+    expect(instants()).toEqual(["2026-10-23T19:43:00.000Z", "2026-10-23T19:43:00.000Z"]);
+    fireEvent.keyDown(views()[1], { key: "ArrowRight" });
+    expect(instants()).toEqual(["2026-10-23T19:43:00.000Z", "2026-10-23T19:43:00.000Z"]);
+    act(() => vi.advanceTimersByTime(60000));
+    expect(instants()[0]).toBe("2026-10-23T19:43:00.000Z");
+    for (const clock of screen.getAllByTestId("row-clock")) expect(clock).toHaveAttribute("datetime", "2026-10-22T19:44:00.000Z");
+    fireEvent.click(screen.getByRole("button", { name: "Return to now" }));
+    expect(instants()[0]).toBe("2026-10-22T19:44:00.000Z");
+    expect(screen.getByRole("button", { name: "Return to now" })).toBeDisabled();
+  });
+  it("resets exploration on date selection and home changes", () => {
+    render(<App />);
+    fireEvent.keyDown(views()[0], { key: "ArrowRight" });
+    fireEvent.click(screen.getByRole("button", { name: "23 Oct" }));
+    expect(instants()).toEqual(["2026-10-23T00:00:00.000Z", "2026-10-23T00:00:00.000Z"]);
+    expect(screen.getByRole("button", { name: "Return to now" })).toBeDisabled();
+    fireEvent.keyDown(views()[0], { key: "ArrowRight" });
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "tokyo" } });
+    expect(instants()[0]).toBe("2026-10-22T15:00:00.000Z");
+    expect(screen.getByRole("button", { name: "Return to now" })).toBeDisabled();
+  });
+  it("accepts horizontal wheels and preserves vertical page scrolling", () => {
+    render(<App />);
+    fireEvent.wheel(views()[0], { deltaY: 100 });
+    act(() => vi.advanceTimersByTime(20));
+    expect(screen.getByRole("button", { name: "Return to now" })).toBeDisabled();
+    const horizontal = new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaX: 100 });
+    fireEvent(views()[0], horizontal);
+    expect(horizontal.defaultPrevented).toBe(true);
+    act(() => vi.advanceTimersToNextFrame());
+    expect(screen.getByRole("button", { name: "Return to now" })).toBeEnabled();
+    expect(instants()[0]).toBe(instants()[1]);
+  });
 });

@@ -65,7 +65,7 @@ it("renders Kolkata 02:30 correctly in the real row, marker and rail during the 
   expect(screen.getByTestId("current-marker")).toHaveStyle({ left: "1250px" });
   expect(container.querySelector('[data-timeline-cell="12"]')).toHaveTextContent("2:30");
   expect(container.querySelector('[data-timeline-cell="12"]')).toHaveAttribute("title", expect.stringContaining("UTC+05:30"));
-  expect(getAbbreviation(now, "Asia/Kolkata")).toBe("GMT+5:30");
+  expect(getAbbreviation(now, "Asia/Kolkata")).toBe("IST");
 });
 
 it("exposes repeated-hour offsets and exact instants in rendered accessible cell names", () => {

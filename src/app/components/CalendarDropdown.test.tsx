@@ -117,3 +117,14 @@ it("disables an entirely skipped calendar day and explains why", () => {
   expect(screen.getByRole("button", { name: "Friday, December 30, 2011" })).toBeDisabled();
   expect(screen.getByRole("status")).toHaveTextContent("Some dates do not exist in this timezone and cannot be selected.");
 });
+
+it("keeps focus inside the portalled calendar when reopening after browsing another month", () => {
+  render(<button>Outside calendar</button>);
+  const { update } = renderCalendar();
+  fireEvent.click(screen.getByRole("button", { name: "Next month" }));
+  update({ isOpen: false });
+  screen.getByRole("button", { name: "Outside calendar" }).focus();
+  update({ isOpen: true });
+  expect(screen.getByText("March 2026")).toBeInTheDocument();
+  expect(screen.getByRole("dialog", { name: "Choose date" })).toContainElement(document.activeElement as HTMLElement);
+});

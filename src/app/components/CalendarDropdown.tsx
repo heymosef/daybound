@@ -1,4 +1,6 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { usePopupPosition } from "../../hooks/usePopupPosition";
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { motion, AnimatePresence } from "motion/react";
@@ -17,6 +19,7 @@ interface CalendarDropdownProps {
   onSelectDate: (selection: DateSelection) => void;
   selection: DateSelection;
   containerRef?: React.RefObject<HTMLDivElement | null>;
+  anchorRef?: React.RefObject<HTMLElement | null>;
   homeTimezone: string;
   now: Date;
 }
@@ -29,11 +32,23 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
   onSelectDate,
   selection,
   containerRef,
+  anchorRef,
   homeTimezone,
   now,
 }) => {
   const { capture } = useAnalytics();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const position = usePopupPosition(isOpen, wrapperRef, anchorRef ?? containerRef);
+  useLayoutEffect(() => {
+    const popup = wrapperRef.current;
+    if (!popup) return;
+    popup.inert = !isOpen;
+    if (isOpen) {
+      const target = popup.querySelector<HTMLButtonElement>('button[aria-pressed="true"], button[aria-current="date"]') ??
+        popup.querySelector<HTMLButtonElement>('[aria-label="Next month"]');
+      target?.focus({ preventScroll: true });
+    }
+  }, [isOpen]);
   const today = getZonedFields(now, homeTimezone).date;
   const selectedDate = selection.mode === "date" ? selection.date : today;
   const selectedMonth = startOfCalendarMonth(selectedDate);
@@ -56,7 +71,8 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
     function handleClickOutside(event: MouseEvent) {
       if (
         outsideRef.current &&
-        !outsideRef.current.contains(event.target as Node)
+        !outsideRef.current.contains(event.target as Node) &&
+        !wrapperRef.current?.contains(event.target as Node)
       ) {
         onClose("outside_click");
       }
@@ -120,13 +136,15 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
     });
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
           ref={wrapperRef}
-          className="absolute top-full right-0 mt-[0.5em] bg-[var(--dt-search-dropdown)] rounded-lg drop-shadow-xl border border-[var(--dt-border)] overflow-hidden z-50 ring-1 ring-black/5 min-w-[18em]"
-          style={{ transformOrigin: "top" }}
+          role="dialog"
+          aria-label="Choose date"
+          className="fixed bg-[var(--dt-search-dropdown)] rounded-lg drop-shadow-xl border border-[var(--dt-border)] overflow-y-auto overscroll-contain z-50 ring-1 ring-black/5"
+          style={{ ...position, transformOrigin: "top" }}
           initial={{ opacity: 0, scaleY: 0.96, y: -4 }}
           animate={{
             opacity: 1,
@@ -173,7 +191,7 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
               {DAY_HEADERS.map((d, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-center w-[2.5em] h-[2em] text-[clamp(10px,0.5vw+7px,12px)] font-medium text-[var(--dt-text-muted)]"
+                  className="flex items-center justify-center w-full h-[2em] text-[clamp(10px,0.5vw+7px,12px)] font-medium text-[var(--dt-text-muted)]"
                 >
                   {d}
                 </div>
@@ -182,7 +200,7 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
 
             <div className="grid grid-cols-7">
               {Array.from({ length: leadingBlanks }).map((_, i) => (
-                <div key={`blank-${i}`} className="w-[2.5em] h-[2.5em]" />
+                <div key={`blank-${i}`} className="w-full aspect-square min-w-0" />
               ))}
 
               {days.map(({ date: day, unavailable }) => {
@@ -193,7 +211,7 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
                   !isDayToday && day === selectedDate;
 
                 let cellClass =
-                  "flex items-center justify-center w-[2.5em] h-[2.5em] text-[clamp(12px,0.6vw+8px,14px)] transition-colors ";
+                  "flex items-center justify-center w-full aspect-square min-w-0 text-[clamp(12px,0.6vw+8px,14px)] transition-colors ";
 
                 if (isPast || unavailable) {
                   cellClass +=
@@ -214,6 +232,8 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
                     key={day}
                     className={cellClass}
                     onClick={() => handleDayClick(day, unavailable)}
+                    aria-current={isDayToday ? "date" : undefined}
+                    aria-pressed={day === selectedDate}
                     aria-disabled={isPast || unavailable}
                     disabled={unavailable}
                     title={unavailable ? `This date does not exist in ${homeTimezone}. Choose another date.` : undefined}
@@ -243,6 +263,7 @@ export const CalendarDropdown: React.FC<CalendarDropdownProps> = ({
           </div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 };

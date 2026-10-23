@@ -13,7 +13,7 @@ const source = (file) => JSON.stringify(path.join(project, file));
 
 await writeFile(path.join(entries, "index.html"), `<!doctype html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' data:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' data:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' blob:; worker-src 'self' blob:">
 <title>Daybound offline browser fixture</title></head><body>
 <aside id="fixture" aria-label="Offline fixture controls" style="position:relative;z-index:9999;background:#fff;color:#111;padding:12px;font:14px system-ui">
 <strong>Offline fixture — real App</strong><p id="fixture-clock"></p>
@@ -29,6 +29,7 @@ const params = new URLSearchParams(location.search);
 const scenario = params.get("scenario") || "midnight";
 const clocks = {
   midnight: "2026-03-07T23:59:30Z",
+  "bc-fall": "2026-11-01T08:59:30Z",
   fractional: "2026-03-07T21:00:00Z",
   "dst-spring": "2026-03-08T06:59:30Z",
   "dst-fall": "2026-11-01T05:59:30Z",
@@ -77,8 +78,8 @@ window.fetch = (input, init = {}) => {
     render();
   });
 };
-const home = scenario.startsWith("dst-") ? "America/New_York" : scenario === "st-johns" ? "America/St_Johns" : "UTC";
-const zones = [...new Set([home, "UTC", "Asia/Kolkata", "Asia/Kathmandu", "Australia/Adelaide", "America/New_York", "Australia/Lord_Howe"])];
+const home = scenario === "bc-fall" ? "America/Vancouver" : scenario.startsWith("dst-") ? "America/New_York" : scenario === "st-johns" ? "America/St_Johns" : "UTC";
+const zones = [...new Set([home, ...(scenario === "bc-fall" ? ["America/Los_Angeles", "America/Edmonton", "America/Winnipeg"] : []), "UTC", "Asia/Kolkata", "Asia/Kathmandu", "Australia/Adelaide", "America/New_York", "Australia/Lord_Howe"])];
 const store = window.localStorage;
 const profile = scenario + ":" + storageMode + ":" + analytics;
 if (store.getItem("daybound-smoke:profile") !== profile || params.get("reset") === "1") {
