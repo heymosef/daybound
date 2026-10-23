@@ -52,3 +52,13 @@ All work remains on the local maintenance branch in the attached worktree. Origi
 - No bundle-saving claim for unimported culori.
 - No unrelated branch deletion/history rewrite; log removal affects future commits only.
 - Optional feature policy questions remain deferred discovery, outside maintenance implementation.
+
+## Subsequent local integration and search analytics
+
+The maintenance work was subsequently merged into the original checkout locally.
+The user then requested linked city-search analytics, including a filtered sample
+of unrecognized failed words under normal PostHog retention. See the
+[implementation and verification record](search-analytics-implementation.md) and
+[report setup guide](../docs/search-analytics.md). The earlier maintenance privacy
+scope and checkout-state statements above describe that earlier milestone.
+Optional features remain deferred; all work remains local.

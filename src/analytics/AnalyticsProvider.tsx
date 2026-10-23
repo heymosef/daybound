@@ -28,3 +28,6 @@ export function useAnalytics() {
   const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   return { ...snapshot, capture: controller.capture, setEnabled: controller.setEnabled };
 }
+
+/** Internal synchronous policy subscription for cancellable search classification. */
+export function useAnalyticsController() { return useContext(AnalyticsContext); }

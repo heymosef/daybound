@@ -1,5 +1,5 @@
 // Builds an offline browser shell around the real application. Never loads .env.
-import { mkdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
@@ -45,6 +45,11 @@ const requests = [];
 const pending = new Set();
 const storageMode = params.get("storage") || "normal";
 const analytics = params.get("analytics") === "on";
+if (params.get("sampleSearches") === "1") {
+  let sequence = 0;
+  // Offline only: every random journey falls in the sampled bucket; IDs remain distinct.
+  crypto.randomUUID = () => "00000000-0000-4000-8000-" + (++sequence).toString(16).padStart(12, "0");
+}
 const render = () => {
   document.getElementById("fixture-clock").textContent = new RealDate(now).toISOString() +
     " | scenario=" + scenario + " | storage=" + storageMode + " | analytics=" + analytics;
@@ -130,6 +135,7 @@ await build({
   define: { "import.meta.env.VITE_PUBLIC_POSTHOG_KEY": "undefined", "import.meta.env.VITE_PUBLIC_POSTHOG_HOST": "undefined" },
   build: { outDir: output, emptyOutDir: true, target: "esnext" },
 });
+await copyFile(path.join(project, "public/city-data-credits.html"), path.join(output, "city-data-credits.html"));
 console.log(`Offline fixture built at ${output}/index.html`);
 console.log(`Serve: python3 -m http.server 4174 --bind 127.0.0.1 --directory ${output}`);
 console.log("Open http://127.0.0.1:4174/?scenario=midnight&analytics=on (see plans/browser-fixtures.md)");

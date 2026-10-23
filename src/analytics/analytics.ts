@@ -1,4 +1,6 @@
-/** Explicit usage events only. Never pass labels, searches, or browser metadata here. */
+import { projectSearchEvent, type SearchAttemptEvent, type SearchClosedEvent, type SearchSelectedEvent } from "./searchEvents";
+
+/** Explicit events only. Search text is restricted to the approved filtered sample. */
 export interface AnalyticsEvents {
   timezone_added: { timezone_count_after: number };
   timezone_removed: { timezone_count_after: number };
@@ -7,6 +9,9 @@ export interface AnalyticsEvents {
   home_timezone_changed: undefined;
   keyboard_shortcut_used: { shortcut: "cmd_k" | "ctrl_k" };
   timezone_search_no_results: { query_length: number; query_words: number };
+  timezone_search_attempted: SearchAttemptEvent;
+  timezone_search_selected: SearchSelectedEvent;
+  timezone_search_closed: SearchClosedEvent;
   date_selected_strip: { date_offset: number };
   date_selected_calendar: { date_offset: number; month_distance: number };
   calendar_opened: undefined;
@@ -72,7 +77,7 @@ function readPreference(raw: string | null): boolean | undefined {
   return value.enabled;
 }
 
-type Properties = Record<string, number | string>;
+type Properties = Record<string, number | string | boolean>;
 const integer = (value: unknown, min: number, max: number): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
 
@@ -80,6 +85,8 @@ const integer = (value: unknown, min: number, max: number): value is number =>
 function project(event: keyof AnalyticsEvents, input: unknown): Properties | undefined {
   const p = typeof input === "object" && input !== null ? input as Record<string, unknown> : {};
   switch (event) {
+    case "timezone_search_attempted": case "timezone_search_selected": case "timezone_search_closed":
+      return projectSearchEvent(event, p);
     case "timezone_renamed": case "home_timezone_changed": case "calendar_opened": return {};
     case "timezone_added": case "timezone_removed":
       return integer(p.timezone_count_after, 0, 100) ? { timezone_count_after: p.timezone_count_after } : undefined;

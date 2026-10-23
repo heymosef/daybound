@@ -13,6 +13,7 @@ import {
 } from "../../utils/timezoneUtils";
 import { motion, AnimatePresence } from "motion/react";
 import { useAnalytics } from "../../analytics/AnalyticsProvider";
+import { useSearchJourney } from "../../hooks/useSearchJourney";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
 
 /** Normalize underscores ↔ spaces for matching */
@@ -110,6 +111,14 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
       };
     }, [search, allTimezones, existingSet]);
 
+  const searchSnapshot = useMemo(() => ({ query: search, available: availableResults.length,
+    alreadyAdded: alreadyAddedResults.length }), [search, availableResults.length, alreadyAddedResults.length]);
+  const journey = useSearchJourney(searchSnapshot, isOpen);
+  const closeSearch = useCallback((method: "outside_click" | "escape" | "focus_left") => {
+    journey.close(searchSnapshot, method);
+    setIsOpen(false);
+  }, [journey, searchSnapshot]);
+
   // Reset highlight when results change
   useEffect(() => {
     setHighlightedIndex(0);
@@ -132,7 +141,7 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
         wrapperRef.current &&
         !wrapperRef.current.contains(event.target as Node)
       ) {
-        setIsOpen(false);
+        closeSearch("outside_click");
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -141,7 +150,7 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
         "mousedown",
         handleClickOutside,
       );
-  }, [wrapperRef]);
+  }, [closeSearch]);
 
   // Keyboard shortcut Cmd+K
   useEffect(() => {
@@ -162,6 +171,7 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
 
   const handleSelect = useCallback(
     (result: SearchResult) => {
+      journey.select(searchSnapshot, result);
       // Pass the alias city name as the label so the row shows "Mumbai" not "Kolkata"
       onAdd(
         result.timezone,
@@ -170,7 +180,7 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
       setSearch("");
       setIsOpen(false);
     },
-    [onAdd],
+    [onAdd, journey, searchSnapshot],
   );
 
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
@@ -199,8 +209,8 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
         break;
       case "Escape":
         e.preventDefault();
+        closeSearch("escape");
         setSearch("");
-        setIsOpen(false);
         inputRef.current?.blur();
         break;
     }
@@ -211,29 +221,13 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
   const hasAlreadyAdded = alreadyAddedResults.length > 0;
   const noResults = !hasAvailable && !hasAlreadyAdded;
 
-  const lastNoResultQuery = useRef("");
-
-  useEffect(() => {
-    const trimmed = search.trim();
-    if (trimmed.length < 3) return;
-    if (!noResults) return;
-
-    if (lastNoResultQuery.current === trimmed) return;
-
-    const timer = window.setTimeout(() => {
-      lastNoResultQuery.current = trimmed;
-      const words = trimmed.split(/\s+/).filter(Boolean);
-      capture("timezone_search_no_results", {
-        query_length: trimmed.length,
-        query_words: words.length,
-      });
-    }, 700);
-
-    return () => window.clearTimeout(timer);
-  }, [search, noResults, capture]);
-
   return (
-    <div className="relative w-full md:w-[24.5em] h-full" ref={wrapperRef}>
+    <div className="relative w-full md:w-[24.5em] h-full" ref={wrapperRef}
+      onBlur={(event) => {
+        // Safari can blur an input to null before a result's click. Null is not
+        // evidence of leaving search; outside pointer clicks are handled above.
+        if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node)) closeSearch("focus_left");
+      }}>
       <div
         className={`group flex items-center gap-[0.5em] px-[0.75em] py-[0.375em] bg-[var(--dt-search-surface)] border border-[var(--dt-border-strong)] rounded-md transition-all focus-within:outline-none focus-within:bg-[var(--dt-bg)] focus-within:ring-2 focus-within:ring-[var(--dt-accent)] hover:bg-[var(--dt-bg)] h-full ${isOpen ? "ring-2 ring-[var(--dt-accent)] bg-[var(--dt-bg)]" : ""}`}
         onClick={() => {
@@ -272,9 +266,11 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                journey.attempt(searchSnapshot);
                 setSearch("");
                 inputRef.current?.focus();
               }}
+              aria-label="Clear search"
               className="flex items-center justify-center md:px-[0.375em] md:py-[0.125em] md:bg-[var(--dt-surface-raised)] md:border md:border-[var(--dt-border-strong)] md:rounded transition-colors focus:[outline-style:solid]"
             >
               <X

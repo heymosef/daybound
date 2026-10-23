@@ -27,7 +27,7 @@ it("has a named, described native toggle with keyboard activation and focus styl
   const user = userEvent.setup();
   mountSettings();
   expect(toggle()).toHaveAttribute("aria-checked", "true");
-  expect(toggle()).toHaveAccessibleDescription("Only basic usage events are shared. Labels and searches stay on this device.");
+  expect(toggle()).toHaveAccessibleDescription("Usage actions, city selections, and a filtered sample of unsuccessful searches may be shared. Custom labels stay on this device.");
   expect(toggle()).toHaveClass("focus-visible:ring-2", "focus-visible:ring-[var(--dt-accent)]");
   toggle().focus();
   await user.keyboard(" ");

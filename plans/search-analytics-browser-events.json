@@ -1,0 +1,162 @@
+[
+  {
+    "event": "timezone_search_attempted",
+    "properties": {
+      "search_id": "00000000-0000-4000-8000-000000000001",
+      "attempt": 1,
+      "elapsed_ms": 0,
+      "search_version": 2,
+      "query_length": 7,
+      "query_words": 1,
+      "available_results": 0,
+      "already_added_results": 0,
+      "no_results": true,
+      "recognition": "city",
+      "candidate_count": 1,
+      "follow_up": false,
+      "missing_city": true,
+      "search_match_failure": false,
+      "requested_city_id": 2745912,
+      "requested_city": "Utrecht",
+      "requested_country": "NL",
+      "requested_region": "09",
+      "requested_timezone": "Europe/Amsterdam",
+      "city_in_picker": false,
+      "$process_person_profile": false,
+      "$geoip_disable": true
+    }
+  },
+  {
+    "event": "timezone_search_no_results",
+    "properties": {
+      "query_length": 7,
+      "query_words": 1,
+      "$process_person_profile": false,
+      "$geoip_disable": true
+    }
+  },
+  {
+    "event": "timezone_added",
+    "properties": {
+      "timezone_count_after": 7,
+      "$process_person_profile": false,
+      "$geoip_disable": true
+    }
+  },
+  {
+    "event": "timezone_search_attempted",
+    "properties": {
+      "search_id": "00000000-0000-4000-8000-000000000001",
+      "attempt": 2,
+      "elapsed_ms": 0,
+      "search_version": 2,
+      "query_length": 9,
+      "query_words": 1,
+      "available_results": 1,
+      "already_added_results": 0,
+      "no_results": false,
+      "recognition": "ambiguous",
+      "candidate_count": 2,
+      "follow_up": true,
+      "missing_city": false,
+      "search_match_failure": false,
+      "requested_city": "Amsterdam",
+      "$process_person_profile": false,
+      "$geoip_disable": true
+    }
+  },
+  {
+    "event": "timezone_search_selected",
+    "properties": {
+      "search_id": "00000000-0000-4000-8000-000000000001",
+      "attempt": 2,
+      "elapsed_ms": 0,
+      "search_version": 2,
+      "selected_result_id": "Europe/Amsterdam|Amsterdam",
+      "selected_city": "Amsterdam",
+      "selected_timezone": "Europe/Amsterdam",
+      "selected_country": "Netherlands",
+      "selected_city_id": 2759794,
+      "$process_person_profile": false,
+      "$geoip_disable": true
+    }
+  },
+  {
+    "event": "timezone_search_attempted",
+    "properties": {
+      "search_id": "00000000-0000-4000-8000-000000000004",
+      "attempt": 1,
+      "elapsed_ms": 0,
+      "search_version": 2,
+      "query_length": 8,
+      "query_words": 1,
+      "available_results": 0,
+      "already_added_results": 0,
+      "no_results": true,
+      "recognition": "unrecognized",
+      "candidate_count": 0,
+      "follow_up": false,
+      "missing_city": false,
+      "search_match_failure": false,
+      "filtered_query": "vancuver",
+      "sample_index": 1,
+      "$process_person_profile": false,
+      "$geoip_disable": true
+    }
+  },
+  {
+    "event": "timezone_search_no_results",
+    "properties": {
+      "query_length": 8,
+      "query_words": 1,
+      "$process_person_profile": false,
+      "$geoip_disable": true
+    }
+  },
+  {
+    "event": "timezone_added",
+    "properties": {
+      "timezone_count_after": 8,
+      "$process_person_profile": false,
+      "$geoip_disable": true
+    }
+  },
+  {
+    "event": "timezone_search_attempted",
+    "properties": {
+      "search_id": "00000000-0000-4000-8000-000000000004",
+      "attempt": 2,
+      "elapsed_ms": 0,
+      "search_version": 2,
+      "query_length": 6,
+      "query_words": 1,
+      "available_results": 1,
+      "already_added_results": 0,
+      "no_results": false,
+      "recognition": "ambiguous",
+      "candidate_count": 2,
+      "follow_up": true,
+      "missing_city": false,
+      "search_match_failure": false,
+      "requested_city": "London",
+      "$process_person_profile": false,
+      "$geoip_disable": true
+    }
+  },
+  {
+    "event": "timezone_search_selected",
+    "properties": {
+      "search_id": "00000000-0000-4000-8000-000000000004",
+      "attempt": 2,
+      "elapsed_ms": 0,
+      "search_version": 2,
+      "selected_result_id": "Europe/London|London",
+      "selected_city": "London",
+      "selected_timezone": "Europe/London",
+      "selected_country": "UK",
+      "selected_city_id": 2643743,
+      "$process_person_profile": false,
+      "$geoip_disable": true
+    }
+  }
+]
