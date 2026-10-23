@@ -64,16 +64,17 @@ export function formatCalendarDate(key: string, options: Intl.DateTimeFormatOpti
 }
 
 /**
- * All local-date boundaries in [start, end), including backward date jumps.
+ * Local-date and UTC-offset changes in [start, end), including backward date jumps.
  * Hourly OFFSET brackets assume at most
  * one offset change per hour (as in the supported IANA timezone data). They do
  * not assume that calendar dates are monotonic or last at least an hour.
  */
-export function calendarDateTransitions(start: number, end: number, timezone: string): number[] {
+export function timezoneTransitions(start: number, end: number, timezone: string) {
   if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || end <= start) {
     throw new RangeError("Invalid date transition interval");
   }
   const spans: { start: number; end: number; offset: number }[] = [];
+  const offsetChanges: { time: number; before: number; after: number }[] = [];
   // Include the millisecond preceding the rail so a boundary at start survives.
   let spanStart = start - 1;
   let offset = getZonedFields(spanStart, timezone).offsetSeconds;
@@ -89,6 +90,7 @@ export function calendarDateTransitions(start: number, end: number, timezone: st
         else high = middle;
       }
       spans.push({ start: spanStart, end: high, offset });
+      if (high >= start && high < end) offsetChanges.push({ time: high, before: offset, after: nextOffset });
       spanStart = high;
       offset = nextOffset;
     }
@@ -112,9 +114,14 @@ export function calendarDateTransitions(start: number, end: number, timezone: st
       candidates.add(midnight);
     }
   }
-  return [...candidates]
+  const dates = [...candidates]
     .filter((time) => getZonedFields(time, timezone).date !== getZonedFields(time - 1, timezone).date)
     .sort((a, b) => a - b);
+  return { dates, offsetChanges };
+}
+
+export function calendarDateTransitions(start: number, end: number, timezone: string): number[] {
+  return timezoneTransitions(start, end, timezone).dates;
 }
 
 /** Earliest occurrence in a bounded 72h window, including brief/repeated dates. */

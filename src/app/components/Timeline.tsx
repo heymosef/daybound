@@ -11,6 +11,7 @@ import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { motion, AnimatePresence } from "motion/react";
 import { MorphingTime } from "./MorphingTime";
+import { Undo2, Redo2 } from "lucide-react";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
 import "./Timeline.css";
 
@@ -458,6 +459,23 @@ const TimelineInner: React.FC<TimelineProps> = ({
         </motion.div>
       </div>
       </div>
+
+      {dims.outer > 0 && model.clockChanges.map(change => {
+        const x = railOffset + change.index * cellWidth;
+        if (x < 0 || x >= dims.outer) return null;
+        const Icon = change.delta < 0 ? Undo2 : Redo2;
+        return (
+          <div key={change.time} className="timeline-clock-change"
+            data-clock-change={new Date(change.time).toISOString()}
+            data-change-seconds={change.delta}
+            role="img" aria-label={change.description} style={{ left: x }}>
+            <span className="timeline-clock-change-label" aria-hidden="true"
+              style={x > dims.outer / 2 ? { right: 4 } : { left: 4 }}>
+              <Icon size={12} aria-hidden="true" />{change.label}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 };

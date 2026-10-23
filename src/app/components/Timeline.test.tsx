@@ -142,6 +142,28 @@ it("renders the missing New York spring hour as an instant jump from 1 to 3", ()
   expect(screen.queryByRole("button", { name: /^2026-03-08 2:00/ })).not.toBeInTheDocument();
 });
 
+it("keeps the clock-change indicator visible during selection without restoring the current-time marker", () => {
+  const select = vi.fn();
+  const { container, rerender } = renderRail({ now: new Date("2026-11-01T00:00:00Z"), timezone: "America/New_York",
+    selectedTime: Date.parse("2026-11-01T06:00:00Z"), onSelectTime: select });
+  const marker = screen.getByRole("img", { name: "Clocks go back 1h. UTC-04:00 to UTC-05:00." });
+  expect(marker).toHaveAttribute("data-clock-change", "2026-11-01T06:00:00.000Z");
+  expect(marker).toHaveStyle({ left: "600px" });
+  expect(marker).toHaveTextContent("Back 1h");
+  expect(screen.queryByTestId("current-marker")).not.toBeInTheDocument();
+  fireEvent.click(container.querySelector('[data-selected]')!);
+  expect(select).toHaveBeenCalledExactlyOnceWith(Date.parse("2026-11-01T06:00:00Z"));
+  rerender(<Timeline now={new Date("2026-11-01T00:00:00Z")} timezone="America/Vancouver" isLive={false} selectedDateOffset={1} />);
+  expect(screen.queryByRole("img")).not.toBeInTheDocument();
+});
+
+it("places a half-hour forward marker between cells and follows scrubbing", () => {
+  const { rerender } = renderRail({ now: new Date("2026-10-03T13:00:00Z"), timezone: "Australia/Lord_Howe" });
+  expect(screen.getByRole("img", { name: /Clocks go forward 30m/ })).toHaveStyle({ left: "250px" });
+  rerender(<Timeline now={new Date("2026-10-03T13:00:00Z")} timezone="Australia/Lord_Howe" isLive={false} selectedDateOffset={1} panHours={3} />);
+  expect(screen.queryByRole("img")).not.toBeInTheDocument();
+});
+
 it("preserves the motion wrapper at midnight then glides forward to the next date", () => {
   const fixed = new Date("2026-12-05T00:00:00Z");
   const { rerender } = renderRail({ now: fixed, timezone: "UTC", selectedDateOffset: 44 });

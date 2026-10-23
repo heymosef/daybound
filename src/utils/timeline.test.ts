@@ -68,6 +68,36 @@ it("disambiguates New York's repeated fall hour with exact instant and offset", 
   expect(repeated[0].description).toContain("UTC-04:00");
   expect(repeated[1].description).toContain("UTC-05:00");
 });
+
+it.each([
+  ["America/New_York", "2026-11-01T00:00:00Z", "2026-11-01T06:00:00Z", -3600, "Back 1h"],
+  ["America/New_York", "2026-03-08T00:00:00Z", "2026-03-08T07:00:00Z", 3600, "Forward 1h"],
+  ["Australia/Lord_Howe", "2026-04-04T13:00:00Z", "2026-04-04T15:00:00Z", -1800, "Back 30m"],
+  ["Australia/Lord_Howe", "2026-10-03T13:00:00Z", "2026-10-03T15:30:00Z", 1800, "Forward 30m"],
+])("marks the exact clock change in %s at %s", (zone, start, change, delta, label) => {
+  const model = createTimeline(new Date(start), zone, false);
+  expect(model.clockChanges).toHaveLength(1);
+  expect(model.clockChanges[0]).toMatchObject({
+    time: Date.parse(change), index: (Date.parse(change) - Date.parse(start)) / 3600000, delta, label,
+  });
+  expect(model.clockChanges[0].description).toContain("UTC");
+});
+
+it("marks only affected zones and keeps BC on permanent Pacific time", () => {
+  const now = new Date("2026-11-01T00:00:00Z");
+  for (const zone of ["America/Vancouver", "UTC", "Asia/Kathmandu"]) {
+    expect(createTimeline(now, zone, false).clockChanges).toEqual([]);
+  }
+  expect(createTimeline(now, "America/Los_Angeles", false).clockChanges[0].time).toBe(Date.parse("2026-11-01T09:00:00Z"));
+});
+
+it("includes a change at rail start and inside the final cell, excluding the right endpoint", () => {
+  const zone = "America/New_York", at = Date.parse("2026-11-01T06:00:00Z");
+  expect(createTimeline(new Date(at), zone, false).clockChanges[0].index).toBe(0);
+  expect(createTimeline(new Date(at - 24.5 * 3600000), zone, false).clockChanges[0].index).toBe(24.5);
+  expect(createTimeline(new Date(at - 25 * 3600000), zone, false).clockChanges).toEqual([]);
+  expect(createTimeline(new Date(at + 1), zone, false).clockChanges).toEqual([]);
+});
 it.each([
   ["2026-09-06", "America/Santiago", "2026-09-06T04:00:00.000Z", 23],
   ["2026-11-01", "America/Havana", "2026-11-01T04:00:00.000Z", 25],

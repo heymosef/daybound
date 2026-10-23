@@ -127,3 +127,16 @@ selection fills without box outlines, rounded band ends, a home-row anchor dot
 4.53:1–8.82:1 across TE-1, Gamut, and DOS in both appearances, using computed sRGB
 colors clamped to the display gamut. Typecheck, lint, all 402 tests, and build
 passed. Forced-colors styling has a system-color fallback but was not emulated.
+
+Clock-change indicator check, 2026-10-23: only affected rows show a dashed
+transition marker with Back/Forward and the exact change amount. The date-boundary
+scan supplies offset changes too, without a second scan. Automated coverage
+includes spring/fall, Lord Howe half-hour changes, rail endpoints, fractional
+positions, selection, panning, and Vancouver's permanent Pacific time. Offline
+desktop and 390px checks confirmed Back/Forward labels fit and remain visible
+with a selected column, while current-time markers stay hidden. Across TE-1,
+Gamut and DOS in both appearances, measured label contrast was 14.30:1–19.68:1;
+the lowest observed marker contrast against a selected fill, including theme
+transitions, was 7.22:1. Forced-colors fallback is present but was not emulated.
+Node24 typecheck, lint, all 410 tests in 23 files, production and offline fixture
+builds passed. No live analytics credentials were used.

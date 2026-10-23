@@ -7,6 +7,30 @@
   border-radius: 0.375em;
 }
 
+/* Opaque, inverted theme colors stay distinct from day, night and selection fills. */
+.timeline-clock-change {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 20;
+  border-left: 1px dashed var(--dt-text);
+  pointer-events: none;
+}
+
+.timeline-clock-change-label {
+  position: absolute;
+  bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 14px;
+  white-space: nowrap;
+  background: var(--dt-text);
+  color: var(--dt-bg);
+}
+
 @media (min-width: 768px) {
   .timeline-viewport [data-selected] { border-radius: 0; }
   .timeline-viewport[data-first-row] [data-selected] { border-radius: 0.375em 0.375em 0 0; }
@@ -19,4 +43,10 @@
     --dt-timeline-selection-text: HighlightText;
   }
   .timeline-viewport [data-selected] { forced-color-adjust: none; }
+  .timeline-clock-change { border-color: CanvasText; }
+  .timeline-clock-change-label {
+    background: CanvasText;
+    color: Canvas;
+    forced-color-adjust: none;
+  }
 }

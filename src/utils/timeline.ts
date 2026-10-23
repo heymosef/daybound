@@ -1,5 +1,5 @@
 import { utcOffsetLabel } from "./formatOffset";
-import { calendarDateTransitions, formatCalendarDate, getZonedFields, HOUR_MS } from "./calendarDate";
+import { timezoneTransitions, formatCalendarDate, getZonedFields, HOUR_MS } from "./calendarDate";
 
 export const TOTAL_HOURS = 25;
 export const PAN_LIMIT_HOURS = 24;
@@ -45,7 +45,22 @@ export function createTimeline(instant: Date, timezone: string, isLive: boolean,
   };
   // Shared offset spans find brief and backward date crossings through the
   // final cell, while excluding the rail's right endpoint.
-  const boundaries = calendarDateTransitions(start, end, timezone).map(boundaryAt);
+  const { dates, offsetChanges } = timezoneTransitions(start, end, timezone);
+  const boundaries = dates.map(boundaryAt);
   const segments = [boundaryAt(start), ...boundaries.filter((boundary) => boundary.time > start)];
-  return { start, end, anchor, progress, cells, boundaries, segments };
+  const clockChanges = offsetChanges.map(({ time, before, after }) => {
+    const delta = after - before;
+    const seconds = Math.abs(delta);
+    const duration = [
+      seconds >= 3600 ? `${Math.floor(seconds / 3600)}h` : "",
+      seconds % 3600 >= 60 ? `${Math.floor(seconds % 3600 / 60)}m` : "",
+      seconds % 60 ? `${seconds % 60}s` : "",
+    ].filter(Boolean).join(" ");
+    return {
+      time, index: (time - start) / HOUR_MS, delta,
+      label: `${delta < 0 ? "Back" : "Forward"} ${duration}`,
+      description: `Clocks go ${delta < 0 ? "back" : "forward"} ${duration}. ${utcOffsetLabel(before)} to ${utcOffsetLabel(after)}.`,
+    };
+  });
+  return { start, end, anchor, progress, cells, boundaries, segments, clockChanges };
 }
