@@ -1,9 +1,11 @@
+import { initializeTheme } from "../utils/theme";
+import { useTheme } from "../hooks/useTheme";
 import { PAN_LIMIT_HOURS } from "../utils/timeline";
 import { canonicalTimezone } from "../utils/bundledTimezones";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Clock, X } from "lucide-react";
 import { useAnalytics } from "../analytics/AnalyticsProvider";
-import { pickerCity, pickerResultId } from "../analytics/searchCatalog";
+import { pickerCity, pickerResultId } from "../utils/cityCatalog";
 import { settingsChanges } from "../analytics/structuredEvents";
 import { useTime } from "../hooks/useTime";
 import { usePersistentState } from "../hooks/useStorage";
@@ -12,7 +14,6 @@ import {
   parseAppSettings,
   parseTimezoneConfig,
   parseNoticeDismissed,
-  readPersistentValue,
 } from "../utils/persistence";
 import {
   TimezoneConfig,
@@ -36,111 +37,8 @@ import Daybound from "../imports/Daybound";
 // Register the squircle paint worklet for smooth corners (idempotent)
 registerSquircle();
 
-// ── Theme color map (hex only – must match CSS hex fallbacks in theme.css) ──
-const THEME_COLORS: Record<string, { light: string; dark: string }> = {
-  gamut: { light: "#ffffff", dark: "#292929" },
-  "te-1": { light: "#ececec", dark: "#333333" },
-  dos: { light: "#f4f9f4", dark: "#022c22" },
-};
-
-/**
- * Compute the resolved theme color hex for a given designTheme + mode.
- * Always returns a 7-char hex like "#333333".
- */
-function resolveThemeColor(
-  designTheme: string,
-  mode: "light" | "dark" | "system"
-): string {
-  const palette = THEME_COLORS[designTheme] || THEME_COLORS["gamut"];
-  const isSystemDark =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const isDark = mode === "dark" || (mode === "system" && isSystemDark);
-  return isDark ? palette.dark : palette.light;
-}
-
-/**
- * Aggressively set/replace the <meta name="theme-color"> tag and paint
- * html + body backgrounds so that iOS Safari / Android Chrome system bars
- * always match the app background. Removes ALL existing theme-color tags
- * to avoid conflicts, then inserts a fresh one at the top of <head>.
- */
-function applySystemBarColor(color: string) {
-  // 1. Remove every existing theme-color meta (there may be several)
-  document
-    .querySelectorAll('meta[name="theme-color"]')
-    .forEach((el) => el.remove());
-
-  // 2. Create a fresh tag and prepend it so Safari reads it first
-  const meta = document.createElement("meta");
-  meta.setAttribute("name", "theme-color");
-  meta.setAttribute("content", color);
-  document.head.prepend(meta);
-
-  // 3. Paint html + body inline so overscroll / safe-area gaps match
-  document.documentElement.style.backgroundColor = color;
-  document.body.style.backgroundColor = color;
-}
-
-// ── SYNCHRONOUS pre-React initialisation ──────────────────────────────
-// Runs once when the module is first imported (before any component
-// renders) so Safari sees the meta tag at first-contentful-paint.
-(function earlyThemeInit() {
-  try {
-    // Read persisted settings from localStorage (same key as usePersistentState)
-    const { value: saved } = readPersistentValue("app_settings", DEFAULT_SETTINGS, parseAppSettings);
-    const designTheme = saved.designTheme || "te-1";
-    const mode = saved.theme || "system";
-
-    // Resolve whether dark mode
-    const isSystemDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-    const isDark =
-      mode === "dark" || (mode === "system" && isSystemDark);
-
-    // 1. Apply dark class on <html>
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-
-    // 2. Set the design-theme data attribute so CSS variables resolve
-    document.documentElement.setAttribute(
-      "data-design-theme",
-      designTheme
-    );
-
-    // 3. Set theme-color + backgrounds
-    const color = resolveThemeColor(designTheme, mode);
-    applySystemBarColor(color);
-
-    // 4. Ensure viewport-fit=cover (needed for iOS safe-area)
-    const vp = document.querySelector('meta[name="viewport"]');
-    if (vp) {
-      const c = vp.getAttribute("content") || "";
-      if (!c.includes("viewport-fit=cover")) {
-        vp.setAttribute("content", c + ", viewport-fit=cover");
-      }
-    }
-
-    // 5. Apple web-app meta tags (only matter when added to home screen)
-    const ensureMeta = (name: string, content: string) => {
-      let m = document.querySelector(`meta[name="${name}"]`);
-      if (!m) {
-        m = document.createElement("meta");
-        m.setAttribute("name", name);
-        document.head.appendChild(m);
-      }
-      m.setAttribute("content", content);
-    };
-    ensureMeta("apple-mobile-web-app-capable", "yes");
-    ensureMeta("apple-mobile-web-app-status-bar-style", "black-translucent");
-  } catch {
-    // Silently ignore – the useEffect hooks below are the real authority
-  }
-})();
+// Paint the saved theme before React’s first render.
+initializeTheme();
 
 function App() {
   const now = useTime();
@@ -160,7 +58,7 @@ function App() {
     );
 
   const savingUnavailable = [timezonePersistence, settingsPersistence, noticePersistence].includes("unavailable");
-  const designTheme = settings.designTheme || "te-1";
+  useTheme(settings);
 
   const { capture } = useAnalytics();
 
@@ -168,69 +66,6 @@ function App() {
     setSettings(next);
     for (const event of settingsChanges(settings, next)) capture("settings_changed", event);
   }, [capture, settings, setSettings]);
-
-  // Apply Theme (light/dark/system) - Class List Management
-  useEffect(() => {
-    const root = window.document.documentElement;
-    const theme = settings.theme || "system";
-
-    const applyTheme = (t: "light" | "dark" | "system") => {
-      let isDarkMode = false;
-      if (t === "dark") {
-        isDarkMode = true;
-      } else if (t === "light") {
-        isDarkMode = false;
-      } else if (t === "system") {
-        isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      }
-
-      if (isDarkMode) {
-        root.classList.add("dark");
-      } else {
-        root.classList.remove("dark");
-      }
-    };
-
-    applyTheme(theme);
-
-    if (theme === "system") {
-      const mediaQuery = window.matchMedia(
-        "(prefers-color-scheme: dark)",
-      );
-      const handleChange = () => applyTheme("system");
-      mediaQuery.addEventListener("change", handleChange);
-      return () =>
-        mediaQuery.removeEventListener("change", handleChange);
-    }
-  }, [settings.theme]);
-
-  // Update theme-color meta tag (Safari/Mobile Support)
-  useEffect(() => {
-    const mode = settings.theme || "system";
-
-    const updateTheme = () => {
-      const color = resolveThemeColor(designTheme, mode);
-
-      // Aggressively replace theme-color and set backgrounds
-      applySystemBarColor(color);
-    };
-    
-    updateTheme();
-
-    if (mode === "system") {
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      const handleChange = () => updateTheme();
-      mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
-    }
-  }, [designTheme, settings.theme]);
-
-  // Apply Design Theme
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.setAttribute("data-design-theme", designTheme);
-  }, [designTheme]);
-
 
   const [initialized, setInitialized] = useState(false);
   const [selection, setSelection] = useState<DateSelection>(LIVE_SELECTION);

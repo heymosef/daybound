@@ -57,6 +57,8 @@ at Git commit `6996580a91dc8582771ac091526eeb407a168f1a`. Its milestone counts a
 checkout statements describe their historical candidates, not current status.
 A LazyMotion/domMax bundle experiment was rejected because it showed no size gain;
 normal bundle measurement remains available in `scripts/measure-bundle.mjs`.
-Theme application and the shared picker catalogue remain optional refactors,
-not part of this cleanup. Preserve platform theme/color fallbacks and distinct
-picker matching versus analytics recognition if those are undertaken later.
+Theme application is shared between synchronous startup and one system-theme
+listener. The product-owned city catalogue supplies picker entries and stable
+analytics identities. Preserve platform theme/color fallbacks, direct-result
+versus alias-metadata precedence, and distinct picker matching versus analytics
+recognition when changing these modules.

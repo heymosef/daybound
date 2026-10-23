@@ -17,6 +17,7 @@ await writeFile(path.join(entries, "index.html"), `<!doctype html>
 <title>Daybound offline browser fixture</title></head><body>
 <aside id="fixture" aria-label="Offline fixture controls" style="position:relative;z-index:9999;background:#fff;color:#111;padding:12px;font:14px system-ui">
 <strong>Offline fixture — real App</strong><p id="fixture-clock"></p>
+<button id="system-theme" hidden>Simulate system theme change</button> <output id="startup-theme"></output>
 <button id="minute">Advance minute</button> <button id="day">Advance day</button>
 <button id="background-minute">Advance minute without focus</button> <button id="focus">Resume focus</button>
 <button id="external-opt-out">Simulate other-tab opt-out</button> <button id="complete">Complete pending requests</button>
@@ -27,6 +28,18 @@ await writeFile(path.join(entries, "index.html"), `<!doctype html>
 await writeFile(path.join(entries, "bootstrap.js"), `
 const params = new URLSearchParams(location.search);
 const scenario = params.get("scenario") || "midnight";
+const requestedSystemTheme = params.get("systemTheme");
+const systemTheme = ["light", "dark"].includes(requestedSystemTheme) ? requestedSystemTheme : null;
+if (systemTheme === "light" || systemTheme === "dark") {
+  const nativeMatchMedia = window.matchMedia.bind(window);
+  let dark = systemTheme === "dark";
+  const media = new EventTarget();
+  Object.defineProperty(media, "matches", { get: () => dark });
+  window.matchMedia = query => query === "(prefers-color-scheme: dark)" ? media : nativeMatchMedia(query);
+  const toggle = document.getElementById("system-theme");
+  toggle.hidden = false;
+  toggle.onclick = () => { dark = !dark; media.dispatchEvent(new Event("change")); };
+}
 const clocks = {
   midnight: "2026-03-07T23:59:30Z",
   "bc-fall": "2026-11-01T08:59:30Z",
@@ -81,10 +94,10 @@ window.fetch = (input, init = {}) => {
 const home = scenario === "bc-fall" ? "America/Vancouver" : scenario.startsWith("dst-") ? "America/New_York" : scenario === "st-johns" ? "America/St_Johns" : "UTC";
 const zones = [...new Set([home, ...(scenario === "bc-fall" ? ["America/Los_Angeles", "America/Edmonton", "America/Winnipeg"] : []), "UTC", "Asia/Kolkata", "Asia/Kathmandu", "Australia/Adelaide", "America/New_York", "Australia/Lord_Howe"])];
 const store = window.localStorage;
-const profile = scenario + ":" + storageMode + ":" + analytics;
+const profile = scenario + ":" + storageMode + ":" + analytics + ":" + systemTheme;
 if (store.getItem("daybound-smoke:profile") !== profile || params.get("reset") === "1") {
   store.setItem("timezone_config", JSON.stringify(zones.map((timezone, i) => ({id: "fixture-" + i, timezone, isHome: i === 0}))));
-  store.setItem("app_settings", JSON.stringify({use24Hour: true, theme: "light", designTheme: "te-1", showBadge: true, showWeekends: true}));
+  store.setItem("app_settings", JSON.stringify({use24Hour: true, theme: systemTheme ? "system" : "light", designTheme: "te-1", showBadge: true, showWeekends: true}));
   store.setItem("local_save_notice_dismissed", "false");
   store.removeItem("daybound:analytics:v1");
   if (storageMode === "corrupt") {
@@ -126,6 +139,11 @@ import ${source("src/styles/index.css")};
 const [{default: App}, {AnalyticsProvider}] = await Promise.all([
   import(${source("src/app/App.tsx")}), import(${source("src/analytics/AnalyticsProvider.tsx")}),
 ]);
+document.getElementById("startup-theme").textContent = " Startup theme before React: " + JSON.stringify({
+  dark: document.documentElement.classList.contains("dark"),
+  design: document.documentElement.dataset.designTheme,
+  color: document.querySelector('meta[name="theme-color"]')?.content,
+});
 createRoot(document.getElementById("root")).render(
   <React.StrictMode><AnalyticsProvider options={window.dayboundFixtureOptions}><App /></AnalyticsProvider></React.StrictMode>
 );

@@ -6,27 +6,13 @@ import React, {
   useMemo,
 } from "react";
 import { Search, X, Check } from "lucide-react";
-import {
-  getCommonTimezones,
-  CITY_ALIASES,
-  type SearchResult,
-} from "../../utils/timezoneUtils";
+import type { SearchResult } from "../../utils/timezoneUtils";
+import { searchPicker } from "../../utils/cityCatalog";
 import { motion, AnimatePresence } from "motion/react";
 import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { useSearchJourney } from "../../hooks/useSearchJourney";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
 import { useScrollFade } from "../../hooks/useScrollFade";
-
-/** Normalize underscores ↔ spaces for matching */
-const normalize = (s: string) =>
-  s.toLowerCase().replace(/_/g, " ");
-
-/** Check if a string matches the query (space/underscore tolerant) */
-const matchesQuery = (text: string, query: string): boolean => {
-  const q = normalize(query).trim();
-  if (!q) return false;
-  return normalize(text).includes(q);
-};
 
 interface AddTimezoneProps {
   onAdd: (timezone: string, label?: string) => void;
@@ -45,72 +31,11 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const allTimezones = useMemo(() => getCommonTimezones(), []);
   const existingSet = useMemo(() => new Set(existingTimezones), [existingTimezones]);
 
-  // Build unified search results: IANA direct matches + city alias matches
-  const { availableResults, alreadyAddedResults } =
-    useMemo(() => {
-      const trimmed = search.trim();
-      if (!trimmed)
-        return {
-          availableResults: [] as SearchResult[],
-          alreadyAddedResults: [] as SearchResult[],
-        };
-
-      const seenKeys = new Set<string>(); // dedup key = "timezone|displayCity"
-      const available: SearchResult[] = [];
-      const alreadyAdded: SearchResult[] = [];
-
-      // 1. IANA direct matches
-      for (const tz of allTimezones) {
-        if (!matchesQuery(tz, search)) continue;
-        const city =
-          tz.split("/").pop()?.replace(/_/g, " ") || tz;
-        const key = `${tz}|${city}`;
-        if (seenKeys.has(key)) continue;
-        seenKeys.add(key);
-
-        const result: SearchResult = {
-          timezone: tz,
-          displayCity: city,
-          iana: tz,
-          isAlias: false,
-        };
-        if (existingSet.has(tz)) {
-          alreadyAdded.push(result);
-        } else {
-          available.push(result);
-        }
-      }
-
-      // 2. City alias matches
-      for (const [cityName, info] of Object.entries(
-        CITY_ALIASES,
-      )) {
-        if (!matchesQuery(cityName, search)) continue;
-        const key = `${info.timezone}|${cityName}`;
-        if (seenKeys.has(key)) continue;
-        seenKeys.add(key);
-
-        const result: SearchResult = {
-          timezone: info.timezone,
-          displayCity: cityName,
-          iana: info.timezone,
-          isAlias: true,
-        };
-        if (existingSet.has(info.timezone)) {
-          alreadyAdded.push(result);
-        } else {
-          available.push(result);
-        }
-      }
-
-      return {
-        availableResults: available.slice(0, 50),
-        alreadyAddedResults: alreadyAdded,
-      };
-    }, [search, allTimezones, existingSet]);
+  const { availableResults, alreadyAddedResults } = useMemo(
+    () => searchPicker(search, existingSet), [search, existingSet],
+  );
 
   const searchSnapshot = useMemo(() => ({ query: search, available: availableResults.length,
     alreadyAdded: alreadyAddedResults.length }), [search, availableResults.length, alreadyAddedResults.length]);

@@ -1,5 +1,6 @@
+import { pickerResultId } from "../utils/cityCatalog";
 import type { AnalyticsController } from "./analytics";
-import { filteredFailedQuery, loadCityCatalog, normalizeSearch, pickerResultId, recognizeCity, samplesUnknownWords } from "./searchCatalog";
+import { filteredFailedQuery, loadCityCatalog, normalizeSearch, recognizeCity, samplesUnknownWords } from "./searchCatalog";
 import type { SearchClosedEvent } from "./searchEvents";
 import type { SearchResult } from "../utils/timezoneUtils";
 

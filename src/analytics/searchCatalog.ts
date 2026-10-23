@@ -1,4 +1,4 @@
-import { CITY_ALIASES, getCommonTimezones, getCountryFromTimezone } from "../utils/timezoneUtils";
+import { getPickerCities } from "../utils/cityCatalog";
 
 export interface CatalogCity { id: number; name: string; country: string; timezone: string; region: string }
 export type Recognition = { kind: "city"; city: CatalogCity; candidates: number } |
@@ -62,28 +62,12 @@ export function recognizeCity(query: string): Recognition {
 }
 export const catalogCity = (id: number) => cities.get(id);
 
-export interface PickerCity { id: string; name: string; timezone: string; country: string }
-let pickerCities: Map<string, PickerCity> | undefined;
-export const pickerResultId = (timezone: string, name: string) => `${timezone}|${name}`;
-function pickerIndex(): Map<string, PickerCity> {
-  if (!pickerCities) {
-    pickerCities = new Map();
-    for (const timezone of getCommonTimezones()) {
-      const name = timezone.split("/").pop()!.replace(/_/g, " ");
-      const id = pickerResultId(timezone, name);
-      pickerCities.set(id, { id, name, timezone, country: getCountryFromTimezone(timezone) });
-    }
-    for (const [name, info] of Object.entries(CITY_ALIASES)) {
-      const id = pickerResultId(info.timezone, name);
-      pickerCities.set(id, { id, name, timezone: info.timezone, country: info.country });
-    }
-  }
-  return pickerCities;
-}
-export const pickerCity = (id: string) => pickerIndex().get(id);
 export function pickerHasCity(city: CatalogCity): boolean {
   const name = normalizeSearch(city.name);
-  return [...pickerIndex().values()].some(result => normalizeSearch(result.name) === name && result.timezone === city.timezone);
+  for (const result of getPickerCities()) {
+    if (normalizeSearch(result.name) === name && result.timezone === city.timezone) return true;
+  }
+  return false;
 }
 
 /** Reject entire suspicious inputs before normalization; never turn an email into a name. */

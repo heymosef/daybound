@@ -1,6 +1,6 @@
 import { canonicalTimezone } from "../utils/bundledTimezones";
 import type { AppSettings } from "../utils/timezoneUtils";
-import { pickerCity } from "./searchCatalog";
+import { pickerCity } from "../utils/cityCatalog";
 
 export type SettingsChangedEvent =
   | { setting: "time_format"; value: "12h" | "24h" }

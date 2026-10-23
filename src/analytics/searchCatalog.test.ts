@@ -1,4 +1,5 @@
-import { filteredFailedQuery, loadCityCatalog, pickerCity, recognizeCity, samplesUnknownWords } from "./searchCatalog";
+import { pickerCity } from "../utils/cityCatalog";
+import { filteredFailedQuery, loadCityCatalog, recognizeCity, samplesUnknownWords } from "./searchCatalog";
 import { projectSearchEvent } from "./searchEvents";
 
 beforeAll(async () => { expect(await loadCityCatalog()).toBe(true); });

@@ -40,6 +40,7 @@ All routes start at `http://127.0.0.1:4174/`:
 | `?storage=corrupt` | Malformed timezone/settings JSON before App initialization |
 | `?storage=blocked` | localStorage property getter throws SecurityError before initialization |
 | `?storage=quota` | Storage writes throw QuotaExceededError before initialization |
+| `?systemTheme=dark` (or `light`) | Fixture-only system preference; seeds System mode and enables a simulated preference-change button |
 | `?analytics=on` | Injected production fixture context, fake public token and .invalid host |
 
 Combine parameters, for example
@@ -56,6 +57,10 @@ The fixture never sets product React state directly.
 
 ## Controls and observations
 
+- Startup theme output records the root class, design and browser chrome color
+  after App initialization and before React mounts. With `systemTheme=dark` or
+  `light`, Simulate system theme change dispatches a fixture-only media event;
+  explicit Light/Dark product choices should ignore it. OS preferences are untouched.
 - Advance minute/day changes `Date`/`Date.now` and dispatches focus/visibility
   events so the real clock hook refreshes. Native timers and Motion remain real.
 - Advance minute without focus only changes the clock; Resume focus dispatches

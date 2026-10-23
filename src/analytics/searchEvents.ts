@@ -1,4 +1,5 @@
-import { catalogCity, filteredFailedQuery, isSearchId, pickerCity, pickerHasCity, recognizeCity, samplesUnknownWords } from "./searchCatalog";
+import { pickerCity } from "../utils/cityCatalog";
+import { catalogCity, filteredFailedQuery, isSearchId, pickerHasCity, recognizeCity, samplesUnknownWords } from "./searchCatalog";
 
 export interface SearchAttemptEvent {
   search_id: string;
