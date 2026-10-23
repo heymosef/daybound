@@ -1,0 +1,22 @@
+.timeline-viewport {
+  --dt-timeline-selection-bg: color-mix(in srgb, var(--dt-accent) 14%, var(--dt-bg));
+  --dt-timeline-selection-text: color-mix(in srgb, var(--dt-accent) 70%, var(--dt-text));
+}
+
+.timeline-viewport [data-selected] {
+  border-radius: 0.375em;
+}
+
+@media (min-width: 768px) {
+  .timeline-viewport [data-selected] { border-radius: 0; }
+  .timeline-viewport[data-first-row] [data-selected] { border-radius: 0.375em 0.375em 0 0; }
+  .timeline-viewport[data-last-row] [data-selected] { border-bottom-left-radius: 0.375em; border-bottom-right-radius: 0.375em; }
+}
+
+@media (forced-colors: active) {
+  .timeline-viewport {
+    --dt-timeline-selection-bg: Highlight;
+    --dt-timeline-selection-text: HighlightText;
+  }
+  .timeline-viewport [data-selected] { forced-color-adjust: none; }
+}

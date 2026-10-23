@@ -120,3 +120,10 @@ Follow-up toggle check, 2026-10-23: the refreshed production preview showed no
 time marker/pill during selection. Clicking the corresponding highlighted cell
 in another city cleared all selected columns and restored live Today. Typecheck,
 lint, all 402 tests across 23 files, and the production build passed.
+
+Soft-band check, 2026-10-23: desktop and 390px preview checks confirmed aligned
+selection fills without box outlines, rounded band ends, a home-row anchor dot
+(each row on mobile), and tap-to-clear. Selected-label contrast measured
+4.53:1–8.82:1 across TE-1, Gamut, and DOS in both appearances, using computed sRGB
+colors clamped to the display gamut. Typecheck, lint, all 402 tests, and build
+passed. Forced-colors styling has a system-color fallback but was not emulated.

@@ -12,12 +12,15 @@ import { twMerge } from "tailwind-merge";
 import { motion, AnimatePresence } from "motion/react";
 import { MorphingTime } from "./MorphingTime";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
+import "./Timeline.css";
 
 interface TimelineProps {
   now: Date;
   timezone: string;
   label?: string;
   isHome?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
   homeTimezone?: string;
   className?: string;
   use24Hour?: boolean;
@@ -40,6 +43,9 @@ const TimelineInner: React.FC<TimelineProps> = ({
   now,
   timezone,
   label,
+  isHome,
+  isFirst,
+  isLast,
   className,
   use24Hour,
   hoveredHourIndex,
@@ -165,6 +171,8 @@ const TimelineInner: React.FC<TimelineProps> = ({
     <div
       ref={outerRef}
       data-date-mode={isLive ? "live" : "date"}
+      data-first-row={isFirst || undefined}
+      data-last-row={isLast || undefined}
       data-preview-instant={new Date(viewTime).toISOString()}
       role={onPan ? "region" : undefined}
       aria-label={onPan ? `${label ?? timezone.split("/").pop()?.replace(/_/g, " ")} timeline. Drag horizontally or use arrow keys to browse; Enter selects or clears a time; Home returns to now.` : undefined}
@@ -179,7 +187,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
       }}
       style={{ touchAction: onPan ? "pan-y pinch-zoom" : undefined }}
       className={twMerge(
-        "overflow-hidden w-full h-full relative select-none",
+        "timeline-viewport overflow-hidden w-full h-full relative select-none",
         onPan ? "cursor-grab data-[scrubbing=true]:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dt-accent)]" : "cursor-default",
         className,
       )}
@@ -363,8 +371,9 @@ const TimelineInner: React.FC<TimelineProps> = ({
                 onMouseEnter={() => onHoverHour?.(index)}
                 onMouseLeave={() => onHoverHour?.(null)}
                 style={{
-                  background: isSelected || isHovered
-                    ? "var(--dt-surface-highlight)"
+                  background: isSelected
+                    ? "var(--dt-timeline-selection-bg)"
+                    : isHovered ? "var(--dt-surface-highlight)"
                     : isNight
                       ? "var(--dt-night)"
                       : "var(--dt-bg)",
@@ -374,10 +383,11 @@ const TimelineInner: React.FC<TimelineProps> = ({
                   "flex flex-col items-center justify-center",
                   "pb-[0.25em] pt-[0.5em] group/hour",
                   "border-l border-transparent transition-colors duration-75",
-                  isSelected && "ring-2 ring-inset ring-[var(--dt-accent)]",
                   onSelectTime && "cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dt-accent)]",
                 )}
               >
+                {isSelected && <span aria-hidden="true"
+                  className={clsx("absolute top-[2px] h-[5px] w-[5px] rounded-full bg-[var(--dt-timeline-selection-text)]", !isHome && "md:hidden")} />}
                 {/* Top Tick */}
                 <div
                   className={clsx(
@@ -395,7 +405,9 @@ const TimelineInner: React.FC<TimelineProps> = ({
                   <span
                     className={clsx(
                       "text-[clamp(13px,0.78vw+5px,16.25px)] font-medium leading-none",
-                      isCurrentHour
+                      isSelected
+                        ? "text-[var(--dt-timeline-selection-text)] font-bold"
+                        : isCurrentHour
                         ? "text-[var(--dt-accent)] font-bold"
                         : "text-[var(--dt-hour-text)]",
                       isMidnight &&
@@ -409,7 +421,9 @@ const TimelineInner: React.FC<TimelineProps> = ({
                     <span
                       className={clsx(
                         "text-[clamp(10px,0.5vw+8px,12px)] leading-none",
-                        isCurrentHour
+                        isSelected
+                          ? "text-[var(--dt-timeline-selection-text)]"
+                          : isCurrentHour
                           ? "text-[var(--dt-accent-80)]"
                           : "text-[var(--dt-text-secondary)]",
                       )}

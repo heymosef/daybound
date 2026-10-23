@@ -20,7 +20,8 @@ overlap remain [deferred designs](../plans/README.md).
   and highlights the corresponding cells; Enter/Space selects the reference slot.
   Tapping a selected cell again (in any row) clears the selection and restores
   live Today. Enter/Space also toggles the reference slot. The time line and pill
-  are hidden during selection; the selected column remains highlighted.
+  are hidden during selection. A soft accent band and stronger time labels mark
+  the selected column; an anchor dot appears on the home row and each mobile row.
   Both modes allow 24 hours backward/forward from their
   starting point. The top date controls follow the home-city date at the center
   in Today mode or the leading edge for a selected date; tapping a slot uses its
