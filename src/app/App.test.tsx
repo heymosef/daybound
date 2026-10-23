@@ -547,6 +547,36 @@ describe("synchronized timeline exploration", () => {
     expect(screen.getByRole("button", { name: "24 Oct", pressed: true })).toBeInTheDocument();
     expect(instants()[0]).toBe("2026-10-24T00:00:00.000Z");
   });
+  it("scrubs backward from a selected tomorrow into today and forward again without resetting the anchor", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "23 Oct" }));
+    fireEvent.keyDown(views()[0], { key: "ArrowLeft" });
+    expect(instants()).toEqual(["2026-10-22T23:00:00.000Z", "2026-10-22T23:00:00.000Z"]);
+    expect(screen.getByRole("button", { name: "22 Oct", pressed: true })).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(60000));
+    expect(instants()[0]).toBe("2026-10-22T23:00:00.000Z");
+    for (const clock of screen.getAllByTestId("row-clock")) expect(clock).toHaveAttribute("datetime", "2026-10-22T19:44:00.000Z");
+    fireEvent.keyDown(views()[1], { key: "ArrowRight" });
+    expect(instants()).toEqual(["2026-10-23T00:00:00.000Z", "2026-10-23T00:00:00.000Z"]);
+    expect(screen.getByRole("button", { name: "23 Oct", pressed: true })).toBeInTheDocument();
+    fireEvent.keyDown(views()[0], { key: "ArrowLeft" });
+    fireEvent.click(screen.getByRole("button", { name: "22 Oct" }));
+    expect(instants()[0]).toBe("2026-10-22T19:44:00.000Z");
+    expect(views()[0]).toHaveAttribute("data-date-mode", "live");
+  });
+  it.each([false, true])("allows 24 hours backward and shows matching fade bounds in selected-date mode=%s", (selected) => {
+    render(<App />);
+    if (selected) fireEvent.click(screen.getByRole("button", { name: "23 Oct" }));
+    const base = Date.parse(instants()[0]!);
+    const leftFade = () => views()[0].querySelector<HTMLElement>(".scroll-fade-x")!.style.getPropertyValue("--scroll-fade-left");
+    expect(leftFade()).toBe("16px");
+    for (let i = 0; i < 5; i++) fireEvent.keyDown(views()[0], { key: "ArrowLeft", shiftKey: true });
+    expect(instants()).toEqual(Array(2).fill(new Date(base - 24 * 3_600_000).toISOString()));
+    expect(leftFade()).toBe("0px");
+    fireEvent.keyDown(views()[0], { key: "ArrowRight" });
+    expect(instants()[0]).toBe(new Date(base - 23 * 3_600_000).toISOString());
+    expect(leftFade()).toBe("16px");
+  });
   it("recenters on tapping today even when the explored time is still today", () => {
     render(<App />);
     fireEvent.keyDown(views()[0], { key: "ArrowRight" });

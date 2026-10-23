@@ -1,3 +1,4 @@
+import { PAN_LIMIT_HOURS } from "../utils/timeline";
 import { canonicalTimezone } from "../utils/bundledTimezones";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Clock, X } from "lucide-react";
@@ -264,10 +265,10 @@ function App() {
     if (!Number.isFinite(delta)) return;
     setExplored(previous => {
       const origin = previous?.context === timelineContext ? previous : { context: timelineContext, base: baseTime, hours: 0 };
-      return { ...origin, hours: Math.max(isLive ? -12 : 0, Math.min(24, origin.hours + delta)) };
+      return { ...origin, hours: Math.max(-PAN_LIMIT_HOURS, Math.min(PAN_LIMIT_HOURS, origin.hours + delta)) };
     });
     setHoveredHourIndex(null);
-  }, [timelineContext, baseTime, isLive]);
+  }, [timelineContext, baseTime]);
   const returnToNow = useCallback(() => {
     setExplored(null);
     setSelection(LIVE_SELECTION);

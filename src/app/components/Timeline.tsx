@@ -5,7 +5,7 @@ import React, {
   useLayoutEffect,
   useMemo,
 } from "react";
-import { createTimeline, formatClock, formatZonedClock, TOTAL_HOURS } from "../../utils/timeline";
+import { createTimeline, formatClock, formatZonedClock, TOTAL_HOURS, PAN_LIMIT_HOURS } from "../../utils/timeline";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { motion, AnimatePresence } from "motion/react";
@@ -276,8 +276,8 @@ const TimelineInner: React.FC<TimelineProps> = ({
 
       {/* Fade only the movable cells; the real-time marker, date labels and focus outline stay crisp. */}
       <div className={`absolute inset-0 ${onPan ? "scroll-fade-x" : ""}`}
-        style={onPan ? { "--scroll-fade-left": panHours > (isLive ? -12 : 0) ? "16px" : "0px",
-          "--scroll-fade-right": panHours < 24 ? "16px" : "0px" } as React.CSSProperties : undefined}>
+        style={onPan ? { "--scroll-fade-left": panHours > -PAN_LIMIT_HOURS ? "16px" : "0px",
+          "--scroll-fade-right": panHours < PAN_LIMIT_HOURS ? "16px" : "0px" } as React.CSSProperties : undefined}>
       {/* ── Inner rail ── */}
       <div
         ref={innerRef}

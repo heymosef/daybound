@@ -1,6 +1,7 @@
 import { calendarDateTransitions, formatCalendarDate, getZonedFields, HOUR_MS } from "./calendarDate";
 
 export const TOTAL_HOURS = 25;
+export const PAN_LIMIT_HOURS = 24;
 export const CENTER_INDEX = 12;
 type ZonedFields = ReturnType<typeof getZonedFields>;
 

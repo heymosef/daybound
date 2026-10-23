@@ -67,7 +67,8 @@ The existing Pages workflow validates and builds `dist/`, then publishes it on m
 Drag or swipe a timeline to explore all cities together; horizontal trackpad
 scrolling also works. With a timeline focused, use arrow keys, Shift+arrow keys
 or Page Up/Down. Exploration
-can reach 24 hours ahead and holds its time while city clocks remain live.
+can move 24 hours in either direction from its starting point, including backward
+from a selected date across midnight. The view holds while city clocks remain live.
 The top date controls follow the home-city date at the rail’s reference instant
 (the center in Today mode, the leading edge for a chosen date). Tap today’s date
 (or press Home), choose a date, or change the reference city to reset the view.

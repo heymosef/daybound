@@ -3,7 +3,7 @@
 ## Accepted behavior
 
 All timelines move together while city clocks stay live. Exploration reaches
-24 elapsed hours ahead, holds its absolute view while real time advances, and
+24 elapsed hours in either direction, holds its absolute view while real time advances, and
 resets by tapping today’s date, selecting a date or changing the home city. Horizontal
 pointer/touch dragging, horizontal wheels, keyboard arrows/Shift+arrows and
 Page Up/Down are supported. Vertical page scrolling, pinch zoom and Home reset
@@ -102,3 +102,16 @@ remains. Browser checks on the offline real App confirmed that crossing from
 March 7 23:59:30 to March 8 00:59:30 selects March 8 in the strip and popup;
 advancing the clock across midnight leaves the viewed time fixed; tapping
 March 8 recenters to the current 00:00:30. No live analytics were used.
+
+
+## Backward scrubbing follow-up
+
+A selected date previously clamped backward movement at its starting midnight,
+which prevented tomorrow-to-today navigation. Both modes now allow 24 elapsed
+hours backward and forward from their anchor. The edge fades use the same shared
+limit. The anchor remains fixed when the surfaced date crosses midnight.
+
+Node 24/npm 11: typecheck, lint, 21 files / 374 tests, and production build PASS.
+Regression coverage selects tomorrow, moves backward into today on all rows,
+keeps clocks live, moves forward across midnight again, and resets by tapping
+today. Both modes also check the backward limit and fade behavior.
