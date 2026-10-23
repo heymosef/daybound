@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { useSearchJourney } from "../../hooks/useSearchJourney";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
+import { useScrollFade } from "../../hooks/useScrollFade";
 
 /** Normalize underscores ↔ spaces for matching */
 const normalize = (s: string) =>
@@ -217,6 +218,7 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
   };
 
   const showDropdown = isOpen && search.trim().length > 0;
+  useScrollFade(listRef, "y", showDropdown);
   const hasAvailable = availableResults.length > 0;
   const hasAlreadyAdded = alreadyAddedResults.length > 0;
   const noResults = !hasAvailable && !hasAlreadyAdded;
@@ -295,8 +297,7 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
       <AnimatePresence>
         {showDropdown && (
           <motion.div
-            ref={listRef}
-            className="absolute top-full left-0 right-0 mt-[0.5em] bg-[var(--dt-search-dropdown)] rounded-lg drop-shadow-xl border border-[var(--dt-border)] overflow-hidden z-50 py-1 max-h-64 overflow-y-auto ring-1 ring-black/5"
+            className="absolute top-full left-0 right-0 mt-[0.5em] bg-[var(--dt-search-dropdown)] rounded-lg drop-shadow-xl border border-[var(--dt-border)] overflow-hidden z-50 ring-1 ring-black/5"
             style={{ transformOrigin: "top" }}
             initial={{ opacity: 0, scaleY: 0.96, y: -4 }}
             animate={{
@@ -311,9 +312,8 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
               y: -4,
               transition: { duration: 0.12, ease: EASE_IN },
             }}
-            role="listbox"
-            id="tz-listbox"
           >
+            <div ref={listRef} className="scroll-fade-y py-1 max-h-64 overflow-y-auto" role="listbox" id="tz-listbox">
             {noResults ? (
               <div className="px-3 py-[2em] text-center">
                 <p className="text-[clamp(14px,0.78vw+5px,18px)] text-[var(--dt-text)] font-medium">
@@ -389,6 +389,7 @@ const AddTimezoneInner: React.FC<AddTimezoneProps> = ({
                 )}
               </div>
             )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

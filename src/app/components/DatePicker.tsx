@@ -5,6 +5,7 @@ import { addCalendarDays, calendarDifference, formatCalendarDate, getZonedFields
 import { motion, AnimatePresence } from "motion/react";
 import { EASE_OUT } from "../../utils/animation";
 import { CalendarDropdown } from "./CalendarDropdown";
+import { useScrollFade } from "../../hooks/useScrollFade";
 
 interface DatePickerProps {
   selection: DateSelection;
@@ -24,6 +25,8 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const firstButtonRef = useRef<HTMLButtonElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
+  useScrollFade(stripRef, "x");
 
   const homeToday = getZonedFields(now, homeTimezone).date;
   const isLive = selection.mode === "live";
@@ -45,12 +48,15 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
       const btnRect = btn.getBoundingClientRect();
       const centerX = btnRect.left - wrapRect.left + btnRect.width / 2;
       wrap.style.setProperty("--indicator-left", `${centerX}px`);
+      wrap.style.setProperty("--indicator-visibility", btnRect.left >= wrapRect.left - 1 && btnRect.right <= wrapRect.right + 1 ? "visible" : "hidden");
     };
 
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(wrap);
-    return () => ro.disconnect();
+    const strip = stripRef.current;
+    strip?.addEventListener("scroll", measure, { passive: true });
+    return () => { ro.disconnect(); strip?.removeEventListener("scroll", measure); };
   }, []);
 
   const handleStripSelect = (offset: number) => {
@@ -107,7 +113,7 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.85 }}
               transition={{ duration: 0.2, ease: EASE_OUT }}
-              className="absolute top-0 -translate-x-1/2 -translate-y-[55%] z-10 pointer-events-none"
+              className="absolute top-0 -translate-x-1/2 -translate-y-[55%] z-10 pointer-events-none [visibility:var(--indicator-visibility,visible)]"
               style={{ left: "var(--indicator-left, 1.625em)" }}
               data-testid="today-indicator"
             >
@@ -122,44 +128,46 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5 }}
               transition={{ duration: 0.2, ease: EASE_OUT }}
-              className="absolute top-0 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none w-[0.35em] h-[0.35em] rounded-full bg-[var(--dt-accent)] dark:bg-[color-mix(in_oklch,var(--dt-accent),black_30%)]"
+              className="absolute top-0 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none w-[0.35em] h-[0.35em] rounded-full bg-[var(--dt-accent)] dark:bg-[color-mix(in_oklch,var(--dt-accent),black_30%)] [visibility:var(--indicator-visibility,visible)]"
               style={{ left: "var(--indicator-left, 1.625em)" }}
               data-testid="today-indicator"
             />
           )}
         </AnimatePresence>
 
-        <div className="flex items-center p-[0.125em] bg-[var(--dt-control-bg)] rounded-md overflow-x-auto [&::-webkit-scrollbar]:hidden">
-          <div className="flex items-center min-w-max">
-            {stripDays.map(({ date, unavailable, month }, i) => {
-              const isSelected = i === selectedDateOffset;
+        <div className="bg-[var(--dt-control-bg)] rounded-md">
+          <div ref={stripRef} className="scroll-fade-x flex items-center p-[0.125em] overflow-x-auto [&::-webkit-scrollbar]:hidden" role="group" aria-label="Next seven days">
+            <div className="flex items-center min-w-max">
+              {stripDays.map(({ date, unavailable, month }, i) => {
+                const isSelected = i === selectedDateOffset;
 
-              return (
-                <button
-                  key={i}
-                  ref={i === 0 ? firstButtonRef : undefined}
-                  onClick={() => handleStripSelect(i)}
-                  disabled={unavailable}
-                  title={unavailable ? `This date does not exist in ${homeTimezone}.` : undefined}
-                  aria-current={i === 0 ? "date" : undefined}
-                  className={`
-                    flex flex-col items-center justify-center gap-[0.125em] px-[0.6em] py-[0.375em] rounded-sm transition-all duration-200 min-w-[3em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)]
-                    ${
-                      isSelected
-                        ? "bg-[var(--dt-control-active)] text-[var(--dt-text)] drop-shadow-sm"
-                        : "text-[var(--dt-text-secondary)] hover:text-[var(--dt-text)]"
-                    }
-                  `}
-                >
-                  <span className="text-[clamp(13px,0.78vw+5px,16.25px)] font-medium leading-none">
-                    {Number(date.slice(8))}
-                  </span>
-                  <span className="text-[clamp(10px,0.5vw+8px,12px)] leading-none font-medium opacity-90">
-                    {month}
-                  </span>
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={i}
+                    ref={i === 0 ? firstButtonRef : undefined}
+                    onClick={() => handleStripSelect(i)}
+                    disabled={unavailable}
+                    title={unavailable ? `This date does not exist in ${homeTimezone}.` : undefined}
+                    aria-current={i === 0 ? "date" : undefined}
+                    className={`
+                      flex flex-col items-center justify-center gap-[0.125em] px-[0.6em] py-[0.375em] rounded-sm transition-all duration-200 min-w-[3em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)]
+                      ${
+                        isSelected
+                          ? "bg-[var(--dt-control-active)] text-[var(--dt-text)] drop-shadow-sm"
+                          : "text-[var(--dt-text-secondary)] hover:text-[var(--dt-text)]"
+                      }
+                    `}
+                  >
+                    <span className="text-[clamp(13px,0.78vw+5px,16.25px)] font-medium leading-none">
+                      {Number(date.slice(8))}
+                    </span>
+                    <span className="text-[clamp(10px,0.5vw+8px,12px)] leading-none font-medium opacity-90">
+                      {month}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
