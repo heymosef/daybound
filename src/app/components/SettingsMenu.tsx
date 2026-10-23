@@ -316,7 +316,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 onClick={() => analytics.setEnabled(!analytics.enabled)}
                 className="w-full flex items-center justify-between gap-2 px-[0.5em] py-[0.375em] rounded-md text-[clamp(12px,0.66vw+4.62px,15px)] text-[var(--dt-text-secondary)] hover:bg-[var(--dt-surface-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
-                <span>Share usage analytics</span>
+                <span>Allow usage analytics</span>
                 <span aria-hidden="true" className={`flex items-center justify-center w-[1.25em] h-[1.25em] shrink-0 rounded border ${analytics.enabled ? "bg-[var(--dt-accent)] border-[var(--dt-accent)]" : "border-[var(--dt-border-strong)]"}`}>
                   {analytics.enabled && <Check size={10} className="text-[var(--dt-text-inverse)]" />}
                 </span>

@@ -20,7 +20,7 @@ function mountSettings(options: AnalyticsOptions = OPTIONS) {
   fireEvent.click(screen.getByRole("button", { name: /settings/i }));
   return { ...view, controller };
 }
-const toggle = () => screen.getByRole("menuitemcheckbox", { name: "Share usage analytics" });
+const toggle = () => screen.getByRole("menuitemcheckbox", { name: "Allow usage analytics" });
 const status = () => screen.getByRole("status", { name: "Usage analytics status" });
 
 it("has a named, described native toggle with keyboard activation and focus styling", async () => {

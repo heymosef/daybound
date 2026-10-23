@@ -414,7 +414,7 @@ describe("App minimal analytics transport integration", () => {
     expect(JSON.parse(localStorage.getItem("app_settings")!).use24Hour).toBe(true);
     expect(JSON.parse(localStorage.getItem("timezone_config")!)[0].id).toBe("other-private-id");
     expect(request).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Share usage analytics" }));
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Allow usage analytics" }));
     expect(request).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("menuitemradio", { name: "12H" }));
     expect(eventBodies()).toHaveLength(1);
@@ -429,7 +429,7 @@ describe("App minimal analytics transport integration", () => {
     unmount();
     render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));
-    expect(screen.getByRole("menuitemcheckbox", { name: "Share usage analytics" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("menuitemcheckbox", { name: "Allow usage analytics" })).toHaveAttribute("aria-checked", "false");
     expect(screen.getByRole("status", { name: "Usage analytics status" })).toHaveTextContent(/^Off$/);
     expect(request).not.toHaveBeenCalled();
   });
@@ -440,7 +440,7 @@ describe("App minimal analytics transport integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open calendar" }));
     fireEvent.keyDown(document, { key: "Escape" });
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));
-    expect(screen.getByRole("menuitemcheckbox", { name: "Share usage analytics" })).toBeDisabled();
+    expect(screen.getByRole("menuitemcheckbox", { name: "Allow usage analytics" })).toBeDisabled();
     expect(screen.getByRole("status", { name: "Usage analytics status" })).toHaveTextContent("Usage analytics is unavailable here.");
     expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(LOCAL_SAVE_NOTICE_COPY);
     expect(request).not.toHaveBeenCalled();
@@ -457,7 +457,7 @@ describe("App minimal analytics transport integration", () => {
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));
     expect(screen.getByRole("status", { name: "Usage analytics status" })).toHaveTextContent("Off for this visit; preference could not be saved.");
     expect(screen.getByRole("status", { name: "Local save status" })).toHaveTextContent(LOCAL_SAVE_NOTICE_COPY);
-    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Share usage analytics" }));
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Allow usage analytics" }));
     expect(controller.getSnapshot()).toMatchObject({ enabled: false, preferenceStatus: "unavailable" });
     expect(request).not.toHaveBeenCalled();
   });
