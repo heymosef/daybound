@@ -178,7 +178,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
       role={onPan ? "region" : undefined}
       aria-label={onPan ? `${label ?? timezone.split("/").pop()?.replace(/_/g, " ")} timeline. Drag horizontally or use arrow keys to browse; Enter selects or clears a time; Home returns to now.` : undefined}
       aria-description={onSelectTime ? selectedTime !== undefined && selectedTime >= keyboardCell.time && selectedTime < keyboardCell.time + HOUR_MS
-        ? "Enter clears the selected time and restores live clocks." : `Enter selects ${keyboardCell.description}` : undefined}
+        ? "Enter clears the selected time and keeps this timeline view." : `Enter selects ${keyboardCell.description}` : undefined}
       tabIndex={onPan ? 0 : undefined}
       onKeyDown={event => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ") && onSelectTime) {

@@ -101,7 +101,9 @@ swipe must move only the view; tapping Today restores live time. Choose another
 future date to retain the selected home-city time, and change home city to retain
 the same instant while updating its calendar date. While selected, there must be
 no time line or time pill. Tap the highlighted column again in either row to
-clear it and restore live Today; Enter/Space should toggle the reference slot.
+clear it while retaining the surfaced date and scrub position; clocks resume
+live time. Enter/Space should toggle the reference slot. Today/Home explicitly
+returns the timeline to now.
 No live analytics are used.
 The offline CSP permits the app's own blob Paint Worklet while all fetches are
 intercepted and connect-src remains none. This preserves the product's corner
@@ -140,3 +142,14 @@ the lowest observed marker contrast against a selected fill, including theme
 transitions, was 7.22:1. Forced-colors fallback is present but was not emulated.
 Node24 typecheck, lint, all 410 tests in 23 files, production and offline fixture
 builds passed. No live analytics credentials were used.
+
+Selection clearing update, 2026-10-23: deselection clears only the selected
+instant, preserving the current rail frame and surfaced calendar date. This
+supersedes the earlier tap-to-clear behavior that reset to Today. Regressions
+cover both cities, future dates, scrubbing before/after selection, partial-hour
+date selections, keyboard toggling, subsequent clock ticks, and explicit Today
+reset. City clocks resume live time when no column is selected.
+Offline browser verification confirmed a scrubbed future-date frame and calendar
+selection survive clearing from another city and Advance minute; Today resets
+the frame. Node24 typecheck, lint, all 413 tests, production and fixture builds
+passed. The production preview on port4180 has the refreshed build.

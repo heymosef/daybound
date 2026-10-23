@@ -101,7 +101,9 @@ function App() {
   }, [nowTime]);
   const handleSelectTime = useCallback((instant: number) => {
     setView(previous => {
-      if (previous?.selected != null && previous.selected >= instant && previous.selected < instant + HOUR_MS) return null;
+      if (previous?.selected != null && previous.selected >= instant && previous.selected < instant + HOUR_MS) {
+        return { ...previous, selected: null };
+      }
       return {
         ...(previous ?? { base: nowTime, hours: 0, centered: true }),
         selected: instant, calendarTime: instant,

@@ -533,32 +533,66 @@ describe("synchronized timeline exploration", () => {
   const clocksAt = (instant: string) => {
     for (const clock of screen.getAllByTestId("row-clock")) expect(clock).toHaveAttribute("datetime", instant);
   };
-  it.each([false, true])("clears a selected column from either city and restores Today in future-date mode=%s", (future) => {
+  const frames = () => views().map(view => {
+    const rail = within(view).getByTestId("timeline-rail");
+    return [view.getAttribute("data-preview-instant"), rail.getAttribute("data-start"), rail.style.transform];
+  });
+  it.each([
+    [false, false, "2026-10-22T20:00:00.000Z", "22 Oct"],
+    [false, true, "2026-10-23T02:00:00.000Z", "23 Oct"],
+    [true, false, "2026-10-23T03:00:00.000Z", "23 Oct"],
+    [true, true, "2026-10-23T09:00:00.000Z", "23 Oct"],
+  ] as const)("clears a selected column without resetting the view: future=%s, scrubbed=%s", (future, scrubbed, selected, date) => {
     render(<App />);
     if (future) fireEvent.click(screen.getByRole("button", { name: "23 Oct" }));
-    fireEvent.click(within(views()[0]).getByRole("button", { name: future ? /^2026-10-23 3:00 / : /^2026-10-22 20:00 / }));
+    if (scrubbed) fireEvent.keyDown(views()[0], { key: "ArrowRight", shiftKey: true });
+    fireEvent.click(views()[0].querySelector(`[data-instant="${selected}"]`)!);
+    const selectedFrames = frames();
     act(() => vi.advanceTimersByTime(60000));
     fireEvent.click(within(views()[1]).getByRole("button", { pressed: true }));
     clocksAt("2026-10-22T19:44:00.000Z");
     for (const rail of views()) expect(within(rail).queryByRole("button", { pressed: true })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "22 Oct", pressed: true })).toBeInTheDocument();
+    expect(frames()).toEqual(selectedFrames);
+    expect(screen.getByRole("button", { name: date, pressed: true })).toBeInTheDocument();
     expect(screen.getByRole("status", { name: "Selected time" })).toHaveTextContent("Showing live time.");
+    act(() => vi.advanceTimersByTime(60000));
+    expect(frames()).toEqual(selectedFrames);
+    clocksAt("2026-10-22T19:45:00.000Z");
+    fireEvent.click(screen.getByRole("button", { name: "22 Oct" }));
+    expect(instants()).toEqual(Array(2).fill("2026-10-22T19:45:00.000Z"));
+  });
+  it("preserves scrubbing done after selecting a column when that column is cleared", () => {
+    render(<App />);
+    fireEvent.click(within(views()[0]).getByRole("button", { name: /^2026-10-22 20:00 / }));
+    fireEvent.keyDown(views()[0], { key: "ArrowRight", shiftKey: true });
+    const scrubbedFrames = frames();
+    fireEvent.click(within(views()[1]).getByRole("button", { pressed: true }));
+    expect(frames()).toEqual(scrubbedFrames);
+    expect(screen.getByRole("button", { name: "23 Oct", pressed: true })).toBeInTheDocument();
+    for (const rail of views()) expect(within(rail).queryByRole("button", { pressed: true })).not.toBeInTheDocument();
   });
   it("clears the highlighted column even when date selection chose a time partway through that hour", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "23 Oct" }));
     clocksAt("2026-10-23T19:43:00.000Z");
+    const selectedFrames = frames();
     fireEvent.click(within(views()[0]).getByRole("button", { pressed: true }));
     clocksAt("2026-10-22T19:43:00.000Z");
+    expect(frames()).toEqual(selectedFrames);
+    expect(screen.getByRole("button", { name: "23 Oct", pressed: true })).toBeInTheDocument();
   });
   it("lets Enter clear the same slot selected by Enter", () => {
     render(<App />);
+    views()[0].focus();
     fireEvent.keyDown(views()[0], { key: "ArrowRight" });
     fireEvent.keyDown(views()[0], { key: "Enter" });
     clocksAt("2026-10-22T20:00:00.000Z");
-    expect(views()[0]).toHaveAttribute("aria-description", "Enter clears the selected time and restores live clocks.");
+    const selectedFrames = frames();
+    expect(views()[0]).toHaveAttribute("aria-description", "Enter clears the selected time and keeps this timeline view.");
     fireEvent.keyDown(views()[0], { key: "Enter" });
     clocksAt("2026-10-22T19:43:00.000Z");
+    expect(frames()).toEqual(selectedFrames);
+    expect(views()[0]).toHaveFocus();
   });
   it("shows future city dates, selects a shared column, and keeps the chosen time on another date", () => {
     render(<App />);
