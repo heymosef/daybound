@@ -68,8 +68,10 @@ Drag or swipe a timeline to explore all cities together; horizontal trackpad
 scrolling also works. With a timeline focused, use arrow keys, Shift+arrow keys
 or Page Up/Down. Exploration
 can reach 24 hours ahead and holds its time while city clocks remain live.
-Return to now (or Home), choosing a date, or changing the reference city resets
-it. Vertical page scrolling and pinch zoom remain available.
+The top date controls follow the home-city date at the rail’s reference instant
+(the center in Today mode, the leading edge for a chosen date). Tap today’s date
+(or press Home), choose a date, or change the reference city to reset the view.
+Vertical page scrolling and pinch zoom remain available.
 
 Calendar popups fit the visible viewport, opening above the trigger or scrolling
 internally when needed.

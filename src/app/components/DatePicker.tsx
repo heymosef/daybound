@@ -151,6 +151,7 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
                     disabled={unavailable}
                     title={unavailable ? `This date does not exist in ${homeTimezone}.` : undefined}
                     aria-current={i === 0 ? "date" : undefined}
+                    aria-pressed={isSelected}
                     className={`
                       flex flex-col items-center justify-center gap-[0.125em] px-[0.6em] py-[0.375em] rounded-sm transition-all duration-200 min-w-[3em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)]
                       ${
@@ -197,7 +198,7 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
         />
       </div>
 
-      {selectedDateOffset > 6 && (() => {
+      {(selectedDateOffset < 0 || selectedDateOffset > 6) && (() => {
         const viewingDate = selectedDate;
         return (
         <button

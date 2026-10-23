@@ -4,7 +4,7 @@
 
 All timelines move together while city clocks stay live. Exploration reaches
 24 elapsed hours ahead, holds its absolute view while real time advances, and
-resets with Return to now/Today, date selection or home-city changes. Horizontal
+resets by tapping today’s date, selecting a date or changing the home city. Horizontal
 pointer/touch dragging, horizontal wheels, keyboard arrows/Shift+arrows and
 Page Up/Down are supported. Vertical page scrolling, pinch zoom and Home reset
 remain available. The comparison frame still renders 25 elapsed-hour cells,
@@ -44,8 +44,8 @@ no live analytics; request count remains 0):
 
 - At 320px width, dragging one row by 190px advanced all 10 rows from
   2026-11-01T08:59:30Z to 2026-11-01T12:38:43.846Z together. Vertical wheels still
-  scroll the page. The exploration control reserves space to avoid drag-time
-  layout shifts.
+  scroll the page. (The original exploration status/control row was removed
+  in the date-control follow-up below.)
 - Four Shift+Right actions reached the +24h bound, with every row showing the
   same 2026-11-02T08:59:30Z view.
 - Advance minute kept that view fixed while live clock instants changed to
@@ -84,3 +84,21 @@ change, or global runtime/model configuration change.
 Sources: https://www.iana.org/time-zones
 https://data.iana.org/time-zones/tzdb/NEWS
 https://news.gov.bc.ca/releases/2026CITZ0009-001073
+
+
+## Date-control follow-up
+
+Removed the exploration status and Return to now row. The top strip and popup
+now follow the viewed instant’s home-city calendar date while the underlying
+rail anchor stays fixed. The reference instant is at the center in Today mode
+and the leading edge after selecting a date. A date outside the seven-day strip,
+including a previous day reached by scrubbing, appears in the existing date chip.
+Tapping today’s date always restores the live view, even when the scrubbed time
+is on that same date. Date buttons expose their selected state to assistive tools.
+
+Node 24/npm 11: typecheck, lint, all 21 files / 371 tests, production build,
+and offline fixture build PASS. Existing large bundled-timezone chunk warning
+remains. Browser checks on the offline real App confirmed that crossing from
+March 7 23:59:30 to March 8 00:59:30 selects March 8 in the strip and popup;
+advancing the clock across midnight leaves the viewed time fixed; tapping
+March 8 recenters to the current 00:00:30. No live analytics were used.

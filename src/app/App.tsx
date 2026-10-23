@@ -250,11 +250,15 @@ function App() {
   const isLive = selectedDate === null || selectedDate < homeToday || selectedStart === null;
   const selectedDateOffset = isLive ? 0 : calendarDifference(selectedDate!, homeToday);
   const displayTime = isLive ? now : selectedStart!;
-  const effectiveSelection = isLive ? LIVE_SELECTION : selection;
   const timelineContext = `${homeTimezone}|${isLive ? "live" : selectedDate}`;
   const [explored, setExplored] = useState<{ context: string; base: number; hours: number } | null>(null);
   const exploration = explored?.context === timelineContext ? explored : null;
   const timelineTime = exploration ? new Date(exploration.base) : displayTime;
+  // Follow the shared rail's reference instant without changing its anchor.
+  // Selecting a date remains an explicit action that resets the pan position.
+  const surfacedSelection: DateSelection = exploration
+    ? { mode: "date", date: getZonedFields(new Date(exploration.base + exploration.hours * 3_600_000), homeTimezone).date }
+    : isLive ? LIVE_SELECTION : selection;
   const baseTime = displayTime.getTime();
   const handlePanTimeline = useCallback((delta: number) => {
     if (!Number.isFinite(delta)) return;
@@ -445,7 +449,7 @@ function App() {
               {/* Group Date Picker and Settings for better mobile layout */}
               <div className="flex flex-row items-stretch gap-[0.5em] flex-grow min-w-0">
                 <DatePicker
-                  selection={effectiveSelection}
+                  selection={surfacedSelection}
                   onSelectDate={handleSelectDate}
                   now={now}
                   homeTimezone={homeTimezone}
@@ -486,10 +490,6 @@ function App() {
             )}
           </div>
 
-          <div className="flex min-h-11 items-center justify-between gap-3 text-sm text-[var(--dt-text-secondary)]">
-            <span>{exploration ? "Exploring · clocks stay live" : "Swipe timelines to explore"}</span>
-            <button type="button" disabled={!exploration} onClick={returnToNow} className="shrink-0 rounded-md px-3 py-2 bg-[var(--dt-control-bg)] text-[var(--dt-text)] disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dt-accent)]">Return to now</button>
-          </div>
           {dateFeedback && <p role="status" className="text-sm text-[var(--dt-text-secondary)]">{dateFeedback}</p>}
           <div className="divide-y divide-[var(--dt-border)]">
             {timezones.length === 0 ? (
