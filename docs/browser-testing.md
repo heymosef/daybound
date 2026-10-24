@@ -208,3 +208,10 @@ logo has a unique clip reference. Motion is opt-in through the no-preference
 media query, leaving the logo static for reduced motion; live preference
 emulation was unavailable. Node24 typecheck, lint, all 418 tests across 24 files,
 and the production build passed. The local preview on port4180 is refreshed.
+
+Curved sunrise refinement, 2026-10-23: the fixed reveal now reuses the sun's
+exact SVG silhouette instead of a rectangle, matching its curved lower edge
+without a second copy of the geometry. Desktop and 390px browser checks
+confirmed matching clip/path data and the entrance transform; the desktop sun
+settled without a transform. Duration and reduced-motion handling are unchanged.
+Node24 typecheck, lint, all 418 tests, and the production build passed.

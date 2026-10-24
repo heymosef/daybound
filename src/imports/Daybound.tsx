@@ -9,7 +9,8 @@ export default function Daybound({ className }: { className?: string }) {
       <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 347.265 68.4717">
         <defs>
           <clipPath id={sunClipId} clipPathUnits="userSpaceOnUse">
-            <rect x="179" y="0" width="40" height="31.5" />
+            {/* Reuse the sun silhouette so the reveal follows its curved lower edge. */}
+            <path d={svgPaths.pa659300} />
           </clipPath>
         </defs>
         <g id="Daybound">
