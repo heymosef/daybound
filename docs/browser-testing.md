@@ -199,3 +199,12 @@ logos legible. Browser-computed SVG fills matched the wordmark color in all
 three designs and both appearances; the original theme selections were restored.
 All 60 App/Settings tests and the final production build passed. No screenshots
 were included, following the user's preference.
+
+Logo sunrise check, 2026-10-23: the sun-shaped o rises once over 1.6 seconds,
+using a translated SVG group inside a fixed clip. The other seven paths and
+the final wordmark geometry stay unchanged. Desktop and 390px browser checks
+observed the entrance transform and its static final position; each mounted
+logo has a unique clip reference. Motion is opt-in through the no-preference
+media query, leaving the logo static for reduced motion; live preference
+emulation was unavailable. Node24 typecheck, lint, all 418 tests across 24 files,
+and the production build passed. The local preview on port4180 is refreshed.
