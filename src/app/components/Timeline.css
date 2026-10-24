@@ -7,6 +7,12 @@
   border-radius: 0.375em;
 }
 
+/* A drag belongs to the viewport; moving cells must not retrigger hover fills. */
+.timeline-viewport[data-scrubbing="true"] [data-timeline-cell] {
+  pointer-events: none;
+  transition: none;
+}
+
 /* Opaque, inverted theme colors stay distinct from day, night and selection fills. */
 .timeline-clock-change {
   position: absolute;

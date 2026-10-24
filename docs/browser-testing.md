@@ -250,3 +250,16 @@ calendar navigation and enabled days, Settings actions, city search choices,
 and search clear use pointer. Disabled calendar actions remain not-allowed;
 the city search input retains its text cursor. All 60 date/calendar/Settings/
 city-search component tests and the production build passed.
+
+Scrub flicker correction, 2026-10-23: the supplied recording showed background
+flashes while moving across whole-hour rail rebases. Cells were keyed by column,
+so React reused a box for a different instant while its 75ms color transition
+still reflected the previous hour. Cells now retain identity by exact instant;
+regressions failed before the fix and passed in centered and fixed-date modes,
+including forward/backward rebases. During pointer drags, cells suspend pointer
+targeting and color transitions so moving columns cannot retrigger hover fills.
+Offline browser drags at 1280px and 390px confirmed those computed styles during
+the drag, restored targeting/transitions afterward, aligned row frames, and
+unchanged clocks/selection. No page overflow or console errors were observed.
+Physical touch was not tested. Node24 typecheck, lint, all 429 tests across
+24 files, and production/fixture builds passed. Port4180 has the updated build.

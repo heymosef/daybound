@@ -371,7 +371,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
             return (
               <button
                 type="button"
-                key={index}
+                key={cell.time}
                 aria-label={cell.description}
                 aria-pressed={isSelected}
                 tabIndex={-1}

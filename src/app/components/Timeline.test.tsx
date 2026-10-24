@@ -250,6 +250,20 @@ it("retains converted rail fields across hover and minute progress while updatin
   expect(screen.getByTestId("timeline-rail")).toHaveAttribute("data-start", "2026-03-07T09:00:00.000Z");
 });
 
+it.each([false, true])("keeps each hour's cell and fill together across scrub rebases in centered mode=%s", (isLive) => {
+  const now = new Date("2026-03-07T21:15:00Z");
+  const instant = isLive ? "2026-03-07T22:00:00.000Z" : "2026-03-07T22:15:00.000Z";
+  const { container, rerender } = renderRail({ now, timezone: "UTC", isLive });
+  const cell = container.querySelector(`[data-instant="${instant}"]`)!;
+  const wrapper = screen.getByTestId("timeline-rail").firstElementChild;
+  for (const panHours of [0.9, 1.1, -0.1]) {
+    rerender(<Timeline now={now} timezone="UTC" isLive={isLive} selectedDateOffset={1} panHours={panHours} use24Hour />);
+    expect(container.querySelector(`[data-instant="${instant}"]`)).toBe(cell);
+    expect(cell).toHaveTextContent("22");
+    expect(screen.getByTestId("timeline-rail").firstElementChild).toBe(wrapper);
+  }
+});
+
 it("selects the exact repeated-hour instant and exposes a pressed column", () => {
   const select = vi.fn();
   const { rerender } = renderRail({ now: new Date("2026-11-01T12:00:00Z"), timezone: "America/New_York", isLive: true, onSelectTime: select });
