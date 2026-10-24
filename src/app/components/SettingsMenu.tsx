@@ -324,10 +324,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <p id={analyticsDescriptionId} className="px-[0.5em] mt-1 text-xs leading-normal text-[var(--dt-text-muted)]">
                 Help improve Daybound by sharing usage and city search data.
               </p>
-              <a href={`${import.meta.env.BASE_URL}city-data-credits.html`} target="_blank" rel="noreferrer"
-                className="inline-block px-[0.5em] mt-1 text-xs underline text-[var(--dt-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)]">
-                City data credits
-              </a>
               <p role="status" aria-label="Usage analytics status" className="px-[0.5em] mt-1 text-xs leading-normal text-[var(--dt-text-secondary)]">
                 {!analytics.available ? "Usage analytics is unavailable here." :
                   analytics.preferenceStatus === "unavailable" ? "Off for this visit; preference could not be saved." :

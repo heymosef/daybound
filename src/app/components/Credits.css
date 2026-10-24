@@ -1,0 +1,5 @@
+/* The native modal supplies focus containment, an inert background and Escape. */
+:root:has(.credits-dialog[open]),
+body:has(.credits-dialog[open]) {
+  overflow: hidden;
+}

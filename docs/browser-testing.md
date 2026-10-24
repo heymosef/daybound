@@ -153,3 +153,13 @@ Offline browser verification confirmed a scrubbed future-date frame and calendar
 selection survive clearing from another city and Advance minute; Today resets
 the frame. Node24 typecheck, lint, all 413 tests, production and fixture builds
 passed. The production preview on port4180 has the refreshed build.
+
+Credits modal check, 2026-10-23: Credits is available in the desktop/mobile footer
+and removed from Settings. The native modal retains GeoNames, licence, source
+and adaptation details. Browser checks confirmed initial close-button focus,
+Tab/Shift+Tab wrapping, blocked background app shortcuts, Escape, close-button
+and backdrop dismissal, restored trigger focus, and background scroll locking.
+The 320px dark appearance fits without horizontal overflow; desktop light was
+also checked. Attribution links open separately to retain the current app view.
+The original System appearance was restored after verification. Node24 typecheck,
+lint, all 418 tests across 24 files, and the production build passed.

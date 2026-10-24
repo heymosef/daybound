@@ -11,6 +11,14 @@ import { ANALYTICS_PREFERENCE_KEY, createAnalytics } from "../analytics/analytic
 const LOCAL_SAVE_NOTICE_COPY =
   "Your changes are saved locally on this device. You can close this page and come back anytime.";
 
+it("puts Credits in the footer and removes city credits from Settings", () => {
+  localStorage.clear();
+  const { container } = render(<App />);
+  expect(within(container.querySelector("footer")!).getByRole("button", { name: "Credits" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+  expect(within(screen.getByRole("menu")).queryByText(/credits/i)).not.toBeInTheDocument();
+});
+
 describe("App local save notice", () => {
   beforeEach(() => {
     localStorage.clear();
