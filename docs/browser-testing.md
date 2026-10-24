@@ -263,3 +263,15 @@ the drag, restored targeting/transitions afterward, aligned row frames, and
 unchanged clocks/selection. No page overflow or console errors were observed.
 Physical touch was not tested. Node24 typecheck, lint, all 429 tests across
 24 files, and production/fixture builds passed. Port4180 has the updated build.
+
+Date-strip flicker correction, 2026-10-23: selected days previously used a
+200ms transition on every property, including a drop-shadow filter. The Today
+label/dot also exited and entered in separate fade steps. Date selection now
+updates immediately, the selected tile uses an equivalent box shadow, and one
+indicator remains mounted through Today/future switches. The indicator identity
+regression failed before the fix and passed afterward. Desktop and 390px browser
+checks across several dates and back to Today confirmed exactly one selected
+day, zero-duration/no-filter selection styling, and one full-opacity indicator.
+No mobile overflow or console errors were observed. Node24 typecheck, lint,
+all 430 tests across 24 files, and the production build passed. Port4180 is
+refreshed; no live analytics credentials were used.

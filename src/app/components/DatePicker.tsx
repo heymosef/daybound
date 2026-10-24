@@ -2,8 +2,6 @@ import React, { useState, useRef, useCallback, useLayoutEffect, useMemo } from "
 import { CalendarDays, X } from "lucide-react";
 import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { addCalendarDays, calendarDifference, formatCalendarDate, getZonedFields, LIVE_SELECTION, startOfCalendarDate, type DateSelection } from "../../utils/calendarDate";
-import { motion, AnimatePresence } from "motion/react";
-import { EASE_OUT } from "../../utils/animation";
 import { CalendarDropdown } from "./CalendarDropdown";
 import { useScrollFade } from "../../hooks/useScrollFade";
 
@@ -119,35 +117,17 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
       className="flex items-center gap-[0.25em] flex-grow md:flex-grow-0 min-w-0"
     >
       <div ref={wrapperRef} className="relative min-w-0" data-testid="strip-wrapper">
-        <AnimatePresence mode="wait" initial={false}>
-          {isLive ? (
-            <motion.span
-              key="today-pill"
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.85 }}
-              transition={{ duration: 0.2, ease: EASE_OUT }}
-              className="absolute top-0 -translate-x-1/2 -translate-y-[55%] z-10 pointer-events-none [visibility:var(--indicator-visibility,visible)]"
-              style={{ left: "var(--indicator-left, 1.625em)" }}
-              data-testid="today-indicator"
-            >
-              <span className="bg-[var(--dt-accent)] dark:bg-[color-mix(in_oklch,var(--dt-accent),black_30%)] text-[var(--dt-text-inverse)] text-[clamp(7px,0.35vw+5px,9px)] font-semibold uppercase tracking-wider px-[0.4em] py-[0.2em] rounded drop-shadow-sm leading-none whitespace-nowrap inline-block">
-                Today
-              </span>
-            </motion.span>
-          ) : (
-            <motion.span
-              key="today-dot"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              transition={{ duration: 0.2, ease: EASE_OUT }}
-              className="absolute top-0 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none w-[0.35em] h-[0.35em] rounded-full bg-[var(--dt-accent)] dark:bg-[color-mix(in_oklch,var(--dt-accent),black_30%)] [visibility:var(--indicator-visibility,visible)]"
-              style={{ left: "var(--indicator-left, 1.625em)" }}
-              data-testid="today-indicator"
-            />
-          )}
-        </AnimatePresence>
+        <span
+          className={`absolute top-0 -translate-x-1/2 z-10 pointer-events-none [visibility:var(--indicator-visibility,visible)] ${isLive
+            ? "-translate-y-[55%]"
+            : "-translate-y-1/2 w-[0.35em] h-[0.35em] rounded-full bg-[var(--dt-accent)] dark:bg-[color-mix(in_oklch,var(--dt-accent),black_30%)]"}`}
+          style={{ left: "var(--indicator-left, 1.625em)" }}
+          data-testid="today-indicator"
+        >
+          {isLive && <span className="bg-[var(--dt-accent)] dark:bg-[color-mix(in_oklch,var(--dt-accent),black_30%)] text-[var(--dt-text-inverse)] text-[clamp(7px,0.35vw+5px,9px)] font-semibold uppercase tracking-wider px-[0.4em] py-[0.2em] rounded drop-shadow-sm leading-none whitespace-nowrap inline-block">
+            Today
+          </span>}
+        </span>
 
         <div className="bg-[var(--dt-control-bg)] rounded-md">
           <div ref={stripRef} className="scroll-fade-x flex items-center p-[0.125em] overflow-x-auto [&::-webkit-scrollbar]:hidden" role="group" aria-label="Next seven days">
@@ -165,10 +145,10 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
                     aria-current={i === 0 ? "date" : undefined}
                     aria-pressed={isSelected}
                     className={`
-                      flex flex-col items-center justify-center gap-[0.125em] px-[0.6em] py-[0.375em] rounded-sm transition-all duration-200 min-w-[3em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)]
+                      flex flex-col items-center justify-center gap-[0.125em] px-[0.6em] py-[0.375em] rounded-sm transition-none min-w-[3em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)]
                       ${
                         isSelected
-                          ? "bg-[var(--dt-control-active)] text-[var(--dt-text)] drop-shadow-sm"
+                          ? "bg-[var(--dt-control-active)] text-[var(--dt-text)] shadow-[0_1px_2px_rgb(0_0_0/0.15)]"
                           : "text-[var(--dt-text-secondary)] hover:text-[var(--dt-text)]"
                       }
                     `}

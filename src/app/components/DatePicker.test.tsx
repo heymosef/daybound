@@ -92,6 +92,20 @@ describe("DatePicker strip", () => {
     expect(indicator.textContent).not.toBe("Today");
   });
 
+  it("keeps one mounted Today indicator through date selection and return to live", () => {
+    const { rerender } = renderDatePicker();
+    const indicator = screen.getByTestId("today-indicator");
+    for (const selection of [
+      { mode: "date", date: "2026-03-03" },
+      { mode: "date", date: "2026-03-05" },
+      { mode: "live" },
+    ] as const) {
+      rerender(<DatePicker selection={selection} onSelectDate={vi.fn()} now={NOW} homeTimezone="UTC" />);
+      expect(screen.getByTestId("today-indicator")).toBe(indicator);
+      expect(indicator.textContent).toBe(selection.mode === "live" ? "Today" : "");
+    }
+  });
+
   it("today indicator and today button both render within the strip wrapper", () => {
     renderDatePicker({ selectedDateOffset: 0 });
     const indicator = screen.getByTestId("today-indicator");
