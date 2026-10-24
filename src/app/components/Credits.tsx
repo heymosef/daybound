@@ -34,7 +34,7 @@ export function Credits({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
             event.currentTarget.close();
           }
         }}
-        className="credits-dialog m-auto w-[calc(100%-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-lg border border-[var(--dt-border)] bg-[var(--dt-bg)] p-5 text-[var(--dt-text)] shadow-xl backdrop:bg-black/40 sm:p-6">
+        className="credits-dialog m-auto w-[calc(100%-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-lg border border-[var(--dt-border)] bg-[var(--dt-bg)] p-5 text-[var(--dt-text)] shadow-xl backdrop:bg-black/40 md:p-6">
         <div className="flex items-center justify-between gap-4 mb-4">
           <h2 id={titleId} className="text-lg font-medium">City data credits</h2>
           <button type="button" aria-label="Close credits" onClick={() => dialogRef.current?.close()}

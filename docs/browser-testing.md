@@ -182,3 +182,7 @@ Desktop breakpoint update, 2026-10-23: the Settings text label now appears from
 1024px, matching the presentation previously reserved for 1280px. Browser checks
 at 1023px, 1024px and 1280px confirmed the label threshold and no horizontal page
 overflow. All nine Settings tests and the production build passed.
+
+Breakpoint consolidation, 2026-10-23: credits modal padding now changes at 768px
+instead of 640px. No app components use sm: responsive classes. Compiled modal
+styles, all four credits tests, and the production build passed.
