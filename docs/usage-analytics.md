@@ -2,9 +2,10 @@
 
 These explicit events restore useful product choices without sending editable
 labels or arbitrary settings objects. They use the existing PostHog transport,
-opt-out, browser privacy signals and normal event retention. They become available
-after a future deployment with the existing public analytics configuration.
-No live dashboards or production settings were changed by this local work.
+opt-out, browser privacy signals and normal event retention. Reports require a published build with valid public analytics configuration and
+successful event delivery. As of the source/document review on 2026-10-23,
+deployment, live ingestion and report population are unverified here. This local
+review did not access a dashboard or change production settings.
 
 ## Settings choices
 

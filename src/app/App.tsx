@@ -2,7 +2,7 @@ import { initializeTheme } from "../utils/theme";
 import { useTheme } from "../hooks/useTheme";
 import { formatZonedClock, PAN_LIMIT_HOURS } from "../utils/timeline";
 import { canonicalTimezone } from "../utils/bundledTimezones";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from "react";
 import { Clock, X } from "lucide-react";
 import { useAnalytics } from "../analytics/AnalyticsProvider";
 import { pickerCity, pickerResultId } from "../utils/cityCatalog";
@@ -11,6 +11,7 @@ import { useTime } from "../hooks/useTime";
 import { usePersistentState } from "../hooks/useStorage";
 import {
   DEFAULT_SETTINGS,
+  decodeExternalTimezoneConfig, decodeExternalAppSettings, decodeExternalNoticeDismissed,
   parseAppSettings,
   parseTimezoneConfig,
   parseNoticeDismissed,
@@ -22,6 +23,8 @@ import {
 } from "../utils/timezoneUtils";
 import { LIVE_SELECTION, calendarDifference, getZonedFields, HOUR_MS, onCalendarDate, startOfCalendarDate, type DateSelection } from "../utils/calendarDate";
 import { TimezoneRow } from "./components/TimezoneRow";
+import { StorageConflictNotice } from "./components/StorageConflictNotice";
+import { UndoCityRemoval } from "./components/UndoCityRemoval";
 import { AddTimezone } from "./components/AddTimezone";
 import { DatePicker } from "./components/DatePicker";
 import { SettingsMenu } from "./components/SettingsMenu";
@@ -31,6 +34,7 @@ import {
   AnimatePresence,
   LayoutGroup,
 } from "motion/react";
+import { validateLabelEdit } from "../utils/labels";
 import { registerSquircle } from "../utils/squircle";
 import Daybound from "../imports/Daybound";
 
@@ -42,22 +46,62 @@ initializeTheme();
 
 function App() {
   const now = useTime();
-  const [timezones, setTimezones, timezonePersistence] =
-    usePersistentState<TimezoneConfig[]>("timezone_config", [], parseTimezoneConfig);
-  const [settings, setSettings, settingsPersistence] =
+  const [timezones, setTimezones, timezonePersistence, timezoneStorage] =
+    usePersistentState<TimezoneConfig[]>("timezone_config", [], parseTimezoneConfig, decodeExternalTimezoneConfig);
+  const [settings, setSettings, settingsPersistence, settingsStorage] =
     usePersistentState<AppSettings>(
       "app_settings",
       DEFAULT_SETTINGS,
       parseAppSettings,
+      decodeExternalAppSettings,
     );
-  const [localSaveNoticeDismissed, setLocalSaveNoticeDismissed, noticePersistence] =
+  const [localSaveNoticeDismissed, setLocalSaveNoticeDismissed, noticePersistence, noticeStorage] =
     usePersistentState<boolean>(
       "local_save_notice_dismissed",
       false,
       parseNoticeDismissed,
+      decodeExternalNoticeDismissed,
     );
 
-  const savingUnavailable = [timezonePersistence, settingsPersistence, noticePersistence].includes("unavailable");
+  const main = useRef<HTMLElement>(null);
+  const renameButtons = useRef(new Map<string, HTMLButtonElement>());
+  const undoAction = useRef<HTMLButtonElement>(null);
+  const pendingFocus = useRef<string | null>(null);
+  const registerRenameTrigger = useCallback((id: string, node: HTMLButtonElement | null, previous: HTMLButtonElement | null) => {
+    if (node) renameButtons.current.set(id, node);
+    else if (renameButtons.current.get(id) === previous) renameButtons.current.delete(id);
+  }, []);
+  const [removed, setRemoved] = useState<{
+    token: string; row: TimezoneConfig; index: number; before?: string; after?: string; revision: number;
+  } | null>(null);
+  const [cityFeedback, setCityFeedback] = useState("");
+  useLayoutEffect(() => {
+    const target = pendingFocus.current;
+    if (!target) return;
+    pendingFocus.current = null;
+    const fallback = timezones.find(row => row.isHome) ?? timezones[0];
+    const button = target === "undo" ? undoAction.current : renameButtons.current.get(target);
+    const current = target === "undo" || timezones.some(row => row.id === target);
+    if (current && button?.isConnected) button.focus();
+    else if (fallback && renameButtons.current.get(fallback.id)?.isConnected) renameButtons.current.get(fallback.id)?.focus();
+    else main.current?.focus();
+  });
+  const clearUndo = useCallback(() => {
+    if (undoAction.current === document.activeElement) pendingFocus.current = "fallback";
+    setRemoved(null);
+  }, []);
+  useLayoutEffect(() => {
+    if (!removed) return;
+    if (removed.revision !== timezoneStorage.externalRevision || timezoneStorage.conflict) clearUndo();
+    else if (timezones.some(row => row.id === removed.row.id || row.timezone === removed.row.timezone)) {
+      setCityFeedback("City is already added.");
+      clearUndo();
+    }
+  }, [removed, timezones, timezoneStorage.externalRevision, timezoneStorage.conflict, clearUndo]);
+
+  const savingUnavailable = [timezonePersistence, settingsPersistence, noticePersistence, noticeStorage].includes("unavailable");
+  const hasSaveConflict = Boolean(timezoneStorage.conflict || settingsStorage.conflict || noticeStorage.conflict);
+  const showSaveNotice = savingUnavailable || (!hasSaveConflict && !localSaveNoticeDismissed);
   useTheme(settings);
 
   const { capture } = useAnalytics();
@@ -184,20 +228,46 @@ function App() {
       ...(standardCity ? { city: standardCity.name } : {}),
     };
     const updated = [...timezones, newTimezone];
-    setTimezones((previous) => previous.some((row) => row.timezone === timezone) ? previous : [...previous, newTimezone]);
+    setTimezones(previous => previous.some(row => row.timezone === timezone)
+      ? previous : [...previous, { ...newTimezone, isHome: previous.length === 0 }]);
     capture("timezone_added", { timezone_count_after: updated.length });
   }, [capture, setTimezones, timezones]);
 
   const handleRemoveTimezone = useCallback((id: string) => {
-    const updated = timezones.filter((tz) => tz.id !== id);
-    setTimezones((previous) => previous.filter((row) => row.id !== id));
-    capture("timezone_removed", { timezone_count_after: updated.length });
-  }, [capture, setTimezones, timezones]);
+    const index = timezones.findIndex(row => row.id === id);
+    const row = timezones[index];
+    if (!row || row.isHome) return;
+    if (document.activeElement?.closest("[data-row-id]")?.getAttribute("data-row-id") === id) pendingFocus.current = "undo";
+    setRemoved({ token: crypto.randomUUID(), row, index, before: timezones[index - 1]?.id,
+      after: timezones[index + 1]?.id, revision: timezoneStorage.externalRevision });
+    setCityFeedback("");
+    setTimezones(previous => previous.filter(item => item.id !== id));
+    capture("timezone_removed", { timezone_count_after: timezones.length - 1 });
+  }, [capture, setTimezones, timezones, timezoneStorage.externalRevision]);
+  const undoRemoval = useCallback(() => {
+    if (!removed || timezoneStorage.conflict || removed.revision !== timezoneStorage.externalRevision) { clearUndo(); return; }
+    if (timezones.some(row => row.id === removed.row.id || row.timezone === removed.row.timezone)) {
+      setCityFeedback("City is already added."); clearUndo(); return;
+    }
+    pendingFocus.current = removed.row.id;
+    setTimezones(previous => {
+      if (previous.some(row => row.id === removed.row.id || row.timezone === removed.row.timezone)) return previous;
+      const next = [...previous];
+      const following = next.findIndex(row => row.id === removed.after);
+      const preceding = next.findIndex(row => row.id === removed.before);
+      const index = following >= 0 ? following : preceding >= 0 ? preceding + 1 : Math.min(removed.index, next.length);
+      next.splice(index, 0, { ...removed.row, isHome: false });
+      return next;
+    });
+    setRemoved(null);
+  }, [removed, timezones, timezoneStorage.conflict, timezoneStorage.externalRevision, setTimezones, clearUndo]);
 
   const handleRename = useCallback((id: string, newLabel: string) => {
+    const result = validateLabelEdit(newLabel);
+    if (result.kind !== "valid") return;
     setTimezones((previous) =>
       previous.map((tz) =>
-        tz.id === id ? { ...tz, label: newLabel } : tz,
+        tz.id === id ? { ...tz, label: result.value } : tz,
       ),
     );
     capture("timezone_renamed");
@@ -250,6 +320,18 @@ function App() {
     }
   }, [capture, setTimezones, timezones]);
 
+  const adoptSavedCities = () => {
+    const conflict = timezoneStorage.conflict;
+    if (timezoneStorage.resolveFromStorage()) {
+      pendingFocus.current = "fallback";
+      if (conflict && (conflict.kind === "valid" || conflict.kind === "absent")) {
+        const nextHome = conflict.value.find(row => row.isHome)?.timezone ?? conflict.value[0]?.timezone;
+        if (nextHome !== homeTimezone) setView(previous => previous?.selected != null ? { ...previous, calendarTime: previous.selected } : null);
+      }
+    }
+  };
+  const resolveNotice = (action: () => boolean) => { if (action()) pendingFocus.current = "fallback"; };
+
   // Render main app
   return (
     <MotionConfig reducedMotion="user">
@@ -263,7 +345,7 @@ function App() {
       />
       <div className="min-h-dvh bg-[var(--dt-bg)] text-[var(--dt-text)] transition-colors duration-200 text-[clamp(16px,0.96vw+6.15px,18px)] flex flex-col" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", paddingLeft: "env(safe-area-inset-left)", paddingRight: "env(safe-area-inset-right)" }}>
         {/* Main Content */}
-        <main className="max-w-[1920px] w-full mx-auto px-[clamp(8px,2.5vw,32px)] py-[clamp(16px,5vw,64px)] flex-grow flex flex-col gap-[1em]">
+        <main ref={main} tabIndex={-1} className="max-w-[1920px] w-full mx-auto px-[clamp(8px,2.5vw,32px)] py-[clamp(16px,5vw,64px)] flex-grow flex flex-col gap-[1em]">
           
           {/* Header */}
           <div className="header-controls flex flex-col gap-6">
@@ -301,8 +383,8 @@ function App() {
             </div>
           </div>
 
-          <div role="status" aria-label="Local save status" className={savingUnavailable || !localSaveNoticeDismissed ? undefined : "sr-only"}>
-            {(savingUnavailable || !localSaveNoticeDismissed) && (
+          <div role="status" aria-label="Local save status" className={showSaveNotice ? undefined : "sr-only"}>
+            {showSaveNotice && (
               <div
                 className="flex items-center gap-[0.625em] p-[0.75em] bg-[var(--dt-accent-wash)] rounded-sm text-[var(--dt-text-secondary)]"
               >
@@ -322,6 +404,22 @@ function App() {
               </div>
             )}
           </div>
+
+          {timezoneStorage.conflict && <StorageConflictNotice group="Cities" conflict={timezoneStorage.conflict}
+            preview={rows => rows.length ? rows.map(row => row.label || getCityName(row.timezone)).join(", ") : "an empty city list"}
+            clearedAction="Use cleared city list" onUseSaved={adoptSavedCities}
+            onReplace={() => resolveNotice(timezoneStorage.replaceFromDraft)} onRetry={timezoneStorage.retryExternalRead} />}
+          {settingsStorage.conflict && <StorageConflictNotice group="Display settings" conflict={settingsStorage.conflict}
+            preview={value => `${value.use24Hour ? "24-hour" : "12-hour"} time, ${value.theme} appearance, ${value.designTheme} design, timezone badges ${value.showBadge ? "on" : "off"}, weekends ${value.showWeekends ? "shown" : "hidden"}`}
+            clearedAction="Use default settings" onUseSaved={() => resolveNotice(settingsStorage.resolveFromStorage)}
+            onReplace={() => resolveNotice(settingsStorage.replaceFromDraft)} onRetry={settingsStorage.retryExternalRead} />}
+          {noticeStorage.conflict && <StorageConflictNotice group="Save notice" conflict={noticeStorage.conflict}
+            preview={value => value ? "save notice hidden" : "save notice shown"}
+            clearedAction="Show local save notice" onUseSaved={() => resolveNotice(noticeStorage.resolveFromStorage)}
+            onReplace={() => resolveNotice(noticeStorage.replaceFromDraft)} onRetry={noticeStorage.retryExternalRead} />}
+          {removed && <UndoCityRemoval token={removed.token} city={removed.row.label || getCityName(removed.row.timezone)}
+            actionRef={undoAction} onUndo={undoRemoval} onExpire={clearUndo} />}
+          {cityFeedback && <p role="status" className="text-sm">{cityFeedback}</p>}
 
           {dateFeedback && <p role="status" className="text-sm text-[var(--dt-text-secondary)]">{dateFeedback}</p>}
           <p role="status" aria-label="Selected time" className="sr-only">
@@ -382,6 +480,7 @@ function App() {
                         onResetTimeline={returnToNow}
                         onRemove={handleRemoveTimezone}
                         onRename={handleRename}
+                        onRenameTrigger={registerRenameTrigger}
                         onMove={moveTimezone}
                         onSetHome={handleSetHome}
                         isHome={tz.isHome}

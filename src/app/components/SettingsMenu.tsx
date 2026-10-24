@@ -26,6 +26,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
   const [creditsOpen, setCreditsOpen] = useState(false);
   const analytics = useAnalytics();
   const analyticsDescriptionId = useId();
+  const homeSelectId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -133,11 +134,12 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           >
             {/* Home City (Mobile Only) */}
             <div className="md:hidden p-[0.75em] border-b border-[var(--dt-border)]">
-              <div className="text-[clamp(10px,0.6vw+3.85px,12.5px)] font-semibold text-[var(--dt-text-muted)] uppercase tracking-wider mb-[0.5em]">
+              <label htmlFor={homeSelectId} className="block text-[clamp(10px,0.6vw+3.85px,12.5px)] font-semibold text-[var(--dt-text-muted)] uppercase tracking-wider mb-[0.5em]">
                 Home City
-              </div>
+              </label>
               <div className="relative">
                 <select
+                  id={homeSelectId}
                   value={timezones.find((t) => t.isHome)?.id || ""}
                   onChange={(e) => {
                     onSetHome(e.target.value);

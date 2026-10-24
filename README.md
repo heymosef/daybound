@@ -31,9 +31,11 @@ Open [the local production build](http://127.0.0.1:4173). Analytics is disabled 
 
 ## Dates and local saving
 
-The rail contains 25 consecutive elapsed-hour cells. Choosing a future date sets all city clocks to the current home-city time on that date. Tapping a slot selects its exact instant and highlights the matching column across cities. Tapping the highlighted column again clears the selection and restores live Today. While a time is selected, the time line and pill are hidden. The clocks and their local dates hold until another selection or Today; changing home city preserves the instant. Choosing another date retains the selected home-city time of day. Today and reload restore live clocks. Missing midnight uses the first existing instant, repeated midnight uses its earliest occurrence, and a wholly skipped date is unavailable. When moving a clock time between dates, a missing time shifts forward through the gap; a repeated time prefers the original UTC offset when available. Fractional offsets and DST changes retain their exact instants.
+The rail contains 25 consecutive elapsed-hour cells. Choosing a future date sets all city clocks to the current home-city time on that date. Tapping a slot selects its exact instant and highlights the matching column across cities. Tapping the highlighted column again returns the clocks to live time while preserving the browsed rail and calendar date. While a time is selected, the time line and pill are hidden. Selected clocks and their local dates hold until another selection, deselection or Today; changing home city preserves the instant. Choosing another date retains the selected home-city time of day. Today and reload restore live clocks. Missing midnight uses the first existing instant, repeated midnight uses its earliest occurrence, and a wholly skipped date is unavailable. When moving a clock time between dates, a missing time shifts forward through the gap; a repeated time prefers the original UTC offset when available. Fractional offsets and DST changes retain their exact instants. See the [interaction truth table](docs/maintenance-decisions.md#interaction-truth-table) for clock, rail and calendar behavior.
 
-Time zones, labels, themes and display settings use browser `localStorage`. Valid saved rows and fields survive partial recovery; malformed values fall back safely. If storage is blocked or full, changes can remain available for the current visit and the app displays a saving notice. It cannot promise that those changes will survive reload. Selected dates are transient.
+Time zones, labels, themes and display settings use browser `localStorage`. Valid saved rows and fields survive partial recovery; malformed values fall back safely. If storage is blocked or full, changes can remain available for the current visit and the app displays a saving notice. It cannot promise that those changes will survive reload. Selected dates are transient. If another tab changes a saved group, Daybound keeps this tab's version and asks which setup to use. Until that choice, edits to that group stay in memory. Storage is not atomic: simultaneous writes are last-writer-wins on disk; the losing tab retains its version when it observes the difference. Resolve the notice before closing or reloading, which discards that tab's recovery copy. Cleared or invalid saved data never silently replaces a known setup during a visit.
+
+Removing a city offers one Undo action for ten seconds, paused while hovered, focused or the page is hidden. Undo restores its label and position without changing the chosen time or home city. A new removal replaces the previous Undo; an external city-list change cancels it. New labels use the same1024 UTF-16 code-unit limit as saved optional text.
 
 ## Optional usage analytics
 
@@ -61,7 +63,7 @@ The existing Pages workflow validates and builds `dist/`, then publishes it on m
 - `src/analytics/`: Minimal usage transport and React provider.
 - `scripts/browser-fixtures.mjs`: Ignored offline smoke-page generator.
 - `docs/`: Current behavior, analytics reports, timezone updates and browser testing.
-- `plans/`: The two deferred feature designs; completed-work history is retained in Git.
+- `plans/`: Maintenance plans, review decisions and deferred feature designs; see the [plan index](plans/README.md).
 
 See [maintenance decisions](docs/maintenance-decisions.md) for behavior to preserve
 and verification limits.

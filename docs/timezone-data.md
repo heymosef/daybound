@@ -40,9 +40,42 @@ npm run tz:check
 ```
 
 This read-only command verifies provider/source/generated metadata agreement,
-then compares with IANA's current release. It exits unsuccessfully on stale data
-or an unavailable/invalid version response. It is a maintenance check, not a
-background monitor or production request.
+then compares with IANA's current release. IANA multi-letter release suffixes
+are supported. Every version discrepancy requires review, even if the endpoint
+reports an older release; the checker never chooses an automatic downgrade.
+
+| Exit | Outcome | Next step |
+| --- | --- | --- |
+| 0 | Timezone data current | Pinned local versions agree with IANA. |
+| 1 | Timezone review needed | Review a published version difference or a missing/mismatched local provider, source or generated version. Follow the update process below. |
+| 2 | Timezone check unavailable | IANA could not be checked because of a network error, 15-second timeout, HTTP error or unexpected response. Check availability before inferring whether data is current. |
+
+The command prints the outcome and, in GitHub Actions, appends a matching heading
+to the job summary. Neither failure outcome is silently converted to success.
+Offline classification tests run with Node's built-in runner:
+
+```sh
+node --test scripts/test-timezone-check.mjs
+```
+
+### Scheduled and manual checks
+
+[Timezone freshness](../.github/workflows/timezone-freshness.yml) is a separate,
+read-only workflow, scheduled daily at **14:17 UTC**, with manual
+`workflow_dispatch` support. It uses Node24 and `npm ci`, runs the offline checker
+tests, then checks IANA once within a five-minute job timeout. Exit1 and exit2
+both fail the run with distinct summary headings. Normal PR CI, installs and
+builds do not depend on this external check. No packages, generated data, issues,
+PRs or deployments are changed by the workflow.
+
+Scheduling requires this workflow on the repository's default branch. GitHub
+may delay scheduled runs, and schedules may be disabled in inactive repositories.
+For a manual remote check after it is published, choose **Actions → Check timezone
+freshness → Run workflow**. Locally, use `npm run tz:check`. This maintenance work
+has not published or remotely dispatched the workflow, verified its activation,
+or configured or verified notification delivery. GitHub run notifications depend
+on the owner's repository subscriptions and account notification settings; the
+owner must monitor failures and inactivity settings.
 
 When an update exists:
 

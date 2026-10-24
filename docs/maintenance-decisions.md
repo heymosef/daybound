@@ -6,34 +6,47 @@ overlap remain [deferred designs](../plans/README.md).
 
 ## Behavior to preserve
 
-- Choosing a future date sets the clocks to the current home-city time of day
-  on that date; choosing another date preserves the selected home-city time.
-  A selected instant stays fixed across midnight and home-city changes; each
-  city's clock/date and the home calendar use its converted local fields.
-  Explicit Today (even when already selected) and reload restore live clocks.
-- Timelines share exact instants and 25 elapsed-hour cells; fractional offsets,
-  DST gaps/repeats and date boundaries remain precise. Missing midnight uses the
-  first existing instant, repeated midnight its earliest occurrence, and wholly
-  skipped dates are unavailable.
-- Scrubbing moves every timeline together and freezes the explored instant without
-  changing the clocks. Tapping a column selects its exact instant across all cities
-  and highlights the corresponding cells; Enter/Space selects the reference slot.
-  Tapping a selected cell again (in any row) clears the selection and restores
-  live Today. Enter/Space also toggles the reference slot. The time line and pill
-  are hidden during selection. A soft accent band and stronger time labels mark
-  the selected column; an anchor dot appears on the home row and each mobile row.
-  Both modes allow 24 hours backward/forward from their
-  starting point. The top date controls follow the home-city date at the center
-  in Today mode or the leading edge for a selected date; tapping a slot uses its
-  home-city date. Today and date selection reset the pan. A home-city change
-  resets unselected browsing and preserves a selected instant. Vertical scrolling, pinch zoom, keyboard
-  navigation and reduced-motion preferences remain available.
+### Interaction truth table
+
+This contract was checked on 2026-10-23 against the selection, pan, date,
+Today/Home and home-city handlers in [App.tsx](../src/app/App.tsx), the midnight,
+reload, deselection and keyboard regressions in [App.test.tsx](../src/app/App.test.tsx),
+and marker visibility in [Timeline.tsx](../src/app/components/Timeline.tsx).
+A selected clock instant and the browsed rail position are independent.
+
+| Action/state | City clocks and local dates | Shared rail | Home-calendar date |
+| --- | --- | --- | --- |
+| Live, before browsing | Advance with current time in each city. | Follows current time, centered. | Current home-city date. |
+| Browse without a selected time | Remain live. | Freezes its base and holds the explored position, within ±24 hours of the starting point. | Home date at the reference instant: center for a centered rail, leading edge for a chosen-date rail. |
+| Choose a future date | Holds the current home-city time of day on that date, or carries an already selected home-city time of day onto it. | Starts at the chosen date's first existing instant; resets pan and uses the leading edge as reference. | Chosen date. |
+| Select a slot, including Enter/Space at the reference slot | Holds that exact instant in every city, including fractional offsets. | Preserves the current base and pan; highlights the corresponding hour column. Later browsing leaves the clocks fixed. | Slot's home-city date initially; later browsing follows the rail reference. |
+| Deselect the highlighted hour in any row, or toggle the same reference slot | Returns to advancing live clocks and local dates. | Clears only `selected`; preserves `base`, `hours`, `centered` and `calendarTime`, including browsing after selection. | Preserves the currently surfaced home-calendar date. |
+| Explicit Today, including an already selected Today, or Home on a timeline | Returns to live clocks. | Clears the view and pan; follows current time, centered. | Current home-city date. |
+| Change home city | Preserves a selected exact instant; otherwise clocks remain live. | Preserves base/pan/centering when selected; resets unselected browsing to live. | Selected instant's date in the new home zone; otherwise the new home's current date. |
+| Reload | Starts with live clocks; restores saved rows and settings. | Starts live, centered, with no selection or pan. | Current home-city date; selected dates are not saved. |
+
+Selection hides the current-time line and pill. Deselecting only makes them
+eligible under the existing no-selection rules: a centered rail and measured
+viewport are required, and the marker can be outside the clipped viewport.
+A chosen-date rail therefore does not acquire a marker merely by deselecting.
+
+Timelines share 25 consecutive elapsed-hour cells. Missing midnight uses the
+first existing instant, repeated midnight its earliest occurrence, and wholly
+skipped dates are unavailable. Moving a clock time to another date shifts a
+missing time forward through its gap; repeated times prefer the original UTC
+offset when available. Selected instants remain fixed through midnight and
+home-zone changes, even when the new home skipped the original calendar date.
+Choosing another date resets pan. Vertical scrolling, pinch zoom, keyboard
+navigation and reduced-motion preferences remain available.
+
+### Other behavior
+
 - The calendar popup fits the visible viewport, supports short-screen scrolling,
   restores keyboard focus and keeps exiting content inert.
 - Valid saved rows/settings survive partial recovery. Blocked or full storage
   preserves in-memory operation and reports that saving is unavailable. Do not
   replace unread saved data with fallback defaults or recreate a default city
-  after the user removes the final row.
+  during a visit after the user explicitly accepts a cleared city list.
 - Date-start/model caching and minute-aligned clock refresh preserve correctness
   through hover, home changes, midnight, backgrounding and resume. Do not replace
   cached date-start resolution with a new boundary scan on every clock update.
@@ -71,3 +84,15 @@ listener. The product-owned city catalogue supplies picker entries and stable
 analytics identities. Preserve platform theme/color fallbacks, direct-result
 versus alias-metadata precedence, and distinct picker matching versus analytics
 recognition when changing these modules.
+
+## Cross-tab recovery and removal Undo
+
+Saved groups (cities, display settings, save-notice dismissal) use explicit conflict resolution. A storage event triggers a fresh read; it never automatically adopts an external setup. Every actual raw difference preserves this tab's current candidate, including a successfully saved candidate subsequently overwritten by another writer. Local edits can continue in memory, with writes paused for that group.
+
+Use saved setup adopts only the validated preview confirmed against a fresh read. Replace saved setup with this tab explicitly writes the current candidate only if that preview still matches. A changed preview requires another action. Invalid data disables adoption; unreadable storage disables both actions until Retry succeeds. External JSON validation is stricter than tolerant initial-load recovery; partial legacy settings and recognized timezone aliases remain accepted.
+
+A cleared group has an explicit preview/action: an empty city list, default display settings or showing the save notice. Accepting an empty list keeps it empty during the current visit and does not write defaults back. Existing initial-load/reload behavior seeds a detected home city when no cities exist. The first city explicitly added to an empty visit becomes home.
+
+Raw preflight checks are not atomic compare-and-set. Concurrent writes remain last-writer-wins on disk; a later invalidation exposes the difference and retains the losing tab's in-memory candidate. Closing/reloading discards that recovery. There are no locks, automatic merges, timestamps/schema envelopes, cloud sync or durable recovery copies. Analytics consent remains under its separate opt-out controller; conflict adoption emits no usage event.
+
+City removal retains only the last removed row in memory. Undo restores stable identity, custom fields and order relative to surviving neighbors, without changing the selected instant or chosen home. It expires after ten seconds measured monotonically, paused by overlapping hover/focus/hidden reasons. External city divergence invalidates Undo immediately; focused invalidation moves focus to a surviving row, while unrelated focus is preserved. A duplicate manual re-add clears Undo with a message; quota failures still allow in-memory removal/restoration.

@@ -9,3 +9,7 @@ dist
 # Local diagnostic logs
 .cursor/debug-*.log
 npm-debug.log*
+
+# Local browser failure diagnostics
+test-results/
+playwright-report/

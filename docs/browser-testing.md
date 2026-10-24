@@ -1,5 +1,59 @@
 # Offline browser fixtures
 
+## Automated Chromium smoke suite
+
+Use Node24 and install the lockfile dependencies before running the suite:
+
+```sh
+npm ci
+npm exec -- playwright install chromium
+npm run typecheck:browser
+npm run test:browser
+```
+
+`@playwright/test` is pinned to 1.64.1. The runner builds the real offline shell
+with `envFile:false`, then owns a static server at `127.0.0.1:4176`. A busy
+port fails; it never reuses or stops the user-owned production preview on 4180.
+The server serves only generated fixture files, rejects escaping paths, and
+closes on runner shutdown. It does not read `.env` or publish fixture output.
+The two projects use Chromium at 1280×900 and 390×844; the calendar test also
+checks 320×568. One worker, no retries, 25-second tests, 5-second assertions,
+60-second server startup and a 240-second overall limit bound the run.
+
+Eight focused flows per project cover search/add/rename persistence, future
+selection clearing, whole-hour drag rebases, date-strip switching, calendar fit
+and focus, keyboard timeline/row controls, Toronto/BC clock changes and fake
+analytics cancellation. Drag checks inspect computed pointer/transition styles,
+DOM identity for an unchanged instant, and aligned rail frames. They do not
+claim pixel-level flicker detection. Physical touch, Safari and screen-reader
+speech require separate checks. No screenshot baselines or videos are recorded.
+Failure traces remain locally in ignored `test-results/`; inspect them with
+`npm exec -- playwright show-trace <trace.zip>`.
+
+Browser tests import only Playwright test APIs from `tests/browser/fixtures.ts`.
+Vitest retains its default exclusions and additionally excludes this directory;
+Playwright collects only `tests/browser/**/*.spec.ts`. Browser TypeScript is
+included in `npm run typecheck` and browser files remain subject to lint.
+Both PR validation and the Pages build job install Chromium with system
+dependencies and run this suite before the production build/artifact upload.
+Only the production build step receives the public analytics configuration.
+Remote workflows are not run by local verification.
+
+Every context intercepts network requests and fails on unexpected external
+origins, failed requests, page errors or console errors. There is no external
+font or CSP exception: all three design fonts load from the fixture origin.
+Fixture fetch interception and its strict CSP remain active, with synthetic
+analytics only.
+
+Tests start with isolated contexts. For a deliberate two-page storage test, use
+the identical fixture scenario/profile on both pages: only pageA seeds with
+`reset=1`, remove that parameter before reload, then navigate pageB without it.
+Loading pageB must never reseed pageA's saved state. The initial persistence
+flow follows that reset-removal convention; cross-tab conflict scenarios may
+be added only alongside the corresponding storage implementation.
+
+## Manual CUA verification
+
 These pages mount the real App, styles and AnalyticsProvider. Controls live only
 in the generated shell, never in the product. Generate them after integration
 so the bundles contain the final source:
@@ -13,8 +67,8 @@ Run the server as a separate terminal command. The generator exits after buildin
 it starts no server. Entries are under `node_modules/.cache/daybound-smoke/entries/`
 and output is under `node_modules/.cache/daybound-smoke/site/`. Both are ignored.
 No `.env` files are read. Stop the server with Ctrl-C. Use supported CUA tools
-for actual browser interactions; this generator does not launch a browser or use
-Playwright/CDP.
+for manual browser interactions. The generator itself starts no browser;
+`npm run test:browser` is the separate automated runner.
 
 Use the regular production build separately on port4173:
 
@@ -81,8 +135,9 @@ DNT is replaced with false only in this explicit offline fixture so the
 transport is deterministic; production still respects browser privacy signals.
 Fetch interception is installed before App/provider modules load and never calls
 native fetch. Every unexpected fetch rejects. A content-security policy also
-blocks all network connections and external fonts/assets. Baseline Google Fonts
-imports are blocked; integrated local fonts can load from the same fixture origin.
+blocks all network connections and external fonts/assets. The generator explicitly
+copies the manifest-listed local WOFF2 files; all three real design fonts load
+from the same fixture origin without relaxing CSP.
 No live analytics key or host is read or embedded by the generator.
 
 This harness prepares offline verification. It is not evidence of completed
@@ -275,3 +330,19 @@ day, zero-duration/no-filter selection styling, and one full-opacity indicator.
 No mobile overflow or console errors were observed. Node24 typecheck, lint,
 all 430 tests across 24 files, and the production build passed. Port4180 is
 refreshed; no live analytics credentials were used.
+
+## Existing-app improvement verification — 2026-10-23
+
+The integrated candidate passed28 Chromium checks across desktop/narrow profiles,
+plus517 unit/component tests,20 offline timezone-checker tests, typecheck, lint,
+production build and16font asset verification. Added browser coverage exercises
+real two-tab conflict resolution, safe invalid/cleared storage, quota recovery,
+keyboard-visible city actions, Undo/focus/invalidation, long-label containment and
+allthree local font designs. No external request/CSP allowlist remains.
+
+The fixture build deliberately keeps publicDir:false and copies only listed font
+assets after bundling. Vite may warn that /fonts public paths resolve at runtime;
+actual first-party requests are verified by the strict browser suite. Production
+builds resolve those public paths normally. The known full-IANA chunk-size warning
+remains the documented accuracy/download tradeoff, not a failed check. Physical
+touch, Safari, screen-reader speech and remote services remain outside this run.

@@ -37,5 +37,11 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Install Chromium
+        run: npm exec -- playwright install --with-deps chromium
+
+      - name: Browser smoke
+        run: npm run test:browser
+
       - name: Build
         run: npm run build

@@ -1,10 +1,12 @@
 # Search discovery reports
 
-The application now reports what people tried, whether the picker offered any
-results, their next attempt, and the standard city/timezone they selected.
-These reports become populated after publishing the new build with the existing
-PostHog public configuration. Local preview/development stays disabled. No live
-dashboard, account settings or production deployment is changed by this work.
+The source implements events for search attempts, offered results, follow-up
+attempts and standard city/timezone selections. These report templates require a
+published build with valid public PostHog configuration and successfully delivered
+events before they can show data. As of the source/document review on 2026-10-23,
+live ingestion, dashboard population and deployment status are unverified here;
+this local review did not access a dashboard or change production settings.
+Local preview/development collection stays disabled.
 
 Settings and manually chosen reference cities are covered in the
 [structured usage reports](usage-analytics.md).
@@ -36,7 +38,7 @@ Settings and manually chosen reference cities are covered in the
 Use **Product analytics → SQL** for each SQL table and save it as an insight in
 your dashboard after the new events exist. The templates use documented HogQL
 syntax and a one-day window. Local synthetic-data checks verify their sequence
-and outcome logic; they have not been executed against a live project. Check the
+and outcome logic; the recorded local verification does not establish live HogQL execution (live status unverified as of the 2026-10-23 document review). Check the
 live event/property schema before saving. Widen the window after checking volume.
 The time filter is a view of data, never a deletion promise.
 

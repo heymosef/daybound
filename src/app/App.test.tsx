@@ -368,8 +368,8 @@ describe("App minimal analytics transport integration", () => {
     render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
     expect(request).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText(privateLabel));
-    fireEvent.change(screen.getByRole("textbox", { name: "Edit timezone label" }), { target: { value: privateRename } });
-    fireEvent.keyDown(screen.getByRole("textbox", { name: "Edit timezone label" }), { key: "Enter" });
+    fireEvent.change(screen.getByRole("textbox", { name: /Edit .* label/ }), { target: { value: privateRename } });
+    fireEvent.keyDown(screen.getByRole("textbox", { name: /Edit .* label/ }), { key: "Enter" });
     expect(screen.getByText(privateRename)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));
     fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "other-private-id" } });
@@ -420,8 +420,8 @@ describe("App minimal analytics transport integration", () => {
     const added = JSON.parse(localStorage.getItem("timezone_config")!).find((row: { city?: string }) => row.city === "Seattle");
     expect(added).toMatchObject({ timezone: "America/Los_Angeles", city: "Seattle" });
     fireEvent.click(screen.getByText("Seattle", { selector: "span.truncate" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "Edit timezone label" }), { target: { value: privateRename } });
-    fireEvent.keyDown(screen.getByRole("textbox", { name: "Edit timezone label" }), { key: "Enter" });
+    fireEvent.change(screen.getByRole("textbox", { name: /Edit .* label/ }), { target: { value: privateRename } });
+    fireEvent.keyDown(screen.getByRole("textbox", { name: /Edit .* label/ }), { key: "Enter" });
     unmount();
     render(<AnalyticsProvider options={options}><App /></AnalyticsProvider>);
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));

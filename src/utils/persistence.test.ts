@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, parseAppSettings, parseNoticeDismissed, parseTimezoneConfig } from "./persistence";
+import { DEFAULT_SETTINGS, parseAppSettings, parseNoticeDismissed, parseTimezoneConfig, decodeExternalTimezoneConfig, decodeExternalAppSettings, decodeExternalNoticeDismissed } from "./persistence";
 
 describe("stored settings", () => {
   it.each([null, undefined, 42, "dark", true, [], [null]])("rejects a wrong settings shape: %j", (value) => {
@@ -71,3 +71,48 @@ it.each([null, undefined, "true", 1, {}, [], false])("does not dismiss a notice 
   expect(parseNoticeDismissed(value)).toBe(false);
 });
 it("preserves a true notice dismissal", () => expect(parseNoticeDismissed(true)).toBe(true));
+
+describe("strict external adoption", () => {
+  it.each(["null", "{}", "true", "1", '"UTC"', "bad JSON"])("rejects invalid external city roots: %s", (raw) => {
+    expect(decodeExternalTimezoneConfig(raw).kind).toBe("invalid");
+  });
+  it("accepts empty lists and normalizes recognized legacy aliases and home flags", () => {
+    expect(decodeExternalTimezoneConfig("[]")).toEqual({ kind: "valid", raw: "[]", value: [] });
+    const raw = JSON.stringify([{ id: "a", timezone: "US/Pacific" }, { id: "b", timezone: "UTC", isHome: true }]);
+    expect(decodeExternalTimezoneConfig(raw)).toEqual({ kind: "valid", raw, value: [
+      { id: "a", timezone: "US/Pacific", isHome: false }, { id: "b", timezone: "UTC", isHome: true },
+    ] });
+  });
+  it.each([
+    [null], [{ id: "", timezone: "UTC" }], [{ id: "a", timezone: "Invalid" }],
+    [{ id: "a", timezone: "UTC", isHome: "yes" }], [{ id: "a", timezone: "UTC", label: null }],
+    [{ id: "a", timezone: "UTC", city: 1 }], [{ id: "a", timezone: "UTC", country: "x".repeat(1025) }],
+    [{ id: "a", timezone: "UTC" }, { id: "a", timezone: "Asia/Tokyo" }],
+    [{ id: "a", timezone: "UTC" }, { id: "b", timezone: "UTC" }],
+  ].map((rows) => ({ rows })))("rejects the entire external list with an unusable field or row: $rows", ({ rows }) => {
+    expect(decodeExternalTimezoneConfig(JSON.stringify(rows)).kind).toBe("invalid");
+  });
+  it("shares the existing optional text boundary without altering valid text", () => {
+    const raw = JSON.stringify([{ id: "a", timezone: "UTC", label: "x".repeat(1024), city: "", country: "  α  " }]);
+    expect(decodeExternalTimezoneConfig(raw)).toEqual({ kind: "valid", raw, value: parseTimezoneConfig(JSON.parse(raw)) });
+  });
+  it.each([{}, { theme: "dark" }, { showBadge: false, unknown: "ignored" }])("accepts recognized legacy partial settings: %j", (value) => {
+    const raw = JSON.stringify(value);
+    expect(decodeExternalAppSettings(raw)).toEqual({ kind: "valid", raw, value: parseAppSettings(value) });
+  });
+  it.each([null, [], { unknown: true }, { theme: "unknown" }, { theme: "dark", showBadge: "false" }, { designTheme: 1 }, { use24Hour: 1 }, { showWeekends: null }])("rejects wrong external settings instead of adopting defaults: %j", (value) => {
+    expect(decodeExternalAppSettings(JSON.stringify(value)).kind).toBe("invalid");
+  });
+  it.each([true, false])("accepts only external boolean notice preferences: %j", (value) => {
+    const raw = JSON.stringify(value);
+    expect(decodeExternalNoticeDismissed(raw)).toEqual({ kind: "valid", raw, value });
+  });
+  it.each([null, 1, "true", {}, []])("rejects an invalid external notice preference: %j", (value) => {
+    expect(decodeExternalNoticeDismissed(JSON.stringify(value)).kind).toBe("invalid");
+  });
+  it("previews each explicitly cleared group", () => {
+    expect(decodeExternalTimezoneConfig(null)).toEqual({ kind: "absent", raw: null, value: [] });
+    expect(decodeExternalAppSettings(null)).toEqual({ kind: "absent", raw: null, value: DEFAULT_SETTINGS });
+    expect(decodeExternalNoticeDismissed(null)).toEqual({ kind: "absent", raw: null, value: false });
+  });
+});

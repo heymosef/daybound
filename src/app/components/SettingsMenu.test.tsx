@@ -93,3 +93,13 @@ it("aborts pending requests when the real Settings control opts out", () => {
   controller.capture("calendar_opened");
   expect(request).toHaveBeenCalledTimes(1);
 });
+
+it("associates the Home City label with its keyboard-operable select", async () => {
+  const user = userEvent.setup(); const onSetHome = vi.fn();
+  render(<SettingsMenu settings={DEFAULT_SETTINGS} onSettingsChange={vi.fn()} onSetHome={onSetHome}
+    timezones={[{ id: "utc", timezone: "UTC", isHome: true }, { id: "toronto", timezone: "America/Toronto" }]} />);
+  await user.click(screen.getByRole("button", { name: /settings/i }));
+  const select = screen.getByRole("combobox", { name: "Home City" });
+  select.focus(); await user.selectOptions(select, "toronto");
+  expect(onSetHome).toHaveBeenCalledWith("toronto");
+});

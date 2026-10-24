@@ -1,5 +1,5 @@
 // Builds an offline browser shell around the real application. Never loads .env.
-import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
@@ -156,6 +156,12 @@ await build({
   build: { outDir: output, emptyOutDir: true, target: "esnext" },
 });
 await copyFile(path.join(project, "public/city-data-credits.html"), path.join(output, "city-data-credits.html"));
+// publicDir stays disabled: copy only the reviewed runtime font files explicitly.
+const fontManifest = JSON.parse(await readFile(path.join(project, "public/fonts/manifest.json"), "utf8"));
+await mkdir(path.join(output, "fonts"), { recursive: true });
+await Promise.all(fontManifest.files.map(({ file }) => copyFile(
+  path.join(project, "public/fonts", file), path.join(output, "fonts", file),
+)));
 console.log(`Offline fixture built at ${output}/index.html`);
 console.log(`Serve: python3 -m http.server 4174 --bind 127.0.0.1 --directory ${output}`);
 console.log("Open http://127.0.0.1:4174/?scenario=midnight&analytics=on (see docs/browser-testing.md)");

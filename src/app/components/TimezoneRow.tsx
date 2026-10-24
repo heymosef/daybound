@@ -1,5 +1,5 @@
 import { utcOffsetLabel } from "../../utils/formatOffset";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useLayoutEffect, useId, useCallback } from "react";
 import { formatCalendarDate, getZonedFields } from "../../utils/calendarDate";
 import { formatClock, dayPeriod } from "../../utils/timeline";
 import { X, Home, ArrowUp, ArrowDown } from "lucide-react";
@@ -12,6 +12,7 @@ import {
 import { Timeline } from "./Timeline";
 import { motion, AnimatePresence } from "motion/react";
 import { MorphingTime } from "./MorphingTime";
+import { MAX_TEXT_LENGTH, validateLabelEdit } from "../../utils/labels";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
 
 interface TimezoneRowProps {
@@ -20,6 +21,7 @@ interface TimezoneRowProps {
   timelineTime: Date;
   onRemove: (id: string) => void;
   onRename: (id: string, newName: string) => void;
+  onRenameTrigger?: (id: string, node: HTMLButtonElement | null, previous: HTMLButtonElement | null) => void;
   onMove: (id: string, direction: "up" | "down") => void;
   onSetHome: (id: string) => void;
   isHome?: boolean;
@@ -47,6 +49,7 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
   timelineTime,
   onRemove,
   onRename,
+  onRenameTrigger,
   onMove,
   onSetHome,
   isHome,
@@ -69,6 +72,22 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
 }) => {
   const { timezone, label } = config;
   const [isEditing, setIsEditing] = useState(false);
+  const editing = useRef(false);
+  const renameTrigger = useRef<HTMLButtonElement | null>(null);
+  const registerRenameTrigger = useCallback((node: HTMLButtonElement | null) => {
+    const previous = renameTrigger.current;
+    renameTrigger.current = node;
+    onRenameTrigger?.(config.id, node, previous);
+  }, [config.id, onRenameTrigger]);
+  const restoreFocus = useRef(false);
+  const [editError, setEditError] = useState("");
+  const errorId = useId();
+  useLayoutEffect(() => {
+    if (!isEditing && restoreFocus.current) {
+      restoreFocus.current = false;
+      renameTrigger.current?.focus();
+    }
+  }, [isEditing]);
   const [editName, setEditName] = useState(
     label || getCityName(timezone),
   );
@@ -88,28 +107,31 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
   const regionName = getRegionName(timezone);
   const countryName = getCountryFromTimezone(timezone);
 
-  const handleSaveRename = () => {
-    if (editName.trim()) {
-      onRename(config.id, editName.trim());
-    } else {
-      setEditName(cityName); // Revert if empty
+  const finishRename = (reason: "enter" | "blur" | "escape") => {
+    if (!editing.current) return;
+    if (reason !== "escape") {
+      const result = validateLabelEdit(editName);
+      if (result.kind === "invalid") { setEditError(result.error); return; }
+      if (result.kind === "valid") onRename(config.id, result.value);
     }
+    editing.current = false;
+    restoreFocus.current = reason !== "blur";
+    setEditName(cityName);
+    setEditError("");
     setIsEditing(false);
   };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSaveRename();
-    if (e.key === "Escape") {
-      setEditName(cityName);
-      setIsEditing(false);
+    if (e.key === "Enter" || e.key === "Escape") {
+      e.preventDefault();
+      finishRename(e.key === "Enter" ? "enter" : "escape");
     }
   };
 
   return (
-    <div className="group relative grid grid-cols-[1fr_auto_auto] md:grid-cols-[18em_8em_1fr] items-center bg-[var(--dt-bg)] hover:bg-[var(--dt-bg-hover)] transition-colors border-b border-[var(--dt-border)] last:border-0 py-4 md:py-0 md:h-[clamp(4.5em,8vh,6em)]">
+    <div data-row-id={config.id} className="group relative grid grid-cols-[minmax(0,1fr)_auto_auto] md:grid-cols-[18em_8em_1fr] items-center bg-[var(--dt-bg)] hover:bg-[var(--dt-bg-hover)] transition-colors border-b border-[var(--dt-border)] last:border-0 py-4 md:py-0 md:h-[clamp(4.5em,8vh,6em)]">
       
       {/* ── 1. Left Info Section (City, Country, Controls) ── */}
-      <div className="col-span-1 md:col-span-1 flex items-center pl-2 pr-2 gap-[0.75em]">
+      <div className="col-span-1 md:col-span-1 min-w-0 flex items-center pl-2 pr-2 gap-[0.75em]">
         {/* Controls */}
         <div className="flex flex-col gap-[0.125em] w-[1.25em] items-center justify-center">
           {isHome ? (
@@ -120,18 +142,18 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
             <>
               <button
                 onClick={() => onRemove(config.id)}
-                className="md:hidden text-[var(--dt-text-muted)] hover:text-red-600 transition-colors p-0.5"
+                className="md:hidden text-[var(--dt-text-muted)] hover:text-red-600 transition-colors p-0.5 rounded focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]"
                 title="Remove timezone"
-                aria-label="Remove timezone"
+                aria-label={`Remove ${cityName}`}
               >
                 <X className="w-[1em] h-[1em]" />
               </button>
-              <div className="hidden md:flex opacity-0 group-hover:opacity-100 flex-col gap-[0.125em] transition-opacity">
+              <div className="hidden md:flex opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 flex-col gap-[0.125em] transition-opacity">
                 {!isFirst && (
                   <button
                     onClick={() => onMove(config.id, "up")}
-                    className="text-[var(--dt-text-muted)] hover:text-[var(--dt-text-secondary)] p-0.5 rounded hover:bg-[var(--dt-surface-raised)]"
-                    aria-label="Move up"
+                    className="text-[var(--dt-text-muted)] hover:text-[var(--dt-text-secondary)] p-0.5 rounded hover:bg-[var(--dt-surface-raised)] focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]"
+                    aria-label={`Move ${cityName} up`}
                   >
                     <ArrowUp className="w-[1em] h-[1em]" />
                   </button>
@@ -139,8 +161,8 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
                 {!isLast && (
                   <button
                     onClick={() => onMove(config.id, "down")}
-                    className="text-[var(--dt-text-muted)] hover:text-[var(--dt-text-secondary)] p-0.5 rounded hover:bg-[var(--dt-surface-raised)]"
-                    aria-label="Move down"
+                    className="text-[var(--dt-text-muted)] hover:text-[var(--dt-text-secondary)] p-0.5 rounded hover:bg-[var(--dt-surface-raised)] focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]"
+                    aria-label={`Move ${cityName} down`}
                   >
                     <ArrowDown className="w-[1em] h-[1em]" />
                   </button>
@@ -153,22 +175,32 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-[0.5em] h-[1.5em]">
             {isEditing ? (
-              <div className="flex items-center w-full">
+              <div className="relative flex items-center w-full">
                 <input
                   autoFocus
                   className="w-full text-[clamp(15px,0.84vw+6px,18px)] font-medium text-[var(--dt-text)] bg-transparent border-b border-[var(--dt-accent)] focus:outline-none p-0 leading-tight"
                   value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  onBlur={handleSaveRename}
+                  onChange={(e) => { setEditName(e.target.value); setEditError(""); }}
+                  maxLength={MAX_TEXT_LENGTH}
+                  aria-invalid={editError ? true : undefined}
+                  aria-describedby={editError ? errorId : undefined}
+                  onBlur={() => finishRename("blur")}
                   onKeyDown={handleKeyDown}
-                  aria-label="Edit timezone label"
+                  aria-label={`Edit ${cityName} label`}
                 />
+                {editError && <span id={errorId} role="status" className="absolute top-full left-0 z-20 rounded bg-[var(--dt-bg)] text-[var(--dt-text)] text-xs p-1">{editError}</span>}
               </div>
             ) : (
-              <div
-                className="flex items-center gap-[0.5em] cursor-pointer group/name"
+              <button
+                type="button"
+                ref={registerRenameTrigger}
+                data-row-action="rename"
+                aria-label={`Rename ${cityName}`}
+                className="flex min-w-0 max-w-full items-center gap-[0.5em] cursor-pointer group/name rounded-sm text-left focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]"
                 onClick={() => {
                   setEditName(cityName);
+                  setEditError("");
+                  editing.current = true;
                   setIsEditing(true);
                 }}
               >
@@ -183,7 +215,7 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
                     {abbreviation}
                   </span>
                 )}
-              </div>
+              </button>
             )}
           </div>
           <div className="text-[clamp(10px,0.5vw+8px,12px)] text-[var(--dt-text-secondary)] truncate flex items-center gap-[0.375em]">
@@ -245,8 +277,8 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
             {!isFirst && (
               <button
                 onClick={() => onMove(config.id, "up")}
-                className="text-[var(--dt-text-muted)] hover:text-[var(--dt-text-secondary)] p-0.5 rounded hover:bg-[var(--dt-surface-raised)]"
-                aria-label="Move up"
+                className="text-[var(--dt-text-muted)] hover:text-[var(--dt-text-secondary)] p-0.5 rounded hover:bg-[var(--dt-surface-raised)] focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]"
+                aria-label={`Move ${cityName} up`}
               >
                 <ArrowUp className="w-[1em] h-[1em]" />
               </button>
@@ -254,8 +286,8 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
             {!isLast && (
               <button
                 onClick={() => onMove(config.id, "down")}
-                className="text-[var(--dt-text-muted)] hover:text-[var(--dt-text-secondary)] p-0.5 rounded hover:bg-[var(--dt-surface-raised)]"
-                aria-label="Move down"
+                className="text-[var(--dt-text-muted)] hover:text-[var(--dt-text-secondary)] p-0.5 rounded hover:bg-[var(--dt-surface-raised)] focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]"
+                aria-label={`Move ${cityName} down`}
               >
                 <ArrowDown className="w-[1em] h-[1em]" />
               </button>
@@ -267,24 +299,24 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
       {/* ── 4. Desktop Hover Actions (Absolute) ── */}
       {!isHome && (
         <div
-          className="hidden md:flex absolute right-0 top-0 bottom-0 md:left-[18em] md:right-auto md:w-[8em] opacity-0 group-hover:opacity-100 items-center justify-end pr-[1.5em] transition-opacity z-10 pointer-events-none group-hover:pointer-events-auto"
+          className="hidden md:flex absolute right-0 top-0 bottom-0 md:left-[18em] md:right-auto md:w-[8em] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 items-center justify-end pr-[1.5em] transition-opacity z-10 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto"
           style={{
             background: `linear-gradient(to left, var(--dt-bg) 30%, transparent)`,
           }}
         >
           <button
             onClick={() => onSetHome(config.id)}
-            className="p-[0.375em] text-[var(--dt-text-muted)] hover:text-[var(--dt-accent)] hover:bg-[var(--dt-surface-raised)] rounded-md transition-all mr-1"
+            className="p-[0.375em] text-[var(--dt-text-muted)] hover:text-[var(--dt-accent)] hover:bg-[var(--dt-surface-raised)] rounded-md transition-all mr-1 focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]"
             title="Set as home"
-            aria-label="Set as home timezone"
+            aria-label={`Set ${cityName} as home timezone`}
           >
             <Home className="w-[1.25em] h-[1.25em]" />
           </button>
           <button
             onClick={() => onRemove(config.id)}
-            className="p-[0.375em] text-[var(--dt-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all"
+            className="p-[0.375em] text-[var(--dt-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]"
             title="Remove timezone"
-            aria-label="Remove timezone"
+            aria-label={`Remove ${cityName}`}
           >
             <X className="w-[1.25em] h-[1.25em]" />
           </button>
