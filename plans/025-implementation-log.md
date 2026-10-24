@@ -45,3 +45,9 @@ Local-only result. The daily timezone workflow is prepared in Git but was not re
 ### Vendored text handling
 
 Staging exposed original trailing spaces/CRLF in the three upstream OFL files. Their bytes remain unchanged and checksum-verified. A narrowly scoped .gitattributes entry disables newline conversion and authored-whitespace rules only for public/fonts/*-OFL.txt, preserving portable license checksums without suppressing checks on application/source documentation. No global Git setting changed. Final staged diff whitespace and index/license checksum checks pass.
+
+## City-removal toast follow-up — 2026-10-23
+
+User requested a toast with the removed city's name and Undo. The recovery component now floats at bottom center, respects viewport safe areas, uses opaque theme tokens, truncates long labels, and keeps the Undo target separate. Its outer positioning layer passes pointer input through; the toast itself remains interactive. The existing timer, pause reasons, stable action ref, recovery and focus behavior are unchanged. No new toast dependency/framework or animation was added.
+
+Focused validation:15 Undo/App tests passed,4 desktop/narrow city-action browser tests passed (including fixed positioning and viewport bounds), typecheck/scoped lint/production build passed. GPT-6 Astra/High approved the bounded presentation delta in024. The local preview build is refreshed; no push/deployment occurred.

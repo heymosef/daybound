@@ -77,3 +77,7 @@ The approved scope remains Plans012–020, with017 completed as an evidence-back
 No further review round is needed for the integrator's status/index/evidence-summary edits that preserve these source decisions and accurately copy the final numbers. Local commit grouping and final task reporting remain the integrator's responsibility.
 
 Final packaging delta approved: `.gitattributes` applies `-text -whitespace` only to `public/fonts/*-OFL.txt`, preserving original upstream license bytes without changing source-file policy; independent inspection confirmed all three staged license SHA256 values match their reviewed manifest checksums, so no product checks require repetition.
+
+## User-requested Undo toast follow-up
+
+**Verdict: APPROVE** for the bounded presentation delta against `27eae9e`. The bottom-centered fixed wrapper respects safe-area insets and leaves surrounding pointer targets accessible; the opaque themed toast permits long city labels to shrink/truncate while retaining full accessible text, and the Undo button retains a usable touch target. The existing action ref, focus handling, monotonic expiry and overlapping pause handlers are unchanged. The new tests assert city-specific visible copy and fixed viewport-contained placement. The integrator reported15 focused tests passing and owns the pending updated browser geometry run before committing; no broader suite was duplicated for this review. No actionable layout, focus or interaction blocker was found in this delta.

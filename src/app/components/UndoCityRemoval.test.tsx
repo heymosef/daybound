@@ -15,7 +15,9 @@ function mount() {
   return { ...view, onExpire, onUndo };
 }
 it("expires after ten seconds and cleans up on unmount", () => {
-  const { onExpire, unmount } = mount(); advance(9999); expect(onExpire).not.toHaveBeenCalled();
+  const { onExpire, unmount } = mount();
+  expect(screen.getByRole("status", { name: "Removed city" })).toHaveTextContent("Toronto removed");
+  advance(9999); expect(onExpire).not.toHaveBeenCalled();
   advance(1); expect(onExpire).toHaveBeenCalledOnce(); unmount(); expect(vi.getTimerCount()).toBe(0);
 });
 it("keeps overlapping hover/focus pauses and resumes only remaining time", () => {

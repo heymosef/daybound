@@ -17,6 +17,13 @@ test("keyboard city actions are visible and Undo restores saved order, focus and
   await page.keyboard.press("Enter");
   const undo = app(page).getByRole("button", { name: "Undo removal of Kolkata", exact: true });
   await expect(undo).toBeFocused();
+  const toast = app(page).getByRole("status", { name: "Removed city", exact: true });
+  await expect(toast).toContainText("Kolkata removed");
+  await expect(toast.locator("..")).toHaveCSS("position", "fixed");
+  await expect.poll(() => toast.evaluate(node => {
+    const rect = node.getBoundingClientRect();
+    return rect.left >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight - 16 && rect.bottom >= innerHeight - 32;
+  })).toBe(true);
   await undo.click();
   await expect(app(page).getByRole("button", { name: "Rename Kolkata", exact: true })).toBeFocused();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("timezone_config"))).toBe(original);

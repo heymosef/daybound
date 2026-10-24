@@ -45,13 +45,15 @@ export function UndoCityRemoval({ token, city, onUndo, onExpire, actionRef }: Pr
     document.addEventListener("visibilitychange", visibility);
     return () => document.removeEventListener("visibilitychange", visibility);
   }, [pause]);
-  return <div role="status" aria-label="Removed city" data-undo-notice
+  return <div className="pointer-events-none fixed left-[max(1rem,env(safe-area-inset-left))] right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] z-[60] flex justify-center">
+    <div role="status" aria-label="Removed city" data-undo-notice
     onPointerEnter={() => pause("hover", true)} onPointerLeave={() => pause("hover", false)}
     onFocus={() => pause("focus", true)}
     onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) pause("focus", false); }}
-    className="flex flex-wrap items-center gap-3 rounded-md bg-[var(--dt-accent-wash)] p-3 text-sm text-[var(--dt-text)]">
-    <span>City removed.</span>
+    className="pointer-events-auto flex min-w-0 max-w-md items-center gap-3 rounded-xl border border-[var(--dt-border-strong)] bg-[var(--dt-search-dropdown)] py-2 pl-4 pr-2 text-sm text-[var(--dt-text)] shadow-lg">
+    <span className="min-w-0 truncate" title={city}>{city} removed</span>
     <button ref={actionRef} type="button" aria-label={`Undo removal of ${city}`} onClick={onUndo}
-      className="cursor-pointer rounded px-2 py-1 font-medium underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]">Undo</button>
+      className="min-h-10 shrink-0 cursor-pointer rounded-md px-3 py-2 font-medium underline underline-offset-2 hover:bg-[var(--dt-bg-hover)] focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)] [@media(pointer:coarse)]:min-h-11">Undo</button>
+    </div>
   </div>;
 }
