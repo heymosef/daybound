@@ -266,7 +266,7 @@ function App() {
         <main className="max-w-[1920px] w-full mx-auto px-[clamp(8px,2.5vw,32px)] py-[clamp(16px,5vw,64px)] flex-grow flex flex-col gap-[1em]">
           
           {/* Header */}
-          <div className="flex flex-col gap-6">
+          <div className="header-controls flex flex-col gap-6">
             <div className="flex-shrink-0 md:hidden flex justify-center pt-1">
               <Daybound className="h-8 text-[var(--dt-logo)] transition-colors aspect-[347/68]" />
             </div>

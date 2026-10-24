@@ -242,3 +242,11 @@ dropdown are absent, and focus moves to the date button after selection. Clickin
 X returns both timelines to live Today and restores focus to the closed calendar
 icon. No mobile page overflow was observed. Node24 typecheck, lint, all 427 tests,
 and the production build passed.
+
+Header cursor check, 2026-10-23: one scoped base rule supplies pointer cursors
+to enabled header buttons, selects and links, including the portaled calendar.
+Browser-computed cursors confirmed date strip/calendar/date-and-X buttons,
+calendar navigation and enabled days, Settings actions, city search choices,
+and search clear use pointer. Disabled calendar actions remain not-allowed;
+the city search input retains its text cursor. All 60 date/calendar/Settings/
+city-search component tests and the production build passed.

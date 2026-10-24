@@ -634,6 +634,10 @@
 }
 
 @layer base {
+  .header-controls :is(button, select, a[href]):not(:disabled):not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
   * {
     @apply border-border;
     outline-color: var(--dt-accent);
