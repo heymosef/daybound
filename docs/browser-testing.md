@@ -235,9 +235,10 @@ builds passed; final builds and mobile selection checks also passed after the
 hit-area adjustment. No live analytics credentials were used. Port4180 has the
 refreshed production preview.
 
-Future date control refinement, 2026-10-23: future selections no longer add the
-extra date-and-X button beside the calendar icon. Desktop and 390px checks on
-Nov 1 confirmed the icon remains usable, the dropdown retains the selected
-date, and tapping today in the strip returns both timelines to live mode.
-No mobile page overflow was observed. Node24 typecheck, lint, all 425 tests,
+Date control refinement, 2026-10-23: the date-and-X button replaces the calendar
+icon when the surfaced date lies outside the seven-day strip. Desktop and 390px
+checks on Nov 1 confirmed the date-and-X button remains, the calendar icon and
+dropdown are absent, and focus moves to the date button after selection. Clicking
+X returns both timelines to live Today and restores focus to the closed calendar
+icon. No mobile page overflow was observed. Node24 typecheck, lint, all 427 tests,
 and the production build passed.

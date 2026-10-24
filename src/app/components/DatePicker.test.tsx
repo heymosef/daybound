@@ -274,11 +274,11 @@ describe("Calendar dropdown", () => {
   });
 });
 
-describe("Future date controls", () => {
-  it("keeps the calendar icon without an extra selected-date button beyond the strip", () => {
-    renderDatePicker({ selectedDateOffset: 14 });
-    expect(screen.queryByRole("button", { name: /back to today/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open calendar/i })).toBeInTheDocument();
+describe("Date controls outside the strip", () => {
+  it.each([-1, 14])("keeps the date-and-X button and hides the calendar at offset %s", (selectedDateOffset) => {
+    renderDatePicker({ selectedDateOffset });
+    expect(screen.getByRole("button", { name: /back to today/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /open calendar/i })).not.toBeInTheDocument();
   });
 
   it("hides viewing label when selectedDateOffset <= 6", () => {
@@ -296,6 +296,27 @@ describe("Future date controls", () => {
       screen.getByRole("button", { current: "date" }),
     );
     expect(onSelectDate).toHaveBeenCalledWith({ mode: "live" });
+  });
+
+  it("swaps the calendar for the selected-date button, preserving focus and restoring the closed calendar on X", async () => {
+    const user = userEvent.setup();
+    function Picker() {
+      const [selection, setSelection] = React.useState<React.ComponentProps<typeof DatePicker>["selection"]>({ mode: "live" });
+      return <DatePicker selection={selection} onSelectDate={setSelection} now={NOW} homeTimezone="UTC" />;
+    }
+    render(<Picker />);
+    await user.click(screen.getByRole("button", { name: /open calendar/i }));
+    await user.click(screen.getByRole("button", { name: "Monday, March 16, 2026" }));
+    const selectedDate = screen.getByRole("button", { name: /back to today/i });
+    expect(selectedDate).toHaveTextContent("16Mar");
+    expect(selectedDate).toHaveFocus();
+    expect(screen.queryByRole("button", { name: /open calendar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await user.click(selectedDate);
+    const calendar = screen.getByRole("button", { name: /open calendar/i });
+    expect(calendar).toHaveAttribute("aria-expanded", "false");
+    expect(calendar).toHaveFocus();
+    expect(screen.queryByRole("button", { name: /back to today/i })).not.toBeInTheDocument();
   });
 });
 
@@ -339,15 +360,14 @@ describe("Timezone-aware date handling", () => {
     expect(onSelectDate).not.toHaveBeenCalled();
   });
 
-  it("calendar keeps the correct selected date in the home timezone", async () => {
-    const user = userEvent.setup();
+  it("date-and-X button keeps the correct selected date in the home timezone", () => {
     renderDatePicker({
       now: TZ_NOW,
       homeTimezone: "Australia/Sydney",
       selectedDateOffset: 14,
     });
-    await user.click(screen.getByRole("button", { name: /open calendar/i }));
-    expect(screen.getByRole("button", { name: "Tuesday, March 17, 2026", pressed: true })).toBeInTheDocument();
+    const selectedDate = screen.getByRole("button", { name: /back to today/i });
+    expect(selectedDate).toHaveTextContent("17Mar");
   });
 });
 

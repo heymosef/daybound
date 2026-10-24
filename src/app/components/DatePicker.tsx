@@ -25,6 +25,8 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const calendarButtonRef = useRef<HTMLButtonElement>(null);
+  const selectedDateButtonRef = useRef<HTMLButtonElement>(null);
+  const focusDateControlRef = useRef(false);
   const firstButtonRef = useRef<HTMLButtonElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   useScrollFade(stripRef, "x");
@@ -33,11 +35,20 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
   const isLive = selection.mode === "live";
   const selectedDate = selection.mode === "date" ? selection.date : homeToday;
   const selectedDateOffset = calendarDifference(selectedDate, homeToday);
+  const showSelectedDateButton = selectedDateOffset < 0 || selectedDateOffset > 6;
   const stripDays = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const date = addCalendarDays(homeToday, i);
     return { date, unavailable: startOfCalendarDate(date, homeTimezone) === null,
       month: formatCalendarDate(date, { month: "short" }) };
   }), [homeToday, homeTimezone]);
+
+  useLayoutEffect(() => {
+    if (showSelectedDateButton) setIsCalendarOpen(false);
+    if (focusDateControlRef.current) {
+      (showSelectedDateButton ? selectedDateButtonRef : calendarButtonRef).current?.focus();
+      focusDateControlRef.current = false;
+    }
+  }, [showSelectedDateButton]);
 
   useLayoutEffect(() => {
     const wrap = wrapperRef.current;
@@ -69,6 +80,7 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
     (next: DateSelection) => {
       const pickedDate = next.mode === "date" ? next.date : homeToday;
       const offset = calendarDifference(pickedDate, homeToday);
+      focusDateControlRef.current = offset < 0 || offset > 6;
       const monthDistance = (Number(pickedDate.slice(0, 4)) - Number(homeToday.slice(0, 4))) * 12 +
         Number(pickedDate.slice(5, 7)) - Number(homeToday.slice(5, 7));
       onSelectDate(next);
@@ -175,7 +187,7 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
         </div>
       </div>
 
-      <div className="relative h-full">
+      {!showSelectedDateButton && <div className="relative h-full">
         <button
           ref={calendarButtonRef}
           onClick={toggleCalendar}
@@ -196,14 +208,16 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
           homeTimezone={homeTimezone}
           now={now}
         />
-      </div>
+      </div>}
 
-      {selectedDateOffset < 0 && (() => {
+      {showSelectedDateButton && (() => {
         const viewingDate = selectedDate;
         return (
         <button
+          ref={selectedDateButtonRef}
           type="button"
           onClick={() => {
+            focusDateControlRef.current = true;
             onSelectDate(LIVE_SELECTION);
             capture("date_selected_strip", { date_offset: 0 });
           }}
