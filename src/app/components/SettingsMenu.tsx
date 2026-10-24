@@ -7,6 +7,7 @@ import { AppSettings, TimezoneConfig, getCityName } from "../../utils/timezoneUt
 import { motion, AnimatePresence } from "motion/react";
 import { useAnalytics } from "../../analytics/AnalyticsProvider";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
+import { Credits } from "./Credits";
 
 interface SettingsMenuProps {
   settings: AppSettings;
@@ -329,6 +330,9 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                   analytics.preferenceStatus === "unavailable" ? "Off for this visit; preference could not be saved." :
                   analytics.enabled ? "On" : "Off"}
               </p>
+            </div>
+            <div className="p-[0.75em] border-t border-[var(--dt-border)]">
+              <Credits />
             </div>
           </motion.div>
         )}

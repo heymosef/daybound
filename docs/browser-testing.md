@@ -163,3 +163,9 @@ The 320px dark appearance fits without horizontal overflow; desktop light was
 also checked. Attribution links open separately to retain the current app view.
 The original System appearance was restored after verification. Node24 typecheck,
 lint, all 418 tests across 24 files, and the production build passed.
+
+Credits placement update, 2026-10-23: City data credits now opens from Settings,
+with the same text as the modal heading; the footer link is removed. Desktop
+and 320px browser checks confirmed the modal fits, focus wraps, and closing
+returns focus to the credits menu item while keeping Settings open. Typecheck,
+lint, all 418 tests, and the production build passed.

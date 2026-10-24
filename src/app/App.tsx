@@ -25,7 +25,6 @@ import { TimezoneRow } from "./components/TimezoneRow";
 import { AddTimezone } from "./components/AddTimezone";
 import { DatePicker } from "./components/DatePicker";
 import { SettingsMenu } from "./components/SettingsMenu";
-import { Credits } from "./components/Credits";
 import {
   MotionConfig,
   motion,
@@ -402,10 +401,9 @@ function App() {
               </LayoutGroup>
             )}
           </div>
-          <footer className="flex flex-col items-center justify-end flex-grow gap-2 pt-6">
-            <Daybound className="hidden md:block h-8 text-[var(--dt-text)] transition-colors opacity-50 hover:opacity-100 aspect-[347/68]" />
-            <Credits />
-          </footer>
+          <div className="hidden md:flex justify-center flex-grow items-end pt-6">
+            <Daybound className="h-8 text-[var(--dt-text)] transition-colors opacity-50 hover:opacity-100 aspect-[347/68]" />
+          </div>
         </main>
       </div>
     </MotionConfig>

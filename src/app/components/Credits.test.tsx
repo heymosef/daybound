@@ -22,8 +22,8 @@ afterAll(() => methods.forEach((method, i) => {
 it("opens a named modal with source, licence and adaptation credits", () => {
   render(<Credits />);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Credits" }));
-  const dialog = screen.getByRole("dialog", { name: "Credits" });
+  fireEvent.click(screen.getByRole("menuitem", { name: "City data credits" }));
+  const dialog = screen.getByRole("dialog", { name: "City data credits" });
   expect(dialog).toHaveAttribute("open");
   expect(within(dialog).getByRole("link", { name: /^GeoNames/ })).toHaveAttribute("href", "https://www.geonames.org/");
   expect(within(dialog).getByRole("link", { name: /^Creative Commons Attribution 4.0/ })).toHaveAttribute("href", "https://creativecommons.org/licenses/by/4.0/");
@@ -32,33 +32,33 @@ it("opens a named modal with source, licence and adaptation credits", () => {
   expect(dialog).toHaveTextContent("coordinates and population data removed");
 });
 
-it("closes and returns focus to Credits, and can reopen", () => {
+it("closes and returns focus to City data credits, and can reopen", () => {
   render(<Credits />);
-  const trigger = screen.getByRole("button", { name: "Credits" });
+  const trigger = screen.getByRole("menuitem", { name: "City data credits" });
   fireEvent.click(trigger);
   fireEvent.click(screen.getByRole("button", { name: "Close credits" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(trigger).toHaveFocus();
   fireEvent.click(trigger);
-  expect(screen.getByRole("dialog", { name: "Credits" })).toHaveAttribute("open");
+  expect(screen.getByRole("dialog", { name: "City data credits" })).toHaveAttribute("open");
 });
 
 it("dismisses a backdrop click while keeping content clicks open", () => {
   render(<Credits />);
-  fireEvent.click(screen.getByRole("button", { name: "Credits" }));
-  const dialog = screen.getByRole("dialog", { name: "Credits" });
+  fireEvent.click(screen.getByRole("menuitem", { name: "City data credits" }));
+  const dialog = screen.getByRole("dialog", { name: "City data credits" });
   vi.spyOn(dialog, "getBoundingClientRect").mockReturnValue({ left: 100, right: 500, top: 100, bottom: 400 } as DOMRect);
   fireEvent.click(within(dialog).getByRole("heading", { name: "City data" }));
   fireEvent.click(dialog, { clientX: 150, clientY: 150 });
   expect(dialog).toHaveAttribute("open");
   fireEvent.click(dialog, { clientX: 50, clientY: 50 });
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Credits" })).toHaveFocus();
+  expect(screen.getByRole("menuitem", { name: "City data credits" })).toHaveFocus();
 });
 
 it("wraps keyboard focus between the close button and final source link", () => {
   render(<Credits />);
-  fireEvent.click(screen.getByRole("button", { name: "Credits" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "City data credits" }));
   const close = screen.getByRole("button", { name: "Close credits" });
   const source = screen.getByRole("link", { name: /^Source data and documentation/ });
   close.focus();

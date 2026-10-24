@@ -9,10 +9,10 @@ export function Credits() {
 
   return (
     <>
-      <button ref={triggerRef} type="button" aria-haspopup="dialog"
+      <button ref={triggerRef} type="button" role="menuitem" aria-haspopup="dialog"
         onClick={() => dialogRef.current?.showModal()}
-        className="min-h-11 min-w-11 px-2 text-xs text-[var(--dt-text-secondary)] underline underline-offset-4 hover:text-[var(--dt-text)] focus-visible:outline-offset-2 transition-colors">
-        Credits
+        className="w-full min-h-11 px-[0.5em] py-[0.375em] text-left text-xs text-[var(--dt-text-secondary)] underline underline-offset-4 rounded-md hover:text-[var(--dt-text)] hover:bg-[var(--dt-surface-raised)] focus-visible:outline-offset-2 transition-colors">
+        City data credits
       </button>
       <dialog ref={dialogRef} aria-labelledby={titleId}
         onClose={() => triggerRef.current?.focus({ preventScroll: true })}
@@ -36,7 +36,7 @@ export function Credits() {
         }}
         className="credits-dialog m-auto w-[calc(100%-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-lg border border-[var(--dt-border)] bg-[var(--dt-bg)] p-5 text-[var(--dt-text)] shadow-xl backdrop:bg-black/40 sm:p-6">
         <div className="flex items-center justify-between gap-4 mb-4">
-          <h2 id={titleId} className="text-lg font-medium">Credits</h2>
+          <h2 id={titleId} className="text-lg font-medium">City data credits</h2>
           <button type="button" aria-label="Close credits" onClick={() => dialogRef.current?.close()}
             className="flex min-h-11 min-w-11 items-center justify-center rounded-md hover:bg-[var(--dt-bg-hover)] focus-visible:outline-offset-2 transition-colors">
             <X size={18} aria-hidden="true" />
