@@ -583,6 +583,11 @@
   }
 }
 
+/* A restrained theme tint keeps light-mode wordmarks dark and dark-mode ones legible. */
+:root {
+  --dt-logo: color-mix(in oklab, var(--dt-accent) 25%, var(--dt-text));
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

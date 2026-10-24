@@ -192,3 +192,10 @@ button's control background, 8px padding/radius, 40px width and shared height,
 in both open and closed states. Browser checks at 390px, 1023px and 1024px
 confirmed the matching icon controls and preserved labelled desktop styling.
 All 13 Settings/credits tests and the production build passed.
+
+Logo tint check, 2026-10-23: mobile and footer wordmarks share a restrained
+accent/foreground mix in Oklab, keeping light-mode logos dark and dark-mode
+logos legible. Browser-computed SVG fills matched the wordmark color in all
+three designs and both appearances; the original theme selections were restored.
+All 60 App/Settings tests and the final production build passed. No screenshots
+were included, following the user's preference.

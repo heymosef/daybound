@@ -263,7 +263,7 @@ function App() {
           {/* Header */}
           <div className="flex flex-col gap-6">
             <div className="flex-shrink-0 md:hidden flex justify-center pt-1">
-              <Daybound className="h-8 text-[var(--dt-text)] transition-colors aspect-[347/68]" />
+              <Daybound className="h-8 text-[var(--dt-logo)] transition-colors aspect-[347/68]" />
             </div>
 
             <div className="flex flex-col md:flex-row items-stretch gap-[1em] md:gap-[1.5em]">
@@ -402,7 +402,7 @@ function App() {
             )}
           </div>
           <div className="hidden md:flex justify-center flex-grow items-end pt-6">
-            <Daybound className="h-8 text-[var(--dt-text)] transition-colors opacity-50 hover:opacity-100 aspect-[347/68]" />
+            <Daybound className="h-8 text-[var(--dt-logo)] transition-colors opacity-50 hover:opacity-100 aspect-[347/68]" />
           </div>
         </main>
       </div>
