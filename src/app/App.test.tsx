@@ -545,6 +545,33 @@ describe("synchronized timeline exploration", () => {
     const rail = within(view).getByTestId("timeline-rail");
     return [view.getAttribute("data-preview-instant"), rail.getAttribute("data-start"), rail.style.transform];
   });
+  it("reveals Toronto's off-screen rollback in every row without changing the selected clocks", () => {
+    const outer = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(2500);
+    const inner = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(2500);
+    try {
+      vi.setSystemTime(new Date("2026-10-31T19:00:00Z"));
+      localStorage.setItem("timezone_config", JSON.stringify([
+        { id: "vancouver", timezone: "America/Vancouver", isHome: true },
+        { id: "toronto", timezone: "America/Toronto", isHome: false },
+        { id: "new-york", timezone: "America/New_York", isHome: false },
+      ]));
+      render(<App />);
+      fireEvent.click(screen.getByRole("button", { name: "1 Nov" }));
+      clocksAt("2026-11-01T19:00:00.000Z");
+      const hint = screen.getByRole("button", { name: /Toronto\. Clocks go back 1h.*Before the visible timeline/ });
+      fireEvent.click(hint);
+      expect(instants()).toEqual(Array(3).fill("2026-11-01T06:00:00.000Z"));
+      clocksAt("2026-11-01T19:00:00.000Z");
+      expect(screen.getAllByRole("img", { name: /Clocks go back 1h/ })).toHaveLength(2);
+      expect(screen.queryByRole("button", { name: /Show clock change/ })).not.toBeInTheDocument();
+      expect(views()[1]).toHaveFocus();
+      expect(screen.getByRole("button", { name: "31 Oct", pressed: true })).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(60000));
+      clocksAt("2026-11-01T19:00:00.000Z");
+    } finally {
+      outer.mockRestore(); inner.mockRestore();
+    }
+  });
   it.each([
     [false, false, "2026-10-22T20:00:00.000Z", "22 Oct"],
     [false, true, "2026-10-23T02:00:00.000Z", "23 Oct"],

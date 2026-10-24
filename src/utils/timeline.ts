@@ -4,6 +4,7 @@ import { timezoneTransitions, formatCalendarDate, getZonedFields, HOUR_MS } from
 export const TOTAL_HOURS = 25;
 export const PAN_LIMIT_HOURS = 24;
 export const CENTER_INDEX = 12;
+export const CLOCK_CHANGE_LOOKAROUND_HOURS = 6;
 type ZonedFields = ReturnType<typeof getZonedFields>;
 
 export function formatClock(fields: ZonedFields, use24Hour: boolean, alwaysMinutes = true, pad24 = false): string {
@@ -45,10 +46,11 @@ export function createTimeline(instant: Date, timezone: string, isLive: boolean,
   };
   // Shared offset spans find brief and backward date crossings through the
   // final cell, while excluding the rail's right endpoint.
-  const { dates, offsetChanges } = timezoneTransitions(start, end, timezone);
-  const boundaries = dates.map(boundaryAt);
+  const lookaround = CLOCK_CHANGE_LOOKAROUND_HOURS * HOUR_MS;
+  const { dates, offsetChanges } = timezoneTransitions(start - lookaround, end + lookaround, timezone);
+  const boundaries = dates.filter(time => time >= start && time < end).map(boundaryAt);
   const segments = [boundaryAt(start), ...boundaries.filter((boundary) => boundary.time > start)];
-  const clockChanges = offsetChanges.map(({ time, before, after }) => {
+  const nearbyClockChanges = offsetChanges.map(({ time, before, after }) => {
     const delta = after - before;
     const seconds = Math.abs(delta);
     const duration = [
@@ -62,5 +64,6 @@ export function createTimeline(instant: Date, timezone: string, isLive: boolean,
       description: `Clocks go ${delta < 0 ? "back" : "forward"} ${duration}. ${utcOffsetLabel(before)} to ${utcOffsetLabel(after)}.`,
     };
   });
-  return { start, end, anchor, progress, cells, boundaries, segments, clockChanges };
+  const clockChanges = nearbyClockChanges.filter(change => change.time >= start && change.time < end);
+  return { start, end, anchor, progress, cells, boundaries, segments, clockChanges, nearbyClockChanges };
 }

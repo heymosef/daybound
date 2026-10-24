@@ -98,6 +98,19 @@ it("includes a change at rail start and inside the final cell, excluding the rig
   expect(createTimeline(new Date(at - 25 * 3600000), zone, false).clockChanges).toEqual([]);
   expect(createTimeline(new Date(at + 1), zone, false).clockChanges).toEqual([]);
 });
+
+it("finds Toronto's nearby rollback before Vancouver's November 1 rail without adding off-rail dates or cells", () => {
+  const model = createTimeline(startOfCalendarDate("2026-11-01", "America/Vancouver")!, "America/Toronto", false);
+  expect(model.clockChanges).toEqual([]);
+  expect(model.nearbyClockChanges).toEqual([expect.objectContaining({
+    time: Date.parse("2026-11-01T06:00:00Z"), index: -1, label: "Back 1h",
+  })]);
+  expect(model.cells).toHaveLength(25);
+  for (const boundary of model.boundaries) {
+    expect(boundary.time).toBeGreaterThanOrEqual(model.start);
+    expect(boundary.time).toBeLessThan(model.end);
+  }
+});
 it.each([
   ["2026-09-06", "America/Santiago", "2026-09-06T04:00:00.000Z", 23],
   ["2026-11-01", "America/Havana", "2026-11-01T04:00:00.000Z", 25],

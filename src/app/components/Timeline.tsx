@@ -6,12 +6,12 @@ import React, {
   useLayoutEffect,
   useMemo,
 } from "react";
-import { createTimeline, formatClock, formatZonedClock, TOTAL_HOURS, PAN_LIMIT_HOURS } from "../../utils/timeline";
+import { createTimeline, formatClock, formatZonedClock, TOTAL_HOURS, PAN_LIMIT_HOURS, CLOCK_CHANGE_LOOKAROUND_HOURS } from "../../utils/timeline";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { motion, AnimatePresence } from "motion/react";
 import { MorphingTime } from "./MorphingTime";
-import { Undo2, Redo2 } from "lucide-react";
+import { Undo2, Redo2, ChevronLeft, ChevronRight } from "lucide-react";
 import { EASE_OUT, EASE_IN } from "../../utils/animation";
 import "./Timeline.css";
 
@@ -36,6 +36,7 @@ interface TimelineProps {
   onReset?: () => void;
   selectedTime?: number;
   onSelectTime?: (instant: number) => void;
+  onShowClockChange?: (instant: number) => void;
 }
 
 const LABEL_PAD = 0; // px – clamping offset from the container edge
@@ -60,6 +61,7 @@ const TimelineInner: React.FC<TimelineProps> = ({
   onReset,
   selectedTime,
   onSelectTime,
+  onShowClockChange,
 }) => {
   // ── Refs & measurement ──
   const outerRef = useRef<HTMLDivElement>(null);
@@ -137,6 +139,19 @@ const TimelineInner: React.FC<TimelineProps> = ({
   const markerLeftPx = railOffset + (realNow - model.start) / HOUR_MS * cellWidth;
   const keyboardCell = model.cells[Math.max(0, Math.min(TOTAL_HOURS - 1, Math.floor(progress)))];
   useTimelineScrub(outerRef, cellWidth, onPan, onReset);
+
+  // One compact hint per edge, measured against the visible viewport rather than
+  // the full rail. Nearby transitions can also sit just outside the rail itself.
+  const edgeChanges = (["earlier", "later"] as const).map(direction => {
+    const candidates = model.nearbyClockChanges.filter(change => {
+      const x = railOffset + change.index * cellWidth;
+      const distance = direction === "earlier" ? -x : x - dims.outer;
+      return (direction === "earlier" ? x < 0 : x >= dims.outer) &&
+        distance <= CLOCK_CHANGE_LOOKAROUND_HOURS * cellWidth;
+    });
+    const change = direction === "earlier" ? candidates.at(-1) : candidates[0];
+    return change ? { change, direction } : null;
+  });
 
   const LABEL_WIDTH_ESTIMATE = 80;
 
@@ -475,6 +490,28 @@ const TimelineInner: React.FC<TimelineProps> = ({
             </span>
           </div>
         );
+      })}
+      {dims.outer > 0 && onShowClockChange && edgeChanges.map(edge => {
+        if (!edge) return null;
+        const { change, direction } = edge;
+        const Icon = direction === "earlier" ? ChevronLeft : ChevronRight;
+        const description = `${label ?? timezone}. ${change.description} ${direction === "earlier" ? "Before" : "After"} the visible timeline. Show clock change.`;
+        return <button key={direction} type="button"
+          className="timeline-clock-change-hint focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dt-accent)]"
+          data-clock-change={new Date(change.time).toISOString()}
+          data-clock-change-edge={direction}
+          aria-label={description} title={description}
+          style={direction === "earlier" ? { left: 0 } : { right: 0 }}
+          onClick={() => {
+            onShowClockChange(change.time);
+            outerRef.current?.focus({ preventScroll: true });
+          }}>
+          <span className="timeline-clock-change-label" aria-hidden="true">
+            {direction === "earlier" && <Icon size={12} aria-hidden="true" />}
+            {change.label}
+            {direction === "later" && <Icon size={12} aria-hidden="true" />}
+          </span>
+        </button>;
       })}
     </div>
   );

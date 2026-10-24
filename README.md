@@ -80,6 +80,11 @@ the slot at the reference point. Tap today’s date (or press Home) to restore l
 time, including when Today is already selected. Choosing a date resets the pan.
 Vertical page scrolling and pinch zoom remain available.
 
+Clock changes show a compact Back/Forward indicator on affected rows. Changes
+within six hours outside the visible timeline appear at its edge with a chevron;
+activate the indicator to center the change across all rows. Selected clock
+times stay unchanged, and the calendar follows the home-city date at the change.
+
 Calendar popups fit the visible viewport, opening above the trigger or scrolling
 internally when needed.
 

@@ -111,6 +111,11 @@ function App() {
     });
     setHoveredHourIndex(null);
   }, [nowTime]);
+  const handleShowClockChange = useCallback((instant: number) => {
+    setView(previous => ({ base: instant, hours: 0, centered: true,
+      selected: previous?.selected ?? null, calendarTime: instant }));
+    setHoveredHourIndex(null);
+  }, []);
   const returnToNow = useCallback(() => {
     setView(null);
     setHoveredHourIndex(null);
@@ -372,6 +377,7 @@ function App() {
                         panHours={view?.hours ?? 0}
                         selectedTime={view?.selected ?? undefined}
                         onSelectTime={handleSelectTime}
+                        onShowClockChange={handleShowClockChange}
                         onPan={handlePanTimeline}
                         onResetTimeline={returnToNow}
                         onRemove={handleRemoveTimezone}

@@ -36,6 +36,7 @@ All routes start at `http://127.0.0.1:4174/`:
 | `?scenario=fractional` | 2026-03-07 21:00Z; Kolkata02:30, Kathmandu02:45 and Adelaide fractional labels |
 | `?scenario=dst-spring` | 2026-03-08 06:59:30Z, New York home; missing hour |
 | `?scenario=dst-fall` | 2026-11-01 05:59:30Z, New York home; repeated hour and explicit offsets |
+| `?scenario=toronto-fall` | 2026-10-31 19:00Z, Vancouver home; Toronto's rollback before Vancouver's Nov 1 |
 | `?scenario=st-johns` | 2009-11-01 02:29:30Z, St Johns home; brief date and backward date crossing |
 | `?storage=corrupt` | Malformed timezone/settings JSON before App initialization |
 | `?storage=blocked` | localStorage property getter throws SecurityError before initialization |
@@ -215,3 +216,21 @@ without a second copy of the geometry. Desktop and 390px browser checks
 confirmed matching clip/path data and the entrance transform; the desktop sun
 settled without a transform. Duration and reduced-motion handling are unchanged.
 Node24 typecheck, lint, all 418 tests, and the production build passed.
+
+Compact off-screen clock-change check, 2026-10-23: `toronto-fall` seeds Vancouver
+home on Oct 31. Select Nov 1 to expose Toronto/New York rollback hints at the
+left edge. A nearby change can also appear at the right edge after scrubbing;
+hints stop beyond six hours outside the viewport. Enter or click centers the
+instant across every row, updates the home-calendar date, preserves selected
+clock times, and returns focus to the activating timeline. Visible markers keep
+their existing Undo/Redo icons; edge hints swap in directional chevrons.
+At 1280px and 390px, both visible marker and hint labels measured 70.21 by 18px
+for Back 1h. The transparent button target is 24px high to avoid intercepting
+the hour label above it. Browser checks confirmed first-slot selection beside
+the hint, light/dark appearance, hints over a selected band, both directions,
+and tap/keyboard reveal without changing clocks. No page overflow or console
+errors were observed. Physical touch and screen-reader speech were not tested.
+Node24 typecheck, lint, all 425 tests across 24 files, and production/fixture
+builds passed; final builds and mobile selection checks also passed after the
+hit-area adjustment. No live analytics credentials were used. Port4180 has the
+refreshed production preview.

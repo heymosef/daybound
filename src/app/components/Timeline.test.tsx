@@ -164,6 +164,45 @@ it("places a half-hour forward marker between cells and follows scrubbing", () =
   expect(screen.queryByRole("img")).not.toBeInTheDocument();
 });
 
+it("offers a compact earlier hint for Toronto's rollback outside Vancouver's November 1 rail", () => {
+  const show = vi.fn(), select = vi.fn();
+  const { rerender } = renderRail({ now: new Date("2026-11-01T07:00:00Z"), timezone: "America/Toronto", label: "Toronto",
+    onShowClockChange: show, onSelectTime: select });
+  const hint = screen.getByRole("button", { name: /Toronto\. Clocks go back 1h.*Before the visible timeline/ });
+  expect(hint).toHaveTextContent(/^Back 1h$/);
+  expect(hint).toHaveAttribute("data-clock-change-edge", "earlier");
+  expect(hint).toHaveStyle({ left: "0px" });
+  expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  fireEvent.click(hint);
+  expect(show).toHaveBeenCalledExactlyOnceWith(Date.parse("2026-11-01T06:00:00Z"));
+  expect(select).not.toHaveBeenCalled();
+  rerender(<Timeline now={new Date("2026-11-01T06:00:00Z")} timezone="America/Toronto" label="Toronto"
+    isLive selectedDateOffset={1} onShowClockChange={show} onPan={vi.fn()} />);
+  expect(screen.queryByRole("button", { name: /Show clock change/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("img", { name: /Clocks go back 1h/ })).toBeInTheDocument();
+});
+
+it("uses the visible edge for a later hint even when the change already exists in the full rail", () => {
+  vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(500);
+  const show = vi.fn();
+  renderRail({ now: new Date("2026-11-01T00:00:00Z"), timezone: "America/Toronto", onShowClockChange: show });
+  const hint = screen.getByRole("button", { name: /After the visible timeline/ });
+  expect(hint).toHaveTextContent(/^Back 1h$/);
+  expect(hint).toHaveAttribute("data-clock-change-edge", "later");
+  expect(hint).toHaveStyle({ right: "0px" });
+  fireEvent.click(hint);
+  expect(show).toHaveBeenCalledExactlyOnceWith(Date.parse("2026-11-01T06:00:00Z"));
+});
+
+it.each([
+  ["2026-11-01T12:00:00Z", "America/Toronto", true],
+  ["2026-11-01T12:00:00.001Z", "America/Toronto", false],
+  ["2026-11-01T07:00:00Z", "America/Vancouver", false],
+])("shows only nearby hints on affected rows at %s in %s", (instant, timezone, visible) => {
+  renderRail({ now: new Date(instant), timezone, onShowClockChange: vi.fn() });
+  expect(screen.queryByRole("button", { name: /Show clock change/ }) !== null).toBe(visible);
+});
+
 it("preserves the motion wrapper at midnight then glides forward to the next date", () => {
   const fixed = new Date("2026-12-05T00:00:00Z");
   const { rerender } = renderRail({ now: fixed, timezone: "UTC", selectedDateOffset: 44 });

@@ -36,6 +36,7 @@ interface TimezoneRowProps {
   onResetTimeline?: () => void;
   selectedTime?: number;
   onSelectTime?: (instant: number) => void;
+  onShowClockChange?: (instant: number) => void;
   isLive: boolean;
   selectedDateOffset: number;
 }
@@ -62,6 +63,7 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
   onResetTimeline,
   selectedTime,
   onSelectTime,
+  onShowClockChange,
   isLive,
   selectedDateOffset,
 }) => {
@@ -299,6 +301,7 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
           onReset={onResetTimeline}
           selectedTime={selectedTime}
           onSelectTime={onSelectTime}
+          onShowClockChange={onShowClockChange}
           timezone={timezone}
           label={cityName}
           isHome={isHome}
