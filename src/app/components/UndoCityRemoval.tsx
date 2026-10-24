@@ -1,3 +1,4 @@
+import "./UndoCityRemoval.css";
 import React, { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
 interface Props {
@@ -45,7 +46,7 @@ export function UndoCityRemoval({ token, city, onUndo, onExpire, actionRef }: Pr
     document.addEventListener("visibilitychange", visibility);
     return () => document.removeEventListener("visibilitychange", visibility);
   }, [pause]);
-  return <div className="pointer-events-none fixed left-[max(1rem,env(safe-area-inset-left))] right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] z-[60] flex justify-center">
+  return <div className="pointer-events-none fixed left-[max(1rem,env(safe-area-inset-left))] right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] z-[60] flex justify-end">
     <div role="status" aria-label="Removed city" data-undo-notice
     onPointerEnter={() => pause("hover", true)} onPointerLeave={() => pause("hover", false)}
     onFocus={() => pause("focus", true)}

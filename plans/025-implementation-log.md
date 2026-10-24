@@ -51,3 +51,9 @@ Staging exposed original trailing spaces/CRLF in the three upstream OFL files. T
 User requested a toast with the removed city's name and Undo. The recovery component now floats at bottom center, respects viewport safe areas, uses opaque theme tokens, truncates long labels, and keeps the Undo target separate. Its outer positioning layer passes pointer input through; the toast itself remains interactive. The existing timer, pause reasons, stable action ref, recovery and focus behavior are unchanged. No new toast dependency/framework or animation was added.
 
 Focused validation:15 Undo/App tests passed,4 desktop/narrow city-action browser tests passed (including fixed positioning and viewport bounds), typecheck/scoped lint/production build passed. GPT-6 Astra/High approved the bounded presentation delta in024. The local preview build is refreshed; no push/deployment occurred.
+
+## Toast corner and entrance follow-up — 2026-10-23
+
+User requested a slide-in like the referenced shadcn toast and bottom-right placement to avoid covering the footer logo. The existing fixed safe-area wrapper now aligns right. A220ms ease-out entrance combines opacity with16px right-to-left movement, contained inside the existing minimum16px right margin. Motion is opt-in via prefers-reduced-motion:no-preference; reduced motion renders the toast immediately. There is no exit delay, replay on content replacement, new dependency or timing/focus/action change.
+
+Validation passed:15 focused Undo/App tests;6 desktop/narrow browser checks including corner geometry and normal/reduced motion; typecheck, scoped lint and production build. The first reduced-motion test attempted to pointer-click a desktop hover-only control; the test now uses the same keyboard activation as the existing city-action checks. No product workaround was introduced. GPT-6 Astra/High approved the bounded delta in024. Preview refreshed; changes remain local.

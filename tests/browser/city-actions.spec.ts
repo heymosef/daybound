@@ -1,6 +1,7 @@
 import { test, expect, app, openFixture, strip, timelines, settledRail } from "./fixtures";
 
 test("keyboard city actions are visible and Undo restores saved order, focus and selected time", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await openFixture(page);
   await strip(page).getByRole("button").nth(1).click();
   await settledRail(timelines(page).first());
@@ -20,9 +21,10 @@ test("keyboard city actions are visible and Undo restores saved order, focus and
   const toast = app(page).getByRole("status", { name: "Removed city", exact: true });
   await expect(toast).toContainText("Kolkata removed");
   await expect(toast.locator("..")).toHaveCSS("position", "fixed");
+  await expect(toast).toHaveCSS("animation-name", "city-removal-toast-enter");
   await expect.poll(() => toast.evaluate(node => {
     const rect = node.getBoundingClientRect();
-    return rect.left >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight - 16 && rect.bottom >= innerHeight - 32;
+    return rect.left >= 0 && Math.abs(rect.right - (innerWidth - 16)) < 1 && rect.bottom <= innerHeight - 16 && rect.bottom >= innerHeight - 32;
   })).toBe(true);
   await undo.click();
   await expect(app(page).getByRole("button", { name: "Rename Kolkata", exact: true })).toBeFocused();
@@ -46,4 +48,18 @@ test("external divergence invalidates a focused Undo without dropping keyboard f
   await expect(app(page).getByRole("button", { name: "Undo removal of Kolkata", exact: true })).toHaveCount(0);
   await expect(app(page).getByRole("button", { name: "Rename UTC", exact: true })).toBeFocused();
   await other.close();
+});
+
+test("reduced motion shows the corner toast immediately without sliding", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await openFixture(page);
+  const remove = app(page).getByRole("button", { name: "Remove Kolkata", exact: true }).filter({ visible: true });
+  await remove.focus();
+  await page.keyboard.press("Enter");
+  const toast = app(page).getByRole("status", { name: "Removed city", exact: true });
+  await expect(toast).toHaveCSS("animation-name", "none");
+  await expect(toast).toHaveCSS("transform", "none");
+  await expect(toast).toHaveCSS("opacity", "1");
+  await toast.getByRole("button", { name: "Undo removal of Kolkata", exact: true }).click();
+  await expect(app(page).getByRole("button", { name: "Rename Kolkata", exact: true })).toBeFocused();
 });
