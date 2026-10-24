@@ -281,7 +281,7 @@ describe("App fixed calendar selection lifecycle", () => {
     expectClocks("2026-04-15T23:59:50.000Z");
     fireEvent.change(within(screen.getByRole("menu")).getByRole("combobox"), { target: { value: "east" } });
     expectClocks("2026-04-15T23:59:50.000Z");
-    expect(screen.getByRole("button", { name: "Back to today" })).toHaveTextContent("16Apr");
+    expect(screen.queryByRole("button", { name: "Back to today" })).not.toBeInTheDocument();
     expect(localStorage.getItem("selected_date")).toBeNull();
   });
 

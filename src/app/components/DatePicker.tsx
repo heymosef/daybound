@@ -198,7 +198,7 @@ const DatePickerInner: React.FC<DatePickerProps> = ({
         />
       </div>
 
-      {(selectedDateOffset < 0 || selectedDateOffset > 6) && (() => {
+      {selectedDateOffset < 0 && (() => {
         const viewingDate = selectedDate;
         return (
         <button

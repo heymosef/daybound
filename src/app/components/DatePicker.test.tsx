@@ -274,12 +274,11 @@ describe("Calendar dropdown", () => {
   });
 });
 
-describe("Viewing label for far-future dates", () => {
-  it("shows viewing label when selectedDateOffset > 6", () => {
+describe("Future date controls", () => {
+  it("keeps the calendar icon without an extra selected-date button beyond the strip", () => {
     renderDatePicker({ selectedDateOffset: 14 });
-    const backButton = screen.getByRole("button", { name: /back to today/i });
-    expect(within(backButton).getByText("16")).toBeInTheDocument();
-    expect(within(backButton).getByText("Mar")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /back to today/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open calendar/i })).toBeInTheDocument();
   });
 
   it("hides viewing label when selectedDateOffset <= 6", () => {
@@ -289,12 +288,12 @@ describe("Viewing label for far-future dates", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("clicking x on viewing label resets to today", async () => {
+  it("today in the strip still resets a far-future view", async () => {
     const user = userEvent.setup();
     const { onSelectDate } = renderDatePicker({ selectedDateOffset: 14 });
 
     await user.click(
-      screen.getByRole("button", { name: /back to today/i }),
+      screen.getByRole("button", { current: "date" }),
     );
     expect(onSelectDate).toHaveBeenCalledWith({ mode: "live" });
   });
@@ -340,15 +339,15 @@ describe("Timezone-aware date handling", () => {
     expect(onSelectDate).not.toHaveBeenCalled();
   });
 
-  it("viewing label shows correct date in home timezone", () => {
+  it("calendar keeps the correct selected date in the home timezone", async () => {
+    const user = userEvent.setup();
     renderDatePicker({
       now: TZ_NOW,
       homeTimezone: "Australia/Sydney",
       selectedDateOffset: 14,
     });
-    const backButton = screen.getByRole("button", { name: /back to today/i });
-    expect(within(backButton).getByText("17")).toBeInTheDocument();
-    expect(within(backButton).getByText("Mar")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /open calendar/i }));
+    expect(screen.getByRole("button", { name: "Tuesday, March 17, 2026", pressed: true })).toBeInTheDocument();
   });
 });
 
