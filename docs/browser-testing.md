@@ -169,3 +169,11 @@ with the same text as the modal heading; the footer link is removed. Desktop
 and 320px browser checks confirmed the modal fits, focus wraps, and closing
 returns focus to the credits menu item while keeping Settings open. Typecheck,
 lint, all 418 tests, and the production build passed.
+
+Credits refinement, 2026-10-23: the modal now has one heading, City data credits.
+Selecting its compact Settings entry closes the dropdown; the modal is mounted
+separately so it survives the dropdown exit. Closing returns focus to Settings
+without reopening the menu. Desktop verification measured the entry section at
+38px (25px button); coarse-pointer styling retains a 44px touch target. Desktop
+and 320px browser checks passed for dismissal, focus wrapping and modal fit.
+Typecheck, lint, all 418 tests, and the production build passed.

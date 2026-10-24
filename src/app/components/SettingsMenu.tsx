@@ -23,6 +23,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
   onSetHome,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
   const analytics = useAnalytics();
   const analyticsDescriptionId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -331,12 +332,24 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                   analytics.enabled ? "On" : "Off"}
               </p>
             </div>
-            <div className="p-[0.75em] border-t border-[var(--dt-border)]">
-              <Credits />
+            <div className="px-[0.75em] py-[0.25em] border-t border-[var(--dt-border)]">
+              <button type="button" role="menuitem" aria-haspopup="dialog"
+                onClick={() => {
+                  makeDropdownInert();
+                  setIsOpen(false);
+                  setCreditsOpen(true);
+                }}
+                className="credits-menu-item w-full min-h-6 px-[0.5em] py-[0.375em] text-left text-xs text-[var(--dt-text-secondary)] underline underline-offset-4 rounded-md hover:text-[var(--dt-text)] hover:bg-[var(--dt-surface-raised)] focus-visible:outline-offset-2 transition-colors">
+                City data credits
+              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+      <Credits isOpen={creditsOpen} onClose={() => {
+        setCreditsOpen(false);
+        triggerRef.current?.focus({ preventScroll: true });
+      }} />
     </div>
   );
 };

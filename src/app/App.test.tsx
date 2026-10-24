@@ -14,7 +14,7 @@ const LOCAL_SAVE_NOTICE_COPY =
 it("puts City data credits in Settings instead of the footer", () => {
   localStorage.clear();
   render(<App />);
-  expect(screen.queryByText(/credits/i)).not.toBeInTheDocument();
+  expect(screen.queryByRole("menuitem", { name: "City data credits" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /settings/i }));
   expect(within(screen.getByRole("menu")).getByRole("menuitem", { name: "City data credits" })).toBeInTheDocument();
 });

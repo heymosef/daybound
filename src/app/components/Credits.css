@@ -3,3 +3,7 @@
 body:has(.credits-dialog[open]) {
   overflow: hidden;
 }
+
+@media (pointer: coarse) {
+  .credits-menu-item { min-height: 44px; }
+}

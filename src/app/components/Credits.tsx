@@ -1,21 +1,21 @@
-import React, { useId, useRef } from "react";
+import React, { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
 import "./Credits.css";
 
-export function Credits() {
+export function Credits({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
 
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (isOpen && !dialog.open) dialog.showModal();
+    else if (!isOpen && dialog.open) dialog.close();
+  }, [isOpen]);
+
   return (
-    <>
-      <button ref={triggerRef} type="button" role="menuitem" aria-haspopup="dialog"
-        onClick={() => dialogRef.current?.showModal()}
-        className="w-full min-h-11 px-[0.5em] py-[0.375em] text-left text-xs text-[var(--dt-text-secondary)] underline underline-offset-4 rounded-md hover:text-[var(--dt-text)] hover:bg-[var(--dt-surface-raised)] focus-visible:outline-offset-2 transition-colors">
-        City data credits
-      </button>
       <dialog ref={dialogRef} aria-labelledby={titleId}
-        onClose={() => triggerRef.current?.focus({ preventScroll: true })}
+        onClose={onClose}
         onKeyDown={event => {
           event.stopPropagation();
           if (event.key !== "Tab") return;
@@ -43,7 +43,6 @@ export function Credits() {
           </button>
         </div>
         <div className="space-y-4 text-sm leading-relaxed text-[var(--dt-text-secondary)]">
-          <h3 className="text-sm font-medium text-[var(--dt-text)]">City data</h3>
           <p>Daybound’s city lookup catalogue uses{" "}
             <a href="https://www.geonames.org/" target="_blank" rel="noreferrer" aria-label="GeoNames (opens in a new tab)" className="underline underline-offset-2">GeoNames</a>{" "}
             cities15000 data, licensed under{" "}
@@ -53,6 +52,5 @@ export function Credits() {
           <p><a href="https://download.geonames.org/export/dump/readme.txt" target="_blank" rel="noreferrer" aria-label="Source data and documentation (opens in a new tab)" className="underline underline-offset-2">Source data and documentation</a></p>
         </div>
       </dialog>
-    </>
   );
 }
