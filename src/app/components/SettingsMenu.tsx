@@ -106,7 +106,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
               : "rotate(0deg)",
           }}
         />
-        <span className="hidden xl:inline text-[clamp(12px,0.72vw+4.62px,15px)] font-medium">
+        <span className="hidden lg:inline text-[clamp(12px,0.72vw+4.62px,15px)] font-medium">
           Settings
         </span>
       </button>

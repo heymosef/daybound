@@ -177,3 +177,8 @@ without reopening the menu. Desktop verification measured the entry section at
 38px (25px button); coarse-pointer styling retains a 44px touch target. Desktop
 and 320px browser checks passed for dismissal, focus wrapping and modal fit.
 Typecheck, lint, all 418 tests, and the production build passed.
+
+Desktop breakpoint update, 2026-10-23: the Settings text label now appears from
+1024px, matching the presentation previously reserved for 1280px. Browser checks
+at 1023px, 1024px and 1280px confirmed the label threshold and no horizontal page
+overflow. All nine Settings tests and the production build passed.
