@@ -19,7 +19,7 @@ interface TimezoneRowProps {
   config: TimezoneConfig;
   now: Date;
   timelineTime: Date;
-  onRemove: (id: string) => void;
+  onRemove: (id: string, keyboard: boolean) => void;
   onRename: (id: string, newName: string) => void;
   onRenameTrigger?: (id: string, node: HTMLButtonElement | null, previous: HTMLButtonElement | null) => void;
   onMove: (id: string, direction: "up" | "down") => void;
@@ -141,7 +141,7 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
           ) : (
             <>
               <button
-                onClick={() => onRemove(config.id)}
+                onClick={event => onRemove(config.id, event.detail === 0)}
                 className="md:hidden text-[var(--dt-text-muted)] hover:text-red-600 transition-colors p-0.5 rounded focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]"
                 title="Remove timezone"
                 aria-label={`Remove ${cityName}`}
@@ -313,7 +313,7 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
             <Home className="w-[1.25em] h-[1.25em]" />
           </button>
           <button
-            onClick={() => onRemove(config.id)}
+            onClick={event => onRemove(config.id, event.detail === 0)}
             className="p-[0.375em] text-[var(--dt-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all focus-visible:outline-2 focus-visible:outline-[var(--dt-accent)]"
             title="Remove timezone"
             aria-label={`Remove ${cityName}`}

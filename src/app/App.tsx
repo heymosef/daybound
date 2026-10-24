@@ -233,11 +233,11 @@ function App() {
     capture("timezone_added", { timezone_count_after: updated.length });
   }, [capture, setTimezones, timezones]);
 
-  const handleRemoveTimezone = useCallback((id: string) => {
+  const handleRemoveTimezone = useCallback((id: string, keyboard = true) => {
     const index = timezones.findIndex(row => row.id === id);
     const row = timezones[index];
     if (!row || row.isHome) return;
-    if (document.activeElement?.closest("[data-row-id]")?.getAttribute("data-row-id") === id) pendingFocus.current = "undo";
+    if (document.activeElement?.closest("[data-row-id]")?.getAttribute("data-row-id") === id) pendingFocus.current = keyboard ? "undo" : "fallback";
     setRemoved({ token: crypto.randomUUID(), row, index, before: timezones[index - 1]?.id,
       after: timezones[index + 1]?.id, revision: timezoneStorage.externalRevision });
     setCityFeedback("");
@@ -417,8 +417,10 @@ function App() {
             preview={value => value ? "save notice hidden" : "save notice shown"}
             clearedAction="Show local save notice" onUseSaved={() => resolveNotice(noticeStorage.resolveFromStorage)}
             onReplace={() => resolveNotice(noticeStorage.replaceFromDraft)} onRetry={noticeStorage.retryExternalRead} />}
-          {removed && <UndoCityRemoval token={removed.token} city={removed.row.label || getCityName(removed.row.timezone)}
-            actionRef={undoAction} onUndo={undoRemoval} onExpire={clearUndo} />}
+          <AnimatePresence>
+            {removed && <UndoCityRemoval token={removed.token} city={removed.row.label || getCityName(removed.row.timezone)}
+              actionRef={undoAction} onUndo={undoRemoval} onExpire={clearUndo} />}
+          </AnimatePresence>
           {cityFeedback && <p role="status" className="text-sm">{cityFeedback}</p>}
 
           {dateFeedback && <p role="status" className="text-sm text-[var(--dt-text-secondary)]">{dateFeedback}</p>}

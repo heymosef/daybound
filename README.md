@@ -35,7 +35,7 @@ The rail contains 25 consecutive elapsed-hour cells. Choosing a future date sets
 
 Time zones, labels, themes and display settings use browser `localStorage`. Valid saved rows and fields survive partial recovery; malformed values fall back safely. If storage is blocked or full, changes can remain available for the current visit and the app displays a saving notice. It cannot promise that those changes will survive reload. Selected dates are transient. If another tab changes a saved group, Daybound keeps this tab's version and asks which setup to use. Until that choice, edits to that group stay in memory. Storage is not atomic: simultaneous writes are last-writer-wins on disk; the losing tab retains its version when it observes the difference. Resolve the notice before closing or reloading, which discards that tab's recovery copy. Cleared or invalid saved data never silently replaces a known setup during a visit.
 
-Removing a city offers one Undo action for ten seconds, paused while hovered, focused or the page is hidden. Undo restores its label and position without changing the chosen time or home city. A new removal replaces the previous Undo; an external city-list change cancels it. New labels use the same1024 UTF-16 code-unit limit as saved optional text.
+Removing a city offers one Undo action for five seconds, paused while hovered, focused or the page is hidden. Undo restores its label and position without changing the chosen time or home city. A new removal replaces the previous Undo; an external city-list change cancels it. New labels use the same1024 UTF-16 code-unit limit as saved optional text.
 
 ## Optional usage analytics
 

@@ -63,3 +63,22 @@ test("reduced motion shows the corner toast immediately without sliding", async 
   await toast.getByRole("button", { name: "Undo removal of Kolkata", exact: true }).click();
   await expect(app(page).getByRole("button", { name: "Rename Kolkata", exact: true })).toBeFocused();
 });
+
+
+test("pointer removal expires after five seconds and slides out of the corner", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await openFixture(page);
+  await page.evaluate(() => document.addEventListener("animationstart", event => {
+    if (event.animationName === "city-removal-toast-exit") {
+      document.documentElement.dataset.toastExit = event.animationName;
+    }
+  }));
+  await app(page).locator('[data-row-id]').filter({ has: page.getByRole("button", { name: "Rename Kolkata", exact: true }) }).hover();
+  await app(page).getByRole("button", { name: "Remove Kolkata", exact: true }).filter({ visible: true }).click();
+  await page.mouse.move(1, 1);
+  const toast = app(page).getByRole("status", { name: "Removed city", exact: true });
+  await expect(toast).toBeVisible();
+  await expect(toast.getByRole("button")).not.toBeFocused();
+  await expect(app(page).locator("[data-undo-notice]")).toHaveCount(0, { timeout: 7000 });
+  await expect(page.locator("html")).toHaveAttribute("data-toast-exit", "city-removal-toast-exit");
+});
