@@ -186,3 +186,9 @@ overflow. All nine Settings tests and the production build passed.
 Breakpoint consolidation, 2026-10-23: credits modal padding now changes at 768px
 instead of 640px. No app components use sm: responsive classes. Compiled modal
 styles, all four credits tests, and the production build passed.
+
+Icon-only Settings check, 2026-10-23: below 1024px, Settings matches the calendar
+button's control background, 8px padding/radius, 40px width and shared height,
+in both open and closed states. Browser checks at 390px, 1023px and 1024px
+confirmed the matching icon controls and preserved labelled desktop styling.
+All 13 Settings/credits tests and the production build passed.

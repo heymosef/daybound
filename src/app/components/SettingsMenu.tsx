@@ -88,10 +88,10 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           if (isOpen) makeDropdownInert();
           setIsOpen(!isOpen);
         }}
-        className={`flex items-center justify-center gap-[0.375em] px-[0.75em] py-[0.375em] rounded-md transition-all h-full min-w-[2.5em] ${
+        className={`flex items-center justify-center gap-[0.375em] p-[0.5em] lg:px-[0.75em] lg:py-[0.375em] bg-[var(--dt-control-bg)] text-[var(--dt-text-secondary)] hover:text-[var(--dt-text)] rounded-md transition-colors duration-200 h-full min-w-[2.5em] ${
           isOpen
-            ? "bg-[var(--dt-control-active)] text-[var(--dt-text)] drop-shadow-sm"
-            : "text-[var(--dt-text-secondary)] hover:text-[var(--dt-text)] hover:bg-[var(--dt-control-bg)]"
+            ? "lg:bg-[var(--dt-control-active)] lg:text-[var(--dt-text)] lg:drop-shadow-sm"
+            : "lg:bg-transparent lg:hover:bg-[var(--dt-control-bg)]"
         } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dt-accent)]`}
         title="Settings"
         aria-expanded={isOpen}
