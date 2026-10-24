@@ -28,7 +28,7 @@ it("has a named, described native toggle with keyboard activation and focus styl
   const user = userEvent.setup();
   mountSettings();
   expect(toggle()).toHaveAttribute("aria-checked", "true");
-  expect(toggle()).toHaveAccessibleDescription("Usage actions, settings choices, selected cities, and a filtered sample of unsuccessful searches may be shared. Custom labels stay on this device.");
+  expect(toggle()).toHaveAccessibleDescription("Help improve Daybound by sharing app usage, settings, city choices and some failed searches.");
   expect(toggle()).toHaveClass("focus-visible:ring-2", "focus-visible:ring-[var(--dt-accent)]");
   toggle().focus();
   await user.keyboard(" ");
