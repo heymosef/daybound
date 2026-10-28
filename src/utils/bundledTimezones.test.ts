@@ -1,10 +1,11 @@
 import metadata from "./timezoneAliases.json";
+import provenance from "../../docs/timezone-provenance.json";
 import { ZoneId } from "@js-joda/core";
 import { canonicalTimezone, getTimezoneNames, TIMEZONE_DATA_VERSION } from "./bundledTimezones";
 import { getZonedFields, startOfCalendarDate, timezoneTransitions } from "./calendarDate";
 
 it("bundles the current reviewed IANA version and resolves legacy names", () => {
-  expect(TIMEZONE_DATA_VERSION).toBe("2026f");
+  expect(TIMEZONE_DATA_VERSION).toBe(provenance.version);
   expect(canonicalTimezone("Canada/Pacific")).toBe("America/Vancouver");
   expect(canonicalTimezone("US/Pacific")).toBe("America/Los_Angeles");
   expect(canonicalTimezone("utc")).toBe("UTC");

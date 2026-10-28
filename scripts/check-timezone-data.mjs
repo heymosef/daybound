@@ -1,26 +1,16 @@
 // Read-only maintenance check. Normal installs/builds use the lockfile and require no IANA network call.
-import { appendFile, readFile } from "node:fs/promises";
-import { createRequire } from "node:module";
+import { appendFile } from "node:fs/promises";
 import { checkTimezoneData, timezoneCheckSummary } from "./lib/timezone-check.mjs";
+import { readPinnedVersions } from "./lib/timezone-update.mjs";
 
-const require = createRequire(import.meta.url);
 let result;
 try {
-  const [metadata, source, provider] = await Promise.all([
-    readFile(new URL("../src/utils/timezoneAliases.json", import.meta.url), "utf8"),
-    readFile(require.resolve("tzdata/timezone-data.json"), "utf8"),
-    readFile(new URL("../src/utils/timezoneRules.json", import.meta.url), "utf8"),
-  ]);
-  result = await checkTimezoneData({
-    metadataVersion: JSON.parse(metadata).version,
-    sourceVersion: JSON.parse(source).version,
-    providerVersion: JSON.parse(provider).version,
-  });
+  result = await checkTimezoneData(await readPinnedVersions(new URL("../", import.meta.url)));
 } catch {
   result = {
     exitCode: 1,
     heading: "Timezone review needed",
-    message: "Pinned timezone data could not be read. Run npm ci and review provider/source/generated metadata; see docs/timezone-data.md.",
+    message: "Pinned timezone data or provenance could not be verified. Review rules, aliases and source hashes; see docs/timezone-data.md.",
   };
 }
 

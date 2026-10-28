@@ -4,16 +4,17 @@ The app uses the `@js-joda/timezone` provider with `@js-joda/core`, pinned in
 the lockfile, for offsets, date boundaries, clocks and timeline cells. Its empty
 bundle loads the full reviewed rules from `src/utils/timezoneRules.json` through
 the supported `ZoneRulesProvider.loadTzdbData` API before any zone is resolved.
-The reviewed IANA release is **2026f**. This includes Cuba staying on UTC−04:00
-until November 7, 2027, Brazil’s corrected 1965/1966 transitions, and the recent
-BC, Alberta, Northwest Territories, Manitoba and Morocco changes. Rules do not depend on visitors'
+The reviewed release, source hashes and release notes are recorded in
+[timezone-provenance.json](timezone-provenance.json) and
+[timezone-release.md](timezone-release.md). Rules do not depend on visitors'
 browser/OS timezone data and require no runtime geocoding or timezone service.
 The browser is used only to detect the initial zone and format locale-neutral
 calendar labels; an unknown detected zone safely falls back to UTC.
 
 Names and backwards-compatible aliases are generated into
-`src/utils/timezoneAliases.json` from the pinned development-only `tzdata`
-package. Geographic link names remain searchable, so shared rules do not remove
+`src/utils/timezoneAliases.json` from the same compiled IANA source as the rules.
+No npm metadata release is required. The unsupported, non-geographic `Factory`
+placeholder is excluded, matching the provider’s upstream builder. Geographic link names remain searchable, so shared rules do not remove
 cities such as Kampala. Existing stored timezone identifiers and custom labels
 are preserved. Validation and analytics canonicalization use the same metadata.
 
@@ -61,80 +62,109 @@ Offline classification tests run with Node's built-in runner:
 node --test scripts/test-timezone-check.mjs
 ```
 
-### Scheduled and manual checks
+### Automated update PRs
 
-[Timezone freshness](../.github/workflows/timezone-freshness.yml) is a separate,
-read-only workflow, scheduled daily at **14:17 UTC**, with manual
-`workflow_dispatch` support. It uses Node24 and `npm ci`, runs the offline checker
-tests, then checks IANA once within a five-minute job timeout. Exit1 and exit2
-both fail the run with distinct summary headings. Normal PR CI, installs and
-builds do not depend on this external check. No packages, generated data, issues,
-PRs or deployments are changed by the workflow.
+[Timezone freshness](../.github/workflows/timezone-freshness.yml) runs daily at
+**14:17 UTC** and supports manual `workflow_dispatch`. With no new release, it
+verifies local provenance, checks IANA once and exits successfully without writes.
+A newer release runs the pinned upstream generator, prepares rules and aliases,
+generates independent regression expectations, and opens **one draft PR per
+release** on `automation/timezone-VERSION`. The PR includes IANA release notes,
+changed zones/aliases, added/removed names and source hashes.
 
-Scheduling requires this workflow on the repository's default branch. GitHub
-may delay scheduled runs, and schedules may be disabled in inactive repositories.
-For a manual remote check after it is published, choose **Actions → Check timezone
-freshness → Run workflow**. Locally, use `npm run tz:check`. GitHub run notifications depend
-on the owner's repository subscriptions and account notification settings; the
-owner must monitor failures and inactivity settings.
+The workflow explicitly dispatches the full [CI workflow](../.github/workflows/ci.yml)
+on the PR branch. This avoids relying on a normal `pull_request` run triggered
+by `GITHUB_TOKEN`, which GitHub may require a maintainer to approve. No PAT or
+additional credential is needed. Typecheck, lint, unit/component tests, offline
+maintenance tests, desktop/narrow Chromium checks and a production build run
+against the proposed commit. CI failures remain visible for human review.
 
-When an update exists:
+Existing legislation-specific regressions are never automatically rewritten to
+make a new release pass. Review legitimate rule changes and adjust those cases
+as needed before marking the draft ready. Merging and deployment remain manual
+operator decisions; this workflow never approves, merges or deploys a PR.
 
-1. Read IANA's release notes and the provider release notes.
-2. Keep the reviewed provider/core versions unless a compatibility update is
-   required. Generate the full rules for the chosen release as described below
-   and commit `src/utils/timezoneRules.json`. This allows a data update while
-   the provider’s npm release still bundles an older IANA release.
-3. Install the corresponding exact metadata source with
-   `npm install --save-dev --save-exact tzdata@VERSION`.
-4. Run `npm run tz:aliases`, then `npm run tz:check`. Versions must match.
-5. Update the version expectation and add regression cases for announced changes.
-   If boundaries or zone IDs change, review the city-to-zone aliases and refresh
-   the broader city catalogue as needed; offset updates alone cannot relocate cities.
-   Run tests, typecheck, lint, audit and production build; verify transition dates
-   in the browser before releasing. Review any official display-name overrides.
-6. Commit the rules/source/lockfile/generated metadata together. Deployment remains a
-   separate authorized action.
+Repeated runs preserve both open and closed PRs for the same release. Closing a
+PR declines that release until an operator deliberately reopens/recreates it.
+An update branch with different work is never force-pushed. If main advances
+while a candidate is generated, publication fails and the next run regenerates
+against the new base. Network errors, source/build failures, invalid metadata,
+older endpoint releases and independent oracle failures remain failures with
+Actions diagnostics; they never become an automatic downgrade or green result.
 
-### Reproducing the bundled rules
+Generation runs with read-only repository permissions. A separate job receives
+only an allowlisted data artifact, verifies hashes again, and uses scoped
+`contents:write`, `pull-requests:write`, and `actions:write` permissions to create
+the branch/PR and dispatch CI. Candidate scripts or patches are never executed
+in that job. Repository Actions settings must allow GitHub Actions to create PRs
+(the API names that combined creation/approval policy
+`can_approve_pull_request_reviews`). Default workflow permissions can stay read-only.
 
-`@js-joda/timezone@3.1.0` still bundles 2026e. Our 2026f rules were generated
-with the provider’s own [tzdb-builder](https://github.com/js-joda/js-joda/tree/dbdecb00b7fded90be6dcb09339f1bfbb8dc3101/packages/tzdb-builder),
-at commit `dbdecb00b7fded90be6dcb09339f1bfbb8dc3101`, using Node24, `zx@8.8.5`,
-`make`, `cc` and `tar`. The generator downloads matching official IANA tzdata
-and tzcode archives, builds zic, and packs the full historical data and future
-projections. No downloaded code or data runs during app installation or build.
+To exercise the complete generator without creating any branch or PR, run the
+workflow manually with **dry_run=true** and **rebuild_current=true**. The latter
+is rejected without dry_run. A verified candidate artifact remains available for
+seven days; publishing is also disabled on non-default workflow refs.
 
-From a separate temporary checkout of that upstream commit:
+If PR creation succeeded but CI dispatch failed, rerun validation explicitly:
 
 ```sh
-cd packages/tzdb-builder
-npm install --ignore-scripts --no-package-lock --workspaces=false --save-exact zx@8.8.5
-npm run generate -- 2026f
+gh workflow run ci.yml --ref automation/timezone-VERSION
 ```
 
-Copy `packages/timezone/data/packed/2026f.json` from that checkout to this
-repository’s `src/utils/timezoneRules.json`, without editing it. Review the
-upstream generator before changing its pinned commit. For this update, rebuilding
-2026e produced data identical to the pinned provider’s `getTzdbData()` result;
-comparing the generated 2026e/2026f data showed changes only in Cuba and Brazil,
-including their aliases, with no zone additions or removals.
+Schedules require this workflow on the default branch. GitHub can delay scheduled
+runs or disable inactive schedules. Notification delivery depends on the owner's
+repository/account settings; check Actions for inactivity and failures.
 
-SHA-256 provenance for this update:
+### Generator and independent regressions
 
-| File | SHA-256 |
-| --- | --- |
-| `tzdata2026f.tar.gz` | `01b4a91cec5167ed48c11e8ab78f2048cead78ce94b0cafcad0ae8c5a3044d3d` |
-| `tzcode2026f.tar.gz` | `5a18da01393679ef2559214dc687563f7f3d05691f6f58b7fbc0166f3e796cd6` |
-| `timezoneRules.json` | `c829ee03b251fc13c452f047abd4463f32e5f072d0e050c8f5114735f8c677af` |
+The upstream generator is pinned to js-joda commit
+`dbdecb00b7fded90be6dcb09339f1bfbb8dc3101`, with `zx@8.8.5`. It downloads the
+matching official IANA tzdata/tzcode archives, builds `zic`, compiles rearguard
+TZif files, and generates the provider’s full historical and projected data.
+No downloading or generation occurs during a normal app install/build.
 
-The empty provider bundle avoids shipping a second, stale copy of the rules.
-The exported data version comes from the active provider, and contract tests
-verify metadata agreement and that every selectable zone/alias resolves.
-Offset, abbreviation and calendar-day regressions cover Cuba’s canceled
-2026 rollback and its retained 2027 rollback, plus Brazil’s corrected history.
-Browser regressions verify Havana’s clocks across the canceled 2026 rollback.
-Leap-second changes in 2026f do not alter this JavaScript/POSIX clock model.
+A separate Python stdlib `zoneinfo` reader loads those compiled TZif files to
+produce expected offsets and wall-clock fields. It does not use the js-joda
+builder’s parsed offset arrays as expected values. Tests cover January/July for
+every zone/alias, plus instants immediately before/at/after changed offset or
+abbreviation boundaries compared with the previous bundle. Generated expectations
+live in `tests/fixtures/timezone-regressions.json`, outside production code.
+Existing hand-written clock, date-boundary, alias and browser regressions also run.
+
+The initial automated fixture records the 2026e→2026f transition: 23 changed
+zones/aliases and 1,502 oracle samples. Rebuilding 2026e with the same generator
+exactly matched the former provider package’s data. Source archive and output
+SHA-256 hashes are recorded in the generated provenance manifest; local checks
+and CI reject changed rules, aliases or fixtures without matching provenance.
+
+For a local update, use Node24, npm dependencies, Python3 with `zoneinfo`, Git,
+`make`, `cc`, `tar`, and network access to GitHub, npm and IANA:
+
+```sh
+npm ci
+npm run tz:update -- --version VERSION
+npm run tz:check
+npm run test:maintenance
+npm run typecheck
+npm run lint
+npm test
+npm run test:browser
+npm run build
+npm audit
+```
+
+`tz:update` checks out the pinned builder into an isolated temporary directory and
+cleans it on completion/failure. For a reviewed existing upstream checkout, supply
+`--builder /absolute/path`; the commit and tracked generator source are checked.
+`--baseline /absolute/path/to/previous-rules.json` can replay an older release
+comparison locally. These are local generator options, not workflow inputs.
+
+Review `docs/timezone-release.md`, provenance hashes, generated samples and any
+CI failures. Check city mappings if names change. Review official display-name
+overrides such as PCT when their affected rules change. Commit the five generated
+files together. Provider/core upgrades and changes to the pinned generator remain
+separate reviewed work. Normal `npm run tz:check` remains a read-only command
+that fails for stale data, mismatches or unavailable IANA responses.
 
 Published databases include historical records and future projections, not a
 guarantee about unannounced laws or dates beyond the provider's projected data.
