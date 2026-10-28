@@ -11,9 +11,10 @@
     "typecheck": "tsc --project tsconfig.json && tsc --project tsconfig.node.json",
     "lint": "eslint . --max-warnings 0",
     "tz:check": "node scripts/check-timezone-data.mjs",
-    "tz:aliases": "node scripts/update-timezone-aliases.mjs",
     "test:browser": "playwright test",
-    "typecheck:browser": "tsc --project tsconfig.node.json"
+    "typecheck:browser": "tsc --project tsconfig.node.json",
+    "tz:update": "node scripts/prepare-timezone-update.mjs",
+    "test:maintenance": "node --test scripts/test-timezone-*.mjs"
   },
   "dependencies": {
     "@js-joda/core": "6.3.0",
@@ -43,7 +44,6 @@
     "tailwindcss": "4.1.12",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.72.0",
-    "tzdata": "1.0.53",
     "vite": "~6.4.5",
     "vitest": "^4.1.12"
   },

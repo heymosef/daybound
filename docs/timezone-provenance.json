@@ -1,0 +1,11 @@
+{
+  "version": "2026f",
+  "builderCommit": "dbdecb00b7fded90be6dcb09339f1bfbb8dc3101",
+  "archives": {
+    "tzdata2026f.tar.gz": "01b4a91cec5167ed48c11e8ab78f2048cead78ce94b0cafcad0ae8c5a3044d3d",
+    "tzcode2026f.tar.gz": "5a18da01393679ef2559214dc687563f7f3d05691f6f58b7fbc0166f3e796cd6"
+  },
+  "rulesSha256": "c829ee03b251fc13c452f047abd4463f32e5f072d0e050c8f5114735f8c677af",
+  "aliasesSha256": "51098bcded305423adb774409d47080013b89c5b78eec0238366f8d964e2f52c",
+  "regressionsSha256": "3dc1735185c23c235338565d050c1c7a5ca23145aa54058244d3113bf28eb166"
+}

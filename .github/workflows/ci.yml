@@ -2,6 +2,7 @@ name: Validate pull requests
 
 on:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -36,6 +37,9 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Test maintenance automation offline
+        run: npm run test:maintenance
 
       - name: Install Chromium
         run: npm exec -- playwright install --with-deps chromium
