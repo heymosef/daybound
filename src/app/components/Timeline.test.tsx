@@ -115,7 +115,8 @@ it.each([false, true])("reserves the same fractional-label width across aligned 
 
 it.each([
   ["America/Santiago", "2026-09-06T04:00:00Z", "1", 23],
-  ["America/Havana", "2026-11-01T04:00:00Z", "0", 25],
+  ["America/Havana", "2026-11-01T04:00:00Z", "0", 24],
+  ["America/Havana", "2027-11-07T04:00:00Z", "0", 25],
   ["Australia/Lord_Howe", "2026-10-03T13:30:00Z", "0", 23.5],
   ["Australia/Lord_Howe", "2026-04-04T13:00:00Z", "0", 24.5],
 ])("renders exact date starts and boundaries in %s at %s", (timezone, instant, firstLabel, nextIndex) => {

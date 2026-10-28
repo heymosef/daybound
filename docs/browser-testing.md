@@ -90,6 +90,7 @@ All routes start at `http://127.0.0.1:4174/`:
 | `?scenario=fractional` | 2026-03-07 21:00Z; Kolkata02:30, Kathmandu02:45 and Adelaide fractional labels |
 | `?scenario=dst-spring` | 2026-03-08 06:59:30Z, New York home; missing hour |
 | `?scenario=dst-fall` | 2026-11-01 05:59:30Z, New York home; repeated hour and explicit offsets |
+| `?scenario=cuba-fall` | 2026-11-01 04:59:30Z, Havana home; canceled 2026 rollback retains UTC−04:00 |
 | `?scenario=toronto-fall` | 2026-10-31 19:00Z, Vancouver home; Toronto's rollback before Vancouver's Nov 1 |
 | `?scenario=st-johns` | 2009-11-01 02:29:30Z, St Johns home; brief date and backward date crossing |
 | `?storage=corrupt` | Malformed timezone/settings JSON before App initialization |

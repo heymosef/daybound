@@ -9,12 +9,12 @@ try {
   const [metadata, source, provider] = await Promise.all([
     readFile(new URL("../src/utils/timezoneAliases.json", import.meta.url), "utf8"),
     readFile(require.resolve("tzdata/timezone-data.json"), "utf8"),
-    readFile(require.resolve("@js-joda/timezone"), "utf8"),
+    readFile(new URL("../src/utils/timezoneRules.json", import.meta.url), "utf8"),
   ]);
   result = await checkTimezoneData({
     metadataVersion: JSON.parse(metadata).version,
     sourceVersion: JSON.parse(source).version,
-    providerVersion: provider.match(/@js-joda\/timezone - [\d.]+-(\d{4}[a-z]+)/)?.[1],
+    providerVersion: JSON.parse(provider).version,
   });
 } catch {
   result = {

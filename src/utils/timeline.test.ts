@@ -113,7 +113,8 @@ it("finds Toronto's nearby rollback before Vancouver's November 1 rail without a
 });
 it.each([
   ["2026-09-06", "America/Santiago", "2026-09-06T04:00:00.000Z", 23],
-  ["2026-11-01", "America/Havana", "2026-11-01T04:00:00.000Z", 25],
+  ["2026-11-01", "America/Havana", "2026-11-01T04:00:00.000Z", 24],
+  ["2027-11-07", "America/Havana", "2027-11-07T04:00:00.000Z", 25],
   ["2026-10-04", "Australia/Lord_Howe", "2026-10-03T13:30:00.000Z", 23.5],
   ["2026-04-05", "Australia/Lord_Howe", "2026-04-04T13:00:00.000Z", 24.5],
 ])("keeps exact start and day transitions on %s in %s", (date, zone, expected, nextDateIndex) => {

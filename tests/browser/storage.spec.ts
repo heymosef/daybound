@@ -37,6 +37,9 @@ test("two tabs explicitly adopt saved changes before editing without losing eith
 test("invalid and cleared external values never silently replace this tab", async ({ page, context }) => {
   await openFixture(page);
   const other = await context.newPage(); await other.goto(page.url());
+  // Navigation can finish before React mounts. Corrupt only after this tab has
+  // read the valid setup, otherwise its startup recovery can race the test.
+  await expect(app(other).getByRole("button", { name: "Rename Kolkata", exact: true })).toBeVisible();
   await other.evaluate(() => localStorage.setItem("timezone_config", "{broken"));
   let notice = app(page).getByRole("status", { name: "Cities changed in another tab", exact: true });
   await expect(notice.getByRole("button", { name: "Use saved setup", exact: true })).toBeDisabled();

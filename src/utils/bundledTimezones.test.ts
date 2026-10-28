@@ -1,8 +1,10 @@
+import metadata from "./timezoneAliases.json";
+import { ZoneId } from "@js-joda/core";
 import { canonicalTimezone, getTimezoneNames, TIMEZONE_DATA_VERSION } from "./bundledTimezones";
-import { getZonedFields, startOfCalendarDate } from "./calendarDate";
+import { getZonedFields, startOfCalendarDate, timezoneTransitions } from "./calendarDate";
 
 it("bundles the current reviewed IANA version and resolves legacy names", () => {
-  expect(TIMEZONE_DATA_VERSION).toBe("2026e");
+  expect(TIMEZONE_DATA_VERSION).toBe("2026f");
   expect(canonicalTimezone("Canada/Pacific")).toBe("America/Vancouver");
   expect(canonicalTimezone("US/Pacific")).toBe("America/Los_Angeles");
   expect(canonicalTimezone("utc")).toBe("UTC");
@@ -20,8 +22,23 @@ it.each([
   ["2026-11-02T12:00:00Z", "America/Edmonton", "2026-11-02", 6, 0, -21600, "CST"],
   ["2026-11-02T12:00:00Z", "America/Winnipeg", "2026-11-02", 7, 0, -18000, "EST"],
   ["2026-11-02T12:00:00Z", "America/Inuvik", "2026-11-02", 6, 0, -21600, "CST"],
+  ["2026-11-01T04:59:59Z", "America/Havana", "2026-11-01", 0, 59, -14400, "CDT"],
+  ["2026-11-01T05:00:00Z", "America/Havana", "2026-11-01", 1, 0, -14400, "CDT"],
+  ["2027-01-15T12:00:00Z", "Cuba", "2027-01-15", 8, 0, -14400, "CDT"],
+  ["2027-11-07T04:59:59Z", "America/Havana", "2027-11-07", 0, 59, -14400, "CDT"],
+  ["2027-11-07T05:00:00Z", "America/Havana", "2027-11-07", 0, 0, -18000, "CST"],
+  ["1965-04-01T01:59:59Z", "America/Sao_Paulo", "1965-03-31", 23, 59, -7200, "UTC-02:00"],
+  ["1965-04-01T02:00:00Z", "America/Sao_Paulo", "1965-03-31", 23, 0, -10800, "UTC-03:00"],
+  ["1966-03-01T02:59:59Z", "America/Sao_Paulo", "1966-03-01", 0, 59, -7200, "UTC-02:00"],
+  ["1966-03-01T03:00:00Z", "America/Sao_Paulo", "1966-03-01", 0, 0, -10800, "UTC-03:00"],
 ])("uses published rules for %s in %s", (date, zone, day, hour, minute, offsetSeconds, abbreviation) => {
   expect(getZonedFields(new Date(date), zone)).toMatchObject({ date: day, hour, minute, offsetSeconds, abbreviation });
+});
+it("does not show a canceled Cuba rollback or lengthen its calendar day", () => {
+  const start = startOfCalendarDate("2026-11-01", "Cuba")!.getTime();
+  const end = startOfCalendarDate("2026-11-02", "Cuba")!.getTime();
+  expect(end - start).toBe(24 * 3_600_000);
+  expect(timezoneTransitions(start, end, "Cuba").offsetChanges).toEqual([]);
 });
 it("is independent of stale or unavailable device Intl timezone rules", () => {
   const formatter = vi.spyOn(Intl, "DateTimeFormat").mockImplementation(() => { throw new Error("Device timezone data unavailable"); });
@@ -32,4 +49,11 @@ it("is independent of stale or unavailable device Intl timezone rules", () => {
 it("preserves a skipped calendar day and exact historical seconds", () => {
   expect(startOfCalendarDate("2011-12-30", "Pacific/Apia")).toBeNull();
   expect(getZonedFields(new Date("1900-01-01T00:00Z"), "Asia/Kathmandu").offsetSeconds).toBe(20476);
+});
+
+it("loads every selectable zone and alias into the active provider", () => {
+  expect(TIMEZONE_DATA_VERSION).toBe(metadata.version);
+  for (const name of getTimezoneNames()) {
+    expect(() => ZoneId.of(name).rules()).not.toThrow();
+  }
 });

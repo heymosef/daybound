@@ -1,10 +1,19 @@
 import { utcOffsetLabel } from "./formatOffset";
-import { Instant, ZoneId, type ZoneRules } from "@js-joda/core";
-import "@js-joda/timezone";
+import { Instant, ZoneId, ZoneRulesProvider, type ZoneRules } from "@js-joda/core";
+import "@js-joda/timezone/dist/js-joda-timezone-empty.esm.js";
 import metadata from "./timezoneAliases.json";
+import packedRules from "./timezoneRules.json";
+
+// Load reviewed rules independently of the provider's npm release cadence.
+// The empty bundle avoids also shipping its older database. See docs/timezone-data.md.
+const provider = ZoneRulesProvider as typeof ZoneRulesProvider & {
+  loadTzdbData(data: typeof packedRules): void;
+  getTzdbData(): typeof packedRules;
+};
+provider.loadTzdbData(packedRules);
 
 // Full published IANA history, bundled with the application, independent of device rules.
-export const TIMEZONE_DATA_VERSION = metadata.version;
+export const TIMEZONE_DATA_VERSION = provider.getTzdbData().version;
 const zones = metadata.aliases as Record<string, string>;
 const zoneNames = metadata.names;
 const spelling = new Map(zoneNames.map(name => [name.toLowerCase(), name]));
