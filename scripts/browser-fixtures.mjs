@@ -43,6 +43,7 @@ if (systemTheme === "light" || systemTheme === "dark") {
 const clocks = {
   midnight: "2026-03-07T23:59:30Z",
   "bc-fall": "2026-11-01T08:59:30Z",
+  "cuba-fall": "2026-11-01T04:59:30Z",
   "toronto-fall": "2026-10-31T19:00:00Z",
   fractional: "2026-03-07T21:00:00Z",
   "dst-spring": "2026-03-08T06:59:30Z",
@@ -92,7 +93,7 @@ window.fetch = (input, init = {}) => {
     render();
   });
 };
-const home = ["bc-fall", "toronto-fall"].includes(scenario) ? "America/Vancouver" : scenario.startsWith("dst-") ? "America/New_York" : scenario === "st-johns" ? "America/St_Johns" : "UTC";
+const home = ["bc-fall", "toronto-fall"].includes(scenario) ? "America/Vancouver" : scenario === "cuba-fall" ? "America/Havana" : scenario.startsWith("dst-") ? "America/New_York" : scenario === "st-johns" ? "America/St_Johns" : "UTC";
 const zones = [...new Set([home, ...(scenario === "bc-fall" ? ["America/Los_Angeles", "America/Edmonton", "America/Winnipeg"] : []), ...(scenario === "toronto-fall" ? ["America/Toronto"] : []), "UTC", "Asia/Kolkata", "Asia/Kathmandu", "Australia/Adelaide", "America/New_York", "Australia/Lord_Howe"])];
 const store = window.localStorage;
 const profile = scenario + ":" + storageMode + ":" + analytics + ":" + systemTheme;

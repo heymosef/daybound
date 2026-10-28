@@ -169,6 +169,17 @@ test("Toronto rollback hint and Vancouver permanent-time difference", async ({ p
   await expect(app(page).getByTestId("row-clock").nth(1)).toHaveAttribute("aria-label", "01:00");
 });
 
+test("Havana keeps daylight time across its canceled November rollback", async ({ page }) => {
+  await openFixture(page, "scenario=cuba-fall");
+  const havana = timeline(page, "Havana");
+  const clock = app(page).getByTestId("row-clock").first();
+  await expect(clock).toHaveAttribute("aria-label", "00:59");
+  await expect(havana.getByRole("img", { name: /Clocks go back/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Advance minute", exact: true }).click();
+  await expect(clock).toHaveAttribute("aria-label", "01:00");
+  await expect(havana.getByRole("img", { name: /Clocks go back/ })).toHaveCount(0);
+});
+
 test("fake analytics opt-out aborts pending intercepted requests", async ({ page }) => {
   await openFixture(page, "scenario=midnight&analytics=on");
   await strip(page).getByRole("button").nth(1).click();
