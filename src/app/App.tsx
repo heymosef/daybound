@@ -3,7 +3,7 @@ import { useTheme } from "../hooks/useTheme";
 import { formatZonedClock, PAN_LIMIT_HOURS } from "../utils/timeline";
 import { canonicalTimezone } from "../utils/bundledTimezones";
 import React, { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from "react";
-import { Clock, X } from "lucide-react";
+import { Clock, SquareTerminal, X } from "lucide-react";
 import { useAnalytics } from "../analytics/AnalyticsProvider";
 import { pickerCity, pickerResultId } from "../utils/cityCatalog";
 import { settingsChanges } from "../analytics/structuredEvents";
@@ -508,9 +508,25 @@ function App() {
               </LayoutGroup>
             )}
           </div>
-          <div className="hidden md:flex justify-center flex-grow items-end pt-6">
-            <Daybound className="h-8 text-[var(--dt-logo)] transition-colors opacity-50 hover:opacity-100 aspect-[347/68]" />
-          </div>
+          <footer className="mt-auto flex items-center justify-center pt-6 md:justify-between">
+            <Daybound className="hidden h-8 text-[var(--dt-logo)] transition-colors opacity-50 hover:opacity-100 aspect-[347/68] md:block" />
+            <div className="flex items-center gap-1 whitespace-nowrap text-xs text-[var(--dt-text-muted)]">
+              {/* Plain corners avoid the global rounded-* paint mask hiding small footer elements. */}
+              <span aria-hidden="true" className="mr-1 flex size-6 shrink-0 items-center justify-center [border-radius:5px] bg-[var(--dt-surface)]">
+                <SquareTerminal size={16} strokeWidth={1.5} />
+              </span>
+              <span>Made by</span>
+              <a
+                href="https://www.heymosef.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="@heymosef — personal website (opens in a new tab)"
+                className="inline-flex min-h-11 items-center text-[var(--dt-text-secondary)] underline decoration-[var(--dt-border-strong)] underline-offset-4 transition-colors hover:text-[var(--dt-accent)] hover:decoration-[var(--dt-accent)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--dt-accent)]"
+              >
+                @heymosef
+              </a>
+            </div>
+          </footer>
         </main>
       </div>
     </MotionConfig>
