@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 
 /** Pointer intent keeps vertical page scrolling native; wheel/keys are separate native paths. */
-export function useTimelineScrub(ref: RefObject<HTMLElement>, cellWidth: number,
+export function useTimelineScrub(ref: RefObject<HTMLElement | null>, cellWidth: number,
   onPan?: (hours: number) => void, onReset?: () => void) {
   const latest = useRef({ cellWidth, onPan, onReset });
   useLayoutEffect(() => { latest.current = { cellWidth, onPan, onReset }; }, [cellWidth, onPan, onReset]);

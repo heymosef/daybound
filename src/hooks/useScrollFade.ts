@@ -1,7 +1,7 @@
 import { useLayoutEffect, type RefObject } from "react";
 
 /** Update CSS masks directly: scrolling never causes a React render. */
-export function useScrollFade(ref: RefObject<HTMLElement>, axis: "x" | "y", enabled = true) {
+export function useScrollFade(ref: RefObject<HTMLElement | null>, axis: "x" | "y", enabled = true) {
   useLayoutEffect(() => {
     const viewport = ref.current;
     if (!viewport || !enabled) return;
