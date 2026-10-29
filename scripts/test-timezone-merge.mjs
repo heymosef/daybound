@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mergeTimezoneUpdate } from "./lib/timezone-merge.mjs";
+import { mergeTimezoneUpdate, waitForTimezoneCI } from "./lib/timezone-merge.mjs";
 import { UPDATE_FILES } from "./lib/timezone-update.mjs";
 import { timezoneGithubApi } from "./lib/timezone-github.mjs";
 
@@ -117,4 +117,23 @@ test("a superseded failed check does not block its successful rerun", async () =
     { id: 2, app: { id: 1 }, name: "validate", status: "completed", conclusion: "success" },
   ] });
   assert.equal((await mergeTimezoneUpdate(args)).state, "merged");
+});
+test("an explicit CI handoff waits for the source run to finish without merging early", async () => {
+  let reads = 0, elapsed = 0;
+  await waitForTimezoneCI({ repo: "owner/repo", runId: 17, now: () => elapsed,
+    sleep: async ms => { elapsed += ms; }, api: async method => {
+      assert.equal(method, "GET"); reads++;
+      return { path: ".github/workflows/ci.yml", head_repository: { full_name: "owner/repo" },
+        head_branch: "automation/timezone-2026g", status: reads < 3 ? "in_progress" : "completed" };
+    } });
+  assert.equal(reads, 3); assert.equal(elapsed, 10000);
+});
+test("a stuck CI handoff times out without any write request", async () => {
+  let elapsed = 0;
+  await assert.rejects(waitForTimezoneCI({ repo: "owner/repo", runId: 17, now: () => elapsed,
+    sleep: async ms => { elapsed += ms; }, timeoutMs: 5000, api: async method => {
+      assert.equal(method, "GET");
+      return { path: ".github/workflows/ci.yml", head_repository: { full_name: "owner/repo" },
+        head_branch: "automation/timezone-2026g", status: "in_progress" };
+    } }), /no merge was attempted/);
 });

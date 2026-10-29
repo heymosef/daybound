@@ -4,6 +4,19 @@ const BOT = "github-actions[bot]";
 const CI_PATH = ".github/workflows/ci.yml";
 const REQUIRED_STEPS = ["Install", "Typecheck", "Lint", "Test", "Test maintenance automation offline", "Install Chromium", "Browser smoke", "Build"];
 
+export async function waitForTimezoneCI({ api, repo, runId, now = Date.now,
+  sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), timeoutMs = 120000 }) {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo) || !/^\d+$/.test(String(runId))) throw new Error("Invalid repository or CI run ID");
+  const deadline = now() + timeoutMs;
+  for (;;) {
+    const run = await api("GET", `/repos/${repo}/actions/runs/${runId}`);
+    if (run.status === "completed" || run.path !== CI_PATH || run.head_repository?.full_name !== repo ||
+        !/^automation\/timezone-\d{4}[a-z]+$/.test(run.head_branch ?? "")) return;
+    if (now() >= deadline) throw new Error("CI did not finish its handoff within two minutes; no merge was attempted");
+    await sleep(5000);
+  }
+}
+
 async function all(api, endpoint, key) {
   const items = [];
   for (let page = 1; page <= 20; page++) {
