@@ -89,8 +89,13 @@ normal push event.
 
 ### Automatic merge gate
 
-The trusted default-branch workflow reacts to completion of **Validate pull
-requests**. It never checks out or executes PR code with its write token.
+The trusted default-branch workflow receives an explicit handoff after
+**Validate pull requests** succeeds. CI dispatches it from a separate final job
+with only `actions:write`, targeting the default branch. This is needed because
+bot-dispatched CI did not emit the automatic `workflow_run` follow-up during a
+live end-to-end test. The completion listener remains as a fallback for other
+runs. The gate waits up to two minutes for the handoff job/source run to close
+before applying the same successful-CI requirements. It never checks out or executes PR code with its write token.
 Before a squash merge, it verifies all of the following:
 
 - The PR and its sole commit were created by `github-actions[bot]` in this
