@@ -97,7 +97,7 @@ jobs:
         with:
           name: timezone-candidate
           path: ${{ runner.temp }}/timezone-candidate
-      - name: Open one draft PR and dispatch full CI
+      - name: Open one timezone PR and dispatch full CI
         env:
           GH_TOKEN: ${{ github.token }}
           TZ_CANDIDATE_DIR: ${{ runner.temp }}/timezone-candidate

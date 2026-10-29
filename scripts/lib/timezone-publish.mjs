@@ -24,6 +24,8 @@ export async function publishTimezoneUpdate({ api, repo, base, baseSha, version,
   if (!ref) {
     const commit = await api("POST", `${prefix}/git/commits`, {
       message: `Update bundled timezone data to IANA ${version}`, tree: generated.sha, parents: [baseSha],
+      author: { name: "github-actions[bot]", email: "41898282+github-actions[bot]@users.noreply.github.com" },
+      committer: { name: "github-actions[bot]", email: "41898282+github-actions[bot]@users.noreply.github.com" },
     });
     try { await api("POST", `${prefix}/git/refs`, { ref: `refs/heads/${branch}`, sha: commit.sha }); }
     catch (error) { if (error.status !== 422) throw error; }
@@ -33,8 +35,8 @@ export async function publishTimezoneUpdate({ api, repo, base, baseSha, version,
   const branchCommit = await api("GET", `${prefix}/git/commits/${ref.object.sha}`);
   if (branchCommit.tree.sha !== generated.sha || branchCommit.parents[0]?.sha !== baseSha) throw new Error("Update branch contains different work; refusing to overwrite it");
   const pr = await api("POST", `${prefix}/pulls`, {
-    title: `Update timezone rules to IANA ${version}`, head: branch, base, draft: true,
-    body: `New IANA timezone data is ready for review. This draft is never automatically merged or deployed.\n\n` +
+    title: `Update timezone rules to IANA ${version}`, head: branch, base, draft: false,
+    body: `New IANA timezone data will merge automatically only after full CI and regression checks pass for this exact commit. Mark this PR as draft or request changes to hold it.\n\n` +
       `Full CI is dispatched on this branch after PR creation. Generation and independent oracle checks: ${runUrl}.\n\n` +
       `Review existing legislation-specific tests if CI fails; automation does not rewrite those expectations.\n\n${report.slice(0, 48000)}`,
   });

@@ -32,11 +32,14 @@ function fixture(options = {}) {
     } };
   return { calls, args };
 }
-test("opens a draft containing only generated data and explicitly dispatches CI", async () => {
+test("opens a ready PR containing only generated data and explicitly dispatches CI", async () => {
   const { args, calls } = fixture();
   assert.equal((await publishTimezoneUpdate(args)).state, "created");
-  assert.equal(calls.find(call => call.endpoint.endsWith("/pulls")).body.draft, true);
+  assert.equal(calls.find(call => call.endpoint.endsWith("/pulls")).body.draft, false);
   assert.deepEqual(calls.find(call => call.endpoint.endsWith("/git/trees")).body.tree.map(entry => entry.path), UPDATE_FILES);
+  const commit = calls.find(call => call.endpoint.endsWith("/git/commits")).body;
+  assert.equal(commit.author.email, "41898282+github-actions[bot]@users.noreply.github.com");
+  assert.deepEqual(commit.committer, commit.author);
   assert.deepEqual(calls.at(-1).body, { ref: "automation/timezone-2026g" });
   assert.ok(calls.every(call => ["GET", "POST"].includes(call.method))); // No force update, merge or deployment.
 });
