@@ -4,7 +4,17 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Match the Node 24 runtime pinned by .nvmrc and package.json.
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+      # typescript-eslint currently supports TypeScript <6.1, not the TS7 API.
+      - dependency-name: typescript
+        versions: [">=6.1.0"]
     groups:
+      # Runtime and DOM packages (including their types) must upgrade together.
+      react:
+        patterns: [react, react-dom, "@types/react", "@types/react-dom"]
       compatible-npm:
         update-types: [minor, patch]
   - package-ecosystem: github-actions
