@@ -509,12 +509,9 @@ function App() {
             )}
           </div>
           <footer className="mt-auto flex items-center justify-center pt-6 md:justify-between">
-            <Daybound className="hidden h-8 text-[var(--dt-logo)] transition-colors opacity-50 hover:opacity-100 aspect-[347/68] md:block" />
-            <div className="flex items-center gap-1 whitespace-nowrap text-xs text-[var(--dt-text-muted)]">
-              {/* Plain corners avoid the global rounded-* paint mask hiding small footer elements. */}
-              <span aria-hidden="true" className="mr-1 flex size-6 shrink-0 items-center justify-center [border-radius:5px] bg-[var(--dt-surface)]">
-                <SquareTerminal size={16} strokeWidth={1.5} />
-              </span>
+            <Daybound className="hidden h-8 text-[var(--dt-logo)] transition-[color,opacity] duration-200 ease-out motion-reduce:transition-none opacity-50 hover:opacity-100 aspect-[347/68] md:block" />
+            <div className="flex items-center gap-1 whitespace-nowrap text-sm text-[var(--dt-text-muted)]">
+              <SquareTerminal size={16} aria-hidden="true" className="mr-1 shrink-0" />
               <span>Made by</span>
               <a
                 href="https://www.heymosef.com"
