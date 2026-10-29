@@ -93,5 +93,7 @@ internally when needed.
 Timezone rules are bundled independently of device updates, including BC's
 permanent Pacific Time/PCT. See [timezone sources and the update process](docs/timezone-data.md).
 Run `npm run tz:check` to compare the pinned rules with IANA's current release.
-The daily timezone workflow prepares one draft update PR per new IANA release,
-with independent regression samples and full CI; see [timezone operations](docs/timezone-data.md).
+The daily timezone workflow prepares one update PR per new IANA release,
+with independent regression samples and full CI. Eligible bot updates merge and
+publish automatically after every check passes; draft status or requested changes
+hold the merge; see [timezone operations](docs/timezone-data.md).

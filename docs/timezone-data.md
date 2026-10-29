@@ -68,7 +68,7 @@ node --test scripts/test-timezone-check.mjs
 **14:17 UTC** and supports manual `workflow_dispatch`. With no new release, it
 verifies local provenance, checks IANA once and exits successfully without writes.
 A newer release runs the pinned upstream generator, prepares rules and aliases,
-generates independent regression expectations, and opens **one draft PR per
+generates independent regression expectations, and opens **one update PR per
 release** on `automation/timezone-VERSION`. The PR includes IANA release notes,
 changed zones/aliases, added/removed names and source hashes.
 
@@ -81,8 +81,48 @@ against the proposed commit. CI failures remain visible for human review.
 
 Existing legislation-specific regressions are never automatically rewritten to
 make a new release pass. Review legitimate rule changes and adjust those cases
-as needed before marking the draft ready. Merging and deployment remain manual
-operator decisions; this workflow never approves, merges or deploys a PR.
+as needed when a release conflicts with them. A separate
+[merge gate](../.github/workflows/timezone-auto-merge.yml) now merges eligible
+updates automatically after full CI succeeds. Merging then explicitly dispatches
+the existing Pages workflow, since a `GITHUB_TOKEN` merge does not trigger its
+normal push event.
+
+### Automatic merge gate
+
+The trusted default-branch workflow reacts to completion of **Validate pull
+requests**. It never checks out or executes PR code with its write token.
+Before a squash merge, it verifies all of the following:
+
+- The PR and its sole commit were created by `github-actions[bot]` in this
+  repository, on `automation/timezone-VERSION`, targeting the default branch.
+- Only the five generated data/provenance/report files changed, with no removals
+  or renames, and the version is newer than the current bundled release.
+- The exact PR head has a successful explicitly dispatched full CI run. Every
+  install, typecheck, lint, unit/regression, maintenance, Chromium, browser and
+  build step must have succeeded.
+- All latest workflow runs, check contexts and commit statuses for that head
+  are successful. Pending, failed, cancelled, neutral or skipped checks hold it.
+- The PR is open, ready, mergeable and has no outstanding request for changes.
+  Neither the head nor base has moved during verification. Main must still be
+  the commit against which the update was generated/tested.
+
+GitHub may hold the normal PR-triggered CI run for approval when the publisher
+uses `GITHUB_TOKEN`. After verifying the data-only bot PR and successful dispatched
+full CI, the gate may approve **only that PR's CI workflow run**. It waits for
+that run to finish successfully too; it does not approve PR reviews or bypass
+checks. Repository branch rules still apply to the merge API.
+
+Mark a timezone PR **draft**, request changes, or close it to stop automatic
+merging. Human PRs, source changes, human edits and stale-base updates remain
+for manual review/regeneration. Existing draft PRs are not automatically marked
+ready. This gate does not enable repository-wide native auto-merge; the repository
+has no required branch checks, so that toggle alone would not enforce CI.
+
+For inspection or recovery, manually run **Merge validated timezone updates**
+on the default branch with a completed `ci_run_id`. Its **dry_run** input defaults
+to true and performs no approvals, merges or deployments. Set it false only to
+apply the same gates. If a merge succeeded but Pages dispatch failed, rerun the
+existing Pages workflow on main; the merge is not undone.
 
 Repeated runs preserve both open and closed PRs for the same release. Closing a
 PR declines that release until an operator deliberately reopens/recreates it.
