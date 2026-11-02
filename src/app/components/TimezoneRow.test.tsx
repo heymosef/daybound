@@ -3,10 +3,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TimezoneRow } from "./TimezoneRow";
 
-function mount() {
+function mount(timezone = "America/Toronto", instant = "2026-10-23T12:00:00Z") {
   const onRename = vi.fn();
-  const now = new Date("2026-10-23T12:00:00Z");
-  render(<><button>Before row</button><TimezoneRow config={{ id: "toronto", timezone: "America/Toronto" }}
+  const now = new Date(instant);
+  render(<><button>Before row</button><TimezoneRow config={{ id: "toronto", timezone }}
     now={now} timelineTime={now} onRemove={vi.fn()} onRename={onRename} onMove={vi.fn()} onSetHome={vi.fn()}
     use24Hour showBadge showWeekends={false} hoveredHourIndex={null} onHoverHour={vi.fn()}
     isLive selectedDateOffset={0} /><button>After row</button></>);
@@ -14,6 +14,16 @@ function mount() {
 }
 const rename = () => screen.getByRole("button", { name: "Rename Toronto" });
 const editor = () => screen.getByRole("textbox", { name: "Edit Toronto label" });
+
+it.each([
+  ["America/Winnipeg", "2026-11-02T12:00:00Z", "MBT", "MBT · UTC-05:00"],
+  ["America/Whitehorse", "2026-11-02T12:00:00Z", "YST", "YST · UTC-07:00"],
+  ["America/Yellowknife", "2026-11-02T12:00:00Z", "CST", "Northwest Territories Time · UTC-06:00"],
+  ["America/Inuvik", "2026-08-20T12:00:00Z", "MDT", "MDT · UTC-06:00"],
+])("renders the date-specific badge and tooltip for %s at %s", (zone, instant, badge, title) => {
+  mount(zone, instant);
+  expect(screen.getByTitle(title)).toHaveTextContent(badge);
+});
 
 it.each(["{Enter}", " "])("starts rename from the keyboard with %s and commits once", async key => {
   const { user, onRename } = mount();

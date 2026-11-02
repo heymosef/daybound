@@ -33,8 +33,27 @@ Alberta's official abbreviation is **ABT** (Alberta Time). For America/Edmonton
 ABT from local midnight on November 1, 2026 (06:00 UTC), the start of the
 province's announced adoption date. Older dates keep historical MST/MDT labels.
 The UTC−06:00 offset continues to come from the bundled rules. Geographic aliases
-outside Alberta, such as America/Yellowknife, retain their database labels even
-when they share Edmonton's rules.
+outside Alberta, such as America/Yellowknife, do not inherit ABT even when they
+share Edmonton's rules.
+
+Manitoba uses **MBT** (Manitoba Standard Time, UTC−05:00) for America/Winnipeg
+and the legacy Canada/Central identifier from local midnight on November 1,
+2026 (05:00 UTC), its publicly announced adoption date. Earlier CST/CDT labels
+remain historical. Ontario identifiers such as America/Rainy_River keep their
+database labels even when they share Winnipeg's rules.
+
+Yukon uses **YST** (Yukon Standard Time, UTC−07:00) for America/Whitehorse,
+America/Dawson and Canada/Yukon from local midnight on November 1, 2020
+(07:00 UTC), the effective date of the Yukon Standard Time Regulation. Earlier
+dates retain their historical database labels.
+
+For America/Yellowknife and America/Inuvik, tooltips identify **Northwest
+Territories Time** from local midnight on August 21, 2026 (06:00 UTC), when
+the naming regulation came into force. GNWT publishes the full name and the
+UTC−06:00 offset without an official short code, so the compact badge keeps
+the database abbreviation (MDT before the November transition, CST thereafter).
+Earlier dates keep their original tooltips. These names do not apply to Alberta
+or Saskatchewan identifiers.
 
 Published IANA abbreviations and official local naming can differ. Other labels
 use the pinned provider's abbreviation data; numeric abbreviations are rendered
@@ -232,6 +251,10 @@ compressible rules are bundled; runtime collection and network behavior are
 unchanged.
 
 Sources: [Alberta Time announcement](https://www.alberta.ca/albertas-new-time-system-abt),
+[Manitoba time guidance](https://www.gov.mb.ca/timechange/),
+[Northwest Territories announcement](https://www.gov.nt.ca/en/newsroom/northwest-territories-ends-seasonal-time-change),
+[Yukon time guidance](https://yukon.ca/en/your-government/about-yukon/learn-about-yukon-standard-time),
+[Yukon Standard Time Regulation](https://archives-ftp.gov.yk.ca/library/normal/PER_YG_03_2020_10.pdf),
 [IANA releases](https://www.iana.org/time-zones),
 [IANA changes](https://data.iana.org/time-zones/tzdb/NEWS),
 [BC PCT announcement](https://news.gov.bc.ca/releases/2026CITZ0009-001073),

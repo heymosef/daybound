@@ -48,6 +48,20 @@ const PCT_NAMED_FROM = Date.parse("2026-09-17T07:00:00Z");
 const ABT_NAMED_FROM = Date.parse("2026-11-01T06:00:00Z");
 // Geographic aliases such as Yellowknife share rules, but not Alberta's name.
 const albertaNames = new Set(["america/edmonton", "canada/mountain"]);
+// Local midnight on the announced adoption dates. Display names are separate
+// from the IANA offset rules and must not spread to other geographic aliases.
+// https://www.gov.mb.ca/timechange/
+const MBT_NAMED_FROM = Date.parse("2026-11-01T05:00:00Z");
+const manitobaNames = new Set(["america/winnipeg", "canada/central"]);
+// https://yukon.ca/en/your-government/about-yukon/learn-about-yukon-standard-time
+// Yukon Standard Time Regulation (O.I.C. 2020/125), effective November 1, 2020.
+const YST_NAMED_FROM = Date.parse("2020-11-01T07:00:00Z");
+const yukonZones = new Set(["America/Whitehorse", "America/Dawson"]);
+// GNWT regulations name Northwest Territories Time from August 21, 2026,
+// without publishing a short code. Keep the database badge and expand its tooltip.
+// https://www.gov.nt.ca/en/newsroom/northwest-territories-ends-seasonal-time-change
+const NWT_NAMED_FROM = Date.parse("2026-08-21T06:00:00Z");
+const northwestTerritoriesNames = new Set(["america/yellowknife", "america/inuvik"]);
 
 const rulesByZone = new Map<string, ZoneRules>();
 // The pinned js-joda provider retains the published IANA abbreviations here.
@@ -76,12 +90,17 @@ export function bundledZonedFields(epoch: number, timezone: string) {
   const month = local.getUTCMonth() + 1;
   const day = local.getUTCDate();
   const rawAbbreviation = canonical === "UTC" ? "UTC" : abbreviationAt(rules, epoch, offsetSeconds);
+  const name = timezone.toLowerCase();
   const abbreviation = canonical === "America/Vancouver" && epoch >= PCT_NAMED_FROM ? "PCT" :
-    albertaNames.has(timezone.toLowerCase()) && epoch >= ABT_NAMED_FROM ? "ABT" :
+    albertaNames.has(name) && epoch >= ABT_NAMED_FROM ? "ABT" :
+    manitobaNames.has(name) && epoch >= MBT_NAMED_FROM ? "MBT" :
+    yukonZones.has(canonical) && epoch >= YST_NAMED_FROM ? "YST" :
     /^[+-]/.test(rawAbbreviation) ? utcOffsetLabel(offsetSeconds) : rawAbbreviation;
+  const timezoneName = northwestTerritoriesNames.has(name) && epoch >= NWT_NAMED_FROM
+    ? "Northwest Territories Time" : undefined;
   return {
     date: `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
     year, month, day, hour: local.getUTCHours(), minute: local.getUTCMinutes(), second: local.getUTCSeconds(),
-    weekday: weekdays[local.getUTCDay()], abbreviation, offsetSeconds,
+    weekday: weekdays[local.getUTCDay()], abbreviation, timezoneName, offsetSeconds,
   };
 }

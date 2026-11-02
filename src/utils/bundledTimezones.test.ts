@@ -31,7 +31,7 @@ it.each([
   ["2026-11-02T12:00:00Z", "America/Yellowknife", "2026-11-02", 6, 0, -21600, "CST"],
   ["2027-01-15T12:00:00Z", "America/Regina", "2027-01-15", 6, 0, -21600, "CST"],
   ["2027-01-15T12:00:00Z", "America/Denver", "2027-01-15", 5, 0, -25200, "MST"],
-  ["2026-11-02T12:00:00Z", "America/Winnipeg", "2026-11-02", 7, 0, -18000, "EST"],
+  ["2026-11-02T12:00:00Z", "America/Winnipeg", "2026-11-02", 7, 0, -18000, "MBT"],
   ["2026-11-02T12:00:00Z", "America/Inuvik", "2026-11-02", 6, 0, -21600, "CST"],
   ["2026-11-01T04:59:59Z", "America/Havana", "2026-11-01", 0, 59, -14400, "CDT"],
   ["2026-11-01T05:00:00Z", "America/Havana", "2026-11-01", 1, 0, -14400, "CDT"],
@@ -44,6 +44,33 @@ it.each([
   ["1966-03-01T03:00:00Z", "America/Sao_Paulo", "1966-03-01", 0, 0, -10800, "UTC-03:00"],
 ])("uses published rules for %s in %s", (date, zone, day, hour, minute, offsetSeconds, abbreviation) => {
   expect(getZonedFields(new Date(date), zone)).toMatchObject({ date: day, hour, minute, offsetSeconds, abbreviation });
+});
+it.each([
+  ["2026-11-01T04:59:59.999Z", "America/Winnipeg", "CDT", -18000],
+  ["2026-11-01T05:00:00Z", "America/Winnipeg", "MBT", -18000],
+  ["2027-01-15T12:00:00Z", "Canada/Central", "MBT", -18000],
+  ["2027-07-15T12:00:00Z", "america/winnipeg", "MBT", -18000],
+  ["2025-12-15T12:00:00Z", "Canada/Central", "CST", -21600],
+  ["2027-01-15T12:00:00Z", "America/Rainy_River", "EST", -18000],
+  ["2020-11-01T06:59:59.999Z", "America/Whitehorse", "PDT", -25200],
+  ["2020-11-01T07:00:00Z", "America/Whitehorse", "YST", -25200],
+  ["2020-11-01T06:59:59.999Z", "America/Dawson", "PDT", -25200],
+  ["2020-11-01T07:00:00Z", "America/Dawson", "YST", -25200],
+  ["2027-01-15T12:00:00Z", "Canada/Yukon", "YST", -25200],
+  ["2027-07-15T12:00:00Z", "america/dawson", "YST", -25200],
+  ["2019-12-15T12:00:00Z", "Canada/Yukon", "PST", -28800],
+])("preserves historical and geographic naming at %s in %s", (instant, zone, abbreviation, offsetSeconds) => {
+  expect(getZonedFields(new Date(instant), zone)).toMatchObject({ abbreviation, offsetSeconds });
+});
+it.each(["America/Yellowknife", "America/Inuvik", "america/yellowknife"])("names Northwest Territories Time without inventing a short code in %s", zone => {
+  expect(getZonedFields(Date.parse("2026-08-21T05:59:59.999Z"), zone)).toMatchObject({ abbreviation: "MDT", timezoneName: undefined, offsetSeconds: -21600 });
+  expect(getZonedFields(Date.parse("2026-08-21T06:00:00Z"), zone)).toMatchObject({ abbreviation: "MDT", timezoneName: "Northwest Territories Time", offsetSeconds: -21600 });
+  for (const instant of ["2027-01-15T12:00:00Z", "2027-07-15T12:00:00Z"]) {
+    expect(getZonedFields(Date.parse(instant), zone)).toMatchObject({ abbreviation: "CST", timezoneName: "Northwest Territories Time", offsetSeconds: -21600 });
+  }
+});
+it.each(["America/Edmonton", "Canada/Mountain", "America/Regina"])("keeps the Northwest Territories name out of %s", zone => {
+  expect(getZonedFields(Date.parse("2027-01-15T12:00:00Z"), zone).timezoneName).toBeUndefined();
 });
 it("does not show a canceled Cuba rollback or lengthen its calendar day", () => {
   const start = startOfCalendarDate("2026-11-01", "Cuba")!.getTime();

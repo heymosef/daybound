@@ -172,6 +172,19 @@ test("Toronto rollback hint and Vancouver permanent-time difference", async ({ p
   await expect(timeline(page, "Edmonton").getByRole("img", { name: /Clocks go back/ })).toHaveCount(0);
 });
 
+test("Canadian badges preserve history and keep geographic names separate", async ({ page }) => {
+  await openFixture(page, "scenario=canadian-labels");
+  const winnipeg = app(page).getByRole("button", { name: "Rename Winnipeg", exact: true });
+  await expect(winnipeg.getByTitle("CDT · UTC-05:00", { exact: true })).toHaveText("CDT");
+  await expect(app(page).getByTitle("Northwest Territories Time · UTC-06:00", { exact: true })).toHaveCount(2);
+  await expect(app(page).getByTitle("YST · UTC-07:00", { exact: true })).toHaveCount(2);
+  await page.getByRole("button", { name: "Advance minute", exact: true }).click();
+  await expect(winnipeg.getByTitle("MBT · UTC-05:00", { exact: true })).toHaveText("MBT");
+  await expect(app(page).getByTestId("row-clock").first()).toHaveAttribute("aria-label", "00:00");
+  await expect(app(page).getByRole("button", { name: "Rename Rainy River", exact: true }).getByTitle("CDT · UTC-05:00", { exact: true })).toHaveText("CDT");
+  await expect(app(page).getByRole("button", { name: "Rename Regina", exact: true }).getByTitle("CST · UTC-06:00", { exact: true })).toHaveText("CST");
+});
+
 test("Havana keeps daylight time across its canceled November rollback", async ({ page }) => {
   await openFixture(page, "scenario=cuba-fall");
   const havana = timeline(page, "Havana");

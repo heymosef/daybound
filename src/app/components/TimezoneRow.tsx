@@ -210,7 +210,7 @@ const TimezoneRowInner: React.FC<TimezoneRowProps> = ({
                   {cityName}
                 </span>
                 {showBadge && (
-                  <span title={`${abbreviation} · ${utcOffsetLabel(fields.offsetSeconds)}`}
+                  <span title={`${fields.timezoneName ?? abbreviation} · ${utcOffsetLabel(fields.offsetSeconds)}`}
                   className="text-[clamp(10px,0.5vw+8px,12px)] font-medium text-[var(--dt-text-secondary)] border border-[var(--dt-border-strong)] px-[0.25em] rounded bg-[var(--dt-surface)]">
                     {abbreviation}
                   </span>
