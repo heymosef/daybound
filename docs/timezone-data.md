@@ -18,7 +18,7 @@ placeholder is excluded, matching the provider’s upstream builder. Geographic 
 cities such as Kampala. Existing stored timezone identifiers and custom labels
 are preserved. Validation and analytics canonicalization use the same metadata.
 
-## PCT naming
+## Official local naming
 
 BC's September 17, 2026 announcement establishes **PCT** as Pacific Time's official
 abbreviation. For America/Vancouver and its aliases, the display uses PCT from
@@ -27,6 +27,14 @@ historical database abbreviations. The offset itself always comes from the
 bundled rules, including the decision not to fall back in November 2026.
 This display override does not apply to every BC timezone: existing local
 mountain-time arrangements remain separate.
+
+Alberta's official abbreviation is **ABT** (Alberta Time). For America/Edmonton
+(including Calgary) and the legacy Canada/Mountain identifier, the display uses
+ABT from local midnight on November 1, 2026 (06:00 UTC), the start of the
+province's announced adoption date. Older dates keep historical MST/MDT labels.
+The UTC−06:00 offset continues to come from the bundled rules. Geographic aliases
+outside Alberta, such as America/Yellowknife, retain their database labels even
+when they share Edmonton's rules.
 
 Published IANA abbreviations and official local naming can differ. Other labels
 use the pinned provider's abbreviation data; numeric abbreviations are rendered
@@ -223,7 +231,8 @@ historical edge cases. Builds report a large-chunk warning because the highly
 compressible rules are bundled; runtime collection and network behavior are
 unchanged.
 
-Sources: [IANA releases](https://www.iana.org/time-zones),
+Sources: [Alberta Time announcement](https://www.alberta.ca/albertas-new-time-system-abt),
+[IANA releases](https://www.iana.org/time-zones),
 [IANA changes](https://data.iana.org/time-zones/tzdb/NEWS),
 [BC PCT announcement](https://news.gov.bc.ca/releases/2026CITZ0009-001073),
 [js-joda timezone provider](https://github.com/js-joda/js-joda/tree/main/packages/timezone).

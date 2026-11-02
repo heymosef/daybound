@@ -43,6 +43,11 @@ export const getTimezoneNames = () => commonNames;
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // Official naming announcement: https://news.gov.bc.ca/releases/2026CITZ0009-001073
 const PCT_NAMED_FROM = Date.parse("2026-09-17T07:00:00Z");
+// Official Alberta Time naming starts November 1 locally (UTC-06:00).
+// https://www.alberta.ca/albertas-new-time-system-abt
+const ABT_NAMED_FROM = Date.parse("2026-11-01T06:00:00Z");
+// Geographic aliases such as Yellowknife share rules, but not Alberta's name.
+const albertaNames = new Set(["america/edmonton", "canada/mountain"]);
 
 const rulesByZone = new Map<string, ZoneRules>();
 // The pinned js-joda provider retains the published IANA abbreviations here.
@@ -72,6 +77,7 @@ export function bundledZonedFields(epoch: number, timezone: string) {
   const day = local.getUTCDate();
   const rawAbbreviation = canonical === "UTC" ? "UTC" : abbreviationAt(rules, epoch, offsetSeconds);
   const abbreviation = canonical === "America/Vancouver" && epoch >= PCT_NAMED_FROM ? "PCT" :
+    albertaNames.has(timezone.toLowerCase()) && epoch >= ABT_NAMED_FROM ? "ABT" :
     /^[+-]/.test(rawAbbreviation) ? utcOffsetLabel(offsetSeconds) : rawAbbreviation;
   return {
     date: `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,

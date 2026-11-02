@@ -167,6 +167,9 @@ test("Toronto rollback hint and Vancouver permanent-time difference", async ({ p
   // Row clocks have exact instants and a spoken local clock, independent of animated digits.
   await expect(app(page).getByTestId("row-clock").nth(0)).toHaveAttribute("aria-label", "02:00");
   await expect(app(page).getByTestId("row-clock").nth(1)).toHaveAttribute("aria-label", "01:00");
+  await expect(app(page).getByTestId("row-clock").nth(2)).toHaveAttribute("aria-label", "03:00");
+  await expect(app(page).getByTitle("ABT · UTC-06:00", { exact: true })).toHaveText("ABT");
+  await expect(timeline(page, "Edmonton").getByRole("img", { name: /Clocks go back/ })).toHaveCount(0);
 });
 
 test("Havana keeps daylight time across its canceled November rollback", async ({ page }) => {
